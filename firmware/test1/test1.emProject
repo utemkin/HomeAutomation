@@ -1,0 +1,88 @@
+<!DOCTYPE CrossStudio_Project_File>
+<solution Name="test1" target="8" version="2">
+  <project Name="test1">
+    <configuration
+      Name="Common"
+      arm_architecture="v7M"
+      arm_core_type="Cortex-M3"
+      arm_endian="Little"
+      arm_fp_abi="Soft"
+      arm_fpu_type="None"
+      arm_simulator_memory_simulation_parameter="RX 08000000,00080000,FFFFFFFF;RWX 20000000,00010000,CDCDCDCD"
+      arm_target_device_name="STM32F103VE"
+      arm_target_interface_type="SWD"
+      c_preprocessor_definitions="USE_HAL_DRIVER;STM32F103xE"
+      c_user_include_directories=".;.\\Inc;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\include;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS;.\\Drivers\\STM32F1xx_HAL_Driver\\Inc;.\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include;.\\Drivers\\CMSIS\\Include"
+      debug_leave_target_running="Yes"
+      debug_register_definition_file="$(ProjectDir)/../STM32F103.svd"
+      debug_start_from_entry_point_symbol="No"
+      debug_target_connection="J-Link"
+      gcc_c_language_standard="gnu11"
+      gcc_cplusplus_language_standard="gnu++11"
+      gcc_enable_all_warnings="Yes"
+      linker_section_placements_segments="FLASH RX 0x08000000 0x00080000;SRAM RWX 0x20000000 0x00010000"
+      project_directory=""
+      project_type="Executable"
+      speed="12000" />
+    <configuration
+      Name="Debug External"
+      asm_additional_options="-Og -g"
+      c_additional_options="-Og -g" />
+    <configuration
+      Name="Release External"
+      asm_additional_options="-O2 -g"
+      c_additional_options="-O2 -g" />
+    <configuration
+      Name="External GNU"
+      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-6-2017-q2-update-win32/bin"
+      external_link_command="&quot;$(ToolChainDir)/arm-none-eabi-g++&quot; $(LinkOptions) -T &quot;$(RelLinkerScriptPath)&quot; $(Objects) -o &quot;$(RelTargetPath)&quot; -Xlinker -Map=&quot;$(RelMapPath)&quot;"
+      link_linker_script_file="$(ProjectDir)/test1.ld"
+      link_use_linker_script_file="Yes"
+      project_type="Externally Built Executable" />
+    <configuration Name="Simulated" debug_target_connection="Simulator" />
+    <folder Name="common">
+      <file file_name="../lib/common/handlers.cpp" />
+      <file file_name="../lib/common/utils.cpp" />
+    </folder>
+  </project>
+  <configuration
+    Name="Debug External"
+    inherited_configurations="External GNU;Debug" />
+  <configuration
+    Name="Release External"
+    inherited_configurations="External GNU;Release" />
+  <configuration
+    Name="Debug"
+    c_preprocessor_definitions="DEBUG"
+    gcc_debugging_level="Level 3"
+    gcc_optimization_level="None"
+    hidden="Yes" />
+  <configuration
+    Name="Release"
+    c_preprocessor_definitions="NDEBUG"
+    gcc_debugging_level="None"
+    gcc_omit_frame_pointer="Yes"
+    gcc_optimization_level="Level 1"
+    hidden="Yes" />
+  <configuration
+    Name="External GNU"
+    asm_additional_options="-mcpu=$(CoreType);-mfpu=$(FPU);-mfloat-abi=$(FPABI)"
+    c_additional_options="-mcpu=$(CoreType);-mfpu=$(FPU);-mfloat-abi=$(FPABI);-ffunction-sections;-fdata-sections;-Wall"
+    external_archive_command="&quot;$(ToolChainDir)/arm-none-eabi-ar&quot; -rcs &quot;$(RelTargetPath)&quot; $(Objects)"
+    external_assemble_command="&quot;$(ToolChainDir)/arm-none-eabi-gcc&quot; -c $(AsmOptions) $(Defines) $(Includes) &quot;$(RelInputPath)&quot; -o &quot;$(RelTargetPath)&quot;"
+    external_c_compile_command="&quot;$(ToolChainDir)/arm-none-eabi-gcc&quot; -c $(COptions) $(COnlyOptions) $(Defines) $(Includes) &quot;$(RelInputPath)&quot; -MD -MF &quot;$(RelDependencyPath)&quot; -fno-diagnostics-show-caret -o &quot;$(RelTargetPath)&quot;"
+    external_cpp_compile_command="&quot;$(ToolChainDir)/arm-none-eabi-g++&quot; -c $(COptions) $(CppOnlyOptions) $(Defines) $(Includes) &quot;$(RelInputPath)&quot; -MD -MF &quot;$(RelDependencyPath)&quot; -fno-diagnostics-show-caret -o &quot;$(RelTargetPath)&quot;"
+    external_link_command="&quot;$(ToolChainDir)/arm-none-eabi-gcc&quot; $(LinkOptions) -T &quot;$(RelLinkerScriptPath)&quot; $(Objects) -o &quot;$(RelTargetPath)&quot; -Xlinker -Map=&quot;$(RelMapPath)&quot;"
+    hidden="Yes"
+    linker_additional_options="-mcpu=$(CoreType);-mfpu=$(FPU);-mfloat-abi=$(FPABI);-Xlinker;--gc-sections;--specs=nano.specs;--specs=nosys.specs"
+    linker_post_build_command="&quot;$(ToolChainDir)/arm-none-eabi-objcopy&quot; &quot;$(RelTargetPath)&quot; &quot;$(PostLinkOutputFilePath)&quot; -Oihex"
+    linker_post_build_command_output_file="$(OutDir)/$(ProjectName).hex" />
+  <configuration Name="Simulated" hidden="Yes" />
+  <configuration
+    Name="Debug External Simulated"
+    inherited_configurations="Debug;External GNU;Simulated" />
+  <configuration
+    Name="Release External Simulated"
+    inherited_configurations="External GNU;Release;Simulated" />
+  <configuration Name="Common" debug_initial_breakpoint="" />
+</solution>
