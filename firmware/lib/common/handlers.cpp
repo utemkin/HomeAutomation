@@ -1,7 +1,25 @@
-#include "handlers.h"
-#include "utils.h"
+#include <common/handlers.h>
+#include <common/utils.h>
 #include <atomic>
 #include <cstdint>
+
+#ifndef NUM_HANDLERS
+
+#  if defined(STM32F1)
+
+#    define NUM_HANDLERS (68)
+
+#  elif defined(STM32F4)
+
+#    define NUM_HANDLERS (102)
+
+#  elif defined(STM32F7)
+
+#    define NUM_HANDLERS (110)
+
+#  endif
+
+#endif
 
 extern "C" uint8_t _estack;
 extern "C" uint8_t _sidata;
@@ -30,7 +48,7 @@ extern "C" void Reset_Handler()
   main();
 }
 
-static std::atomic<Irq::Handler*> volatile handlers[100];
+static std::atomic<Irq::Handler*> volatile handlers[NUM_HANDLERS + 16];
 
 void Irq::Handler::install(IRQn_Type IRQn)
 {
@@ -38,7 +56,7 @@ void Irq::Handler::install(IRQn_Type IRQn)
     Error_Handler();
 
   IRQn = IRQn_Type(int(IRQn) + 16);
-  assert_param(IRQn < 100);   //fixme
+  assert_param(IRQn < NUM_HANDLERS + 16);
   m_next = handlers[IRQn].load(std::memory_order_relaxed);
   while (!handlers[IRQn].compare_exchange_weak(m_next, this, std::memory_order_release, std::memory_order_relaxed));
 }
@@ -98,19 +116,78 @@ DECLARE(PendSV_Handler);
 DECLARE(SysTick_Handler);
 
 DECLARE10();
+#if NUM_HANDLERS > 10
 DECLARE10(1);
+#endif
+#if NUM_HANDLERS > 20
 DECLARE10(2);
+#endif
+#if NUM_HANDLERS > 30
 DECLARE10(3);
+#endif
+#if NUM_HANDLERS > 40
 DECLARE10(4);
+#endif
+#if NUM_HANDLERS > 50
 DECLARE10(5);
-DECLARE1(60);
-DECLARE1(61);
-DECLARE1(62);
-DECLARE1(63);
-DECLARE1(64);
-DECLARE1(65);
-DECLARE1(66);
-DECLARE1(67);
+#endif
+#if NUM_HANDLERS > 60
+DECLARE10(6);
+#endif
+#if NUM_HANDLERS > 70
+DECLARE10(7);
+#endif
+#if NUM_HANDLERS > 80
+DECLARE10(8);
+#endif
+#if NUM_HANDLERS > 90
+DECLARE10(9);
+#endif
+#if NUM_HANDLERS > 100
+DECLARE10(10);
+#endif
+#if NUM_HANDLERS > 110
+DECLARE10(11);
+#endif
+#if NUM_HANDLERS > 120
+DECLARE10(12);
+#endif
+#if NUM_HANDLERS > 130
+DECLARE10(13);
+#endif
+#if NUM_HANDLERS > 140
+DECLARE10(14);
+#endif
+#if NUM_HANDLERS > 150
+DECLARE10(15);
+#endif
+#if NUM_HANDLERS > 160
+DECLARE10(16);
+#endif
+#if NUM_HANDLERS > 170
+DECLARE10(17);
+#endif
+#if NUM_HANDLERS > 180
+DECLARE10(18);
+#endif
+#if NUM_HANDLERS > 190
+DECLARE10(19);
+#endif
+#if NUM_HANDLERS > 200
+DECLARE10(20);
+#endif
+#if NUM_HANDLERS > 210
+DECLARE10(21);
+#endif
+#if NUM_HANDLERS > 220
+DECLARE10(22);
+#endif
+#if NUM_HANDLERS > 230
+DECLARE10(23);
+#endif
+#if NUM_HANDLERS > 240
+#  error Maximum supported NUM_HANDLERS is 240
+#endif
 
 uint32_t __attribute__((section(".isr_vector"))) vectors[] =
 {
@@ -131,17 +208,70 @@ uint32_t __attribute__((section(".isr_vector"))) vectors[] =
   REF(PendSV_Handler),
   REF(SysTick_Handler),
   REF10(),
+#if NUM_HANDLERS > 10
   REF10(1),
+#endif
+#if NUM_HANDLERS > 20
   REF10(2),
+#endif
+#if NUM_HANDLERS > 30
   REF10(3),
+#endif
+#if NUM_HANDLERS > 40
   REF10(4),
+#endif
+#if NUM_HANDLERS > 50
   REF10(5),
-  REF1(60),
-  REF1(61),
-  REF1(62),
-  REF1(63),
-  REF1(64),
-  REF1(65),
-  REF1(66),
-  REF1(67),
+#endif
+#if NUM_HANDLERS > 60
+  REF10(6),
+#endif
+#if NUM_HANDLERS > 70
+  REF10(7),
+#endif
+#if NUM_HANDLERS > 80
+  REF10(8),
+#endif
+#if NUM_HANDLERS > 90
+  REF10(9),
+#endif
+#if NUM_HANDLERS > 110
+  REF10(11),
+#endif
+#if NUM_HANDLERS > 120
+  REF10(12),
+#endif
+#if NUM_HANDLERS > 130
+  REF10(13),
+#endif
+#if NUM_HANDLERS > 140
+  REF10(14),
+#endif
+#if NUM_HANDLERS > 150
+  REF10(15),
+#endif
+#if NUM_HANDLERS > 160
+  REF10(16),
+#endif
+#if NUM_HANDLERS > 170
+  REF10(17),
+#endif
+#if NUM_HANDLERS > 180
+  REF10(18),
+#endif
+#if NUM_HANDLERS > 190
+  REF10(19),
+#endif
+#if NUM_HANDLERS > 200
+  REF10(20),
+#endif
+#if NUM_HANDLERS > 210
+  REF10(21),
+#endif
+#if NUM_HANDLERS > 220
+  REF10(22),
+#endif
+#if NUM_HANDLERS > 230
+  REF10(23),
+#endif
 };

@@ -1,5 +1,5 @@
-#include "utils.h"
-#include "stm32f1xx_hal.h"
+#include <common/utils.h>
+#include <common/stm32.h>
 
 namespace RT
 {
