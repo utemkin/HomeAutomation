@@ -1,4 +1,6 @@
 #include <common/stm32.h>
+#include <enc28j60/enc28j60.h>
+#include <enc28j60/enc28j60spistm32.h>
 
 extern "C" void maintask()
 {

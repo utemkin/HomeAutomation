@@ -89,6 +89,10 @@
       <file file_name="../lib/segger/SEGGER_RTT_Syscalls_GCC.c" />
     </folder>
     <file file_name="maintask.cpp" />
+    <folder Name="enc28j60">
+      <file file_name="../lib/enc28j60/enc28j60spistm32.cpp" />
+      <file file_name="../lib/enc28j60/enc28j60.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"
