@@ -45,7 +45,6 @@
       <file file_name="../lib/common/utils.cpp" />
     </folder>
     <folder Name="cubemx">
-      <file file_name="Src/dma.c" />
       <file file_name="Src/freertos.c" />
       <file file_name="Src/gpio.c" />
       <file file_name="Src/main.c" />

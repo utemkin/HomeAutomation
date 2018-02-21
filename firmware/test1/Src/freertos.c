@@ -111,6 +111,10 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN StartDefaultTask */
+
+  extern void maintask();
+  maintask();
+
   /* Infinite loop */
   for(;;)
   {
