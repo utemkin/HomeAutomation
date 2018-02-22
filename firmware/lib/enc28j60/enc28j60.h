@@ -1,8 +1,3 @@
-#pragma once
-#include <enc28j60/enc28j60spi.h>
-#include <cstdint>
-#include <cstddef>
-
 /*
 #include <stdint.h>
 #include <stddef.h>
@@ -31,11 +26,13 @@ extern int enc28j60_packet_read_finish(
     struct enc28j60* enc);
 */
 
-class Enc28j60
-{
-public:
-  Enc28j60();
+#pragma once
+#include <enc28j60/enc28j60spi.h>
+#include <common/utils.h>
+#include <memory>
 
-protected:
-  Enc28j60spi& m_spi;
+class Enc28j60 : mstd::noncopyable
+{
 };
+
+std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi);

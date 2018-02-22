@@ -1,15 +1,38 @@
 #pragma once
 #include "cmsis_os.h"
+#include <memory>
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
 #define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
 #define ATTR_NOINLINE __attribute__((noinline))
 #define ATTR_FORCEINLINE __attribute__((always_inline))
 
+namespace mstd
+{
+  template<typename T>
+  std::shared_ptr<T> to_shared(std::unique_ptr<T>&& ptr)
+  {
+    return std::move(ptr);
+  }
+
+  class noncopyable
+  {
+  protected:
+    noncopyable() = default;
+    noncopyable(const noncopyable&) = delete;
+    noncopyable& operator =(const noncopyable&) = delete;
+  };
+}
+
+namespace RT
+{
+  void stall(const unsigned cycles);
+}
+
 namespace OS
 {
   // Can be used recursively and/or from handler
-  class InterruptDisabler
+  class InterruptDisabler : mstd::noncopyable
   {
   public:
     InterruptDisabler()
@@ -23,13 +46,10 @@ namespace OS
 
   protected:
     uint32_t m_oldMask;
-
-    InterruptDisabler(const InterruptDisabler&) = delete;
-    InterruptDisabler& operator =(const InterruptDisabler&) = delete;
   };
 
   // Can be used recursively
-  class CriticalSection
+  class CriticalSection : mstd::noncopyable
   {
   public:
     CriticalSection()
@@ -40,13 +60,10 @@ namespace OS
     {
       portEXIT_CRITICAL();
     }
-
-    CriticalSection(const CriticalSection&) = delete;
-    CriticalSection& operator =(const CriticalSection&) = delete;
   };
 
   template<class T>
-  class Locker
+  class Locker : mstd::noncopyable
   {
   public:
     Locker(T& obj)
@@ -61,12 +78,9 @@ namespace OS
 
   protected:
     T& m_obj;
-
-    Locker(const Locker&) = delete;
-    Locker& operator =(const Locker&) = delete;
   };
 
-  class Mutex
+  class Mutex : mstd::noncopyable
   {
   public:
     Mutex()
@@ -92,14 +106,6 @@ namespace OS
   protected:
     osMutexId m_mutex;
 
-    Mutex(const Mutex&) = delete;
-    Mutex& operator =(const Mutex&) = delete;
-
     friend class Locker<Mutex>;
   };
-}
-
-namespace RT
-{
-  void stall(const unsigned cycles);
 }

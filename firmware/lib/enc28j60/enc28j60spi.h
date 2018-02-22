@@ -1,4 +1,5 @@
 #pragma once
+#include <common/utils.h>
 #include <cstdint>
 #include <cstddef>
 
@@ -13,16 +14,11 @@
 //   If error occurs, the transfer is aborted at unknown stage, so reinit() must be called before any other call
 // - reinit() must re-initialize SPI hardware and CS pin state, must be able to recover from all function's failures
 // - fixme: ??? Implementation may expect initialization and all subsequent calls to be done from the same thread
-class Enc28j60spi
+class Enc28j60spi : mstd::noncopyable
 {
 public:
   virtual int reinit() = 0;
   virtual int txrx(uint8_t* txrx, size_t txrx_len) = 0;
   virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) = 0;
   virtual int txThenRx(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len) = 0;
-
-protected:
-  Enc28j60spi() = default;
-  Enc28j60spi(const Enc28j60spi&) = delete;
-  Enc28j60spi& operator =(const Enc28j60spi&) = delete;
 };

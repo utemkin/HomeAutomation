@@ -499,6 +499,7 @@ Benchmarking phy_write...
 #endif
 
 #include <enc28j60/enc28j60spistm32.h>
+#include <limits>
 
 namespace
 {
@@ -508,26 +509,144 @@ namespace
     Enc28j60spiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert)
       : m_spi(spi)
     {
+#if defined(STM32F1)
+      if (m_spi == SPI1)
+      {
+        __HAL_RCC_SPI1_CLK_ENABLE();
+        __HAL_RCC_DMA1_CLK_ENABLE();
+        m_dmatx = DMA1_Channel3;
+        m_dmarx = DMA1_Channel2;
+      }
+#ifdef SPI2
+      else if (m_spi == SPI2)
+      {
+        __HAL_RCC_SPI2_CLK_ENABLE();
+        __HAL_RCC_DMA1_CLK_ENABLE();
+        m_dmatx = DMA1_Channel5;
+        m_dmarx = DMA1_Channel4;
+      }
+#endif
+#ifdef SPI3
+      else if (m_spi == SPI3)
+      {
+        __HAL_RCC_SPI3_CLK_ENABLE();
+        __HAL_RCC_DMA2_CLK_ENABLE();
+        m_dmatx = DMA2_Channel2;
+        m_dmarx = DMA2_Channel1;
+      }
+#endif
+#else
+#error Unsupported architecture
+#endif
+      else
+      {
+        //fixme
+        return;
+      }
       //fixme
+      reinit();
     }
   
+    // should be called either at the end of constructor or after deinit()
     virtual int reinit() override
     {
-      //fixme
-      return 1;
+      //fixme: deinit() ?
+
+      uint32_t pclk = std::numeric_limits<decltype(pclk)>::max();
+#if defined(STM32F1)
+      if (m_spi == SPI1)
+      {
+        __HAL_RCC_SPI1_FORCE_RESET();
+        __HAL_RCC_SPI1_RELEASE_RESET();
+        pclk = HAL_RCC_GetPCLK2Freq();
+      }
+#ifdef SPI2
+      else if (m_spi == SPI2)
+      {
+        __HAL_RCC_SPI2_FORCE_RESET();
+        __HAL_RCC_SPI2_RELEASE_RESET();
+        pclk = HAL_RCC_GetPCLK1Freq();
+      }
+#endif
+#ifdef SPI3
+      else if (m_spi == SPI3)
+      {
+        __HAL_RCC_SPI3_FORCE_RESET();
+        __HAL_RCC_SPI3_RELEASE_RESET();
+        pclk = HAL_RCC_GetPCLK1Freq();
+      }
+#endif
+#else
+#error Unsupported architecture
+#endif
+
+      uint32_t br;
+      for (br = 0; br < 8; pclk >>= 1, ++br)
+        if (pclk <= (20000000 << 1))
+          break;
+
+      if (pclk > (20000000 << 1))
+        return 1;   //fixme
+
+      m_dmatx->CPAR = m_dmarx->CPAR = uint32_t(&m_spi->DR);
+      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC; // | DMA_CCR_EN;
+      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
+
+      m_spi->CR1 = SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
+      m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+
+      return 0;
     }
   
     virtual int txrx(uint8_t* txrx, size_t txrx_len) override
     {
-      DMA_Channel_TypeDef* const hdmarx = m_hdmarx;
-      hdmarx->CMAR = (uint32_t)txrx;
+      DMA_Channel_TypeDef* const hdmarx = m_dmarx;
+      hdmarx->CMAR = uint32_t(txrx);
+      hdmarx->CNDTR = txrx_len;
+      hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      SPI_TypeDef* const spi = m_spi;
+      spi->DR = *txrx;
+      DMA_Channel_TypeDef* const hdmatx = m_dmatx;
+      hdmatx->CMAR = uint32_t(txrx+1);
+      hdmatx->CNDTR = txrx_len-1;
+      hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (hdmarx->CNDTR != 0);
+      hdmarx->CCR = 0;
+      hdmatx->CCR = 0;
+      while ((spi->SR & SPI_SR_BSY) != 0);
+/*
+      DMA_Channel_TypeDef* const hdmarx = m_dmarx;
+      hdmarx->CMAR = uint32_t(txrx);
+      hdmarx->CNDTR = txrx_len;
+      hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      SPI_TypeDef* const spi = m_spi;
+      spi->DR = *txrx;
+      DMA_Channel_TypeDef* const hdmatx = m_dmatx;
+      hdmatx->CMAR = uint32_t(txrx+1);
+      hdmatx->CNDTR = txrx_len-1;
+      hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (hdmarx->CNDTR != 0);
+      hdmarx->CCR = 0;
+      hdmatx->CCR = 0;
+      while ((spi->SR & SPI_SR_BSY) != 0);
+
+Benchmarking rxtx 1...
+               ... cycle = 1522 ns = 110 CLKs
+Benchmarking rxtx 2...
+               ... cycle = 1969 ns = 142 CLKs
+Benchmarking rxtx 3...
+               ... cycle = 2417 ns = 174 CLKs
+*/
+/*
+      DMA_Channel_TypeDef* const hdmarx = m_dmarx;
+      hdmarx->CMAR = uint32_t(txrx);
       hdmarx->CNDTR = txrx_len;
       uint32_t rx_ccr = hdmarx->CCR;
       hdmarx->CCR = rx_ccr | DMA_CCR_EN;
       SPI_TypeDef* const spi = m_spi;
       spi->DR = *txrx;
-      DMA_Channel_TypeDef* const hdmatx = m_hdmatx;
-      hdmatx->CMAR = (uint32_t)txrx+1;
+      DMA_Channel_TypeDef* const hdmatx = m_dmatx;
+      hdmatx->CMAR = uint32_t(txrx+1);
       hdmatx->CNDTR = txrx_len-1;
       uint32_t tx_ccr = hdmatx->CCR;
       hdmatx->CCR = tx_ccr | DMA_CCR_EN;
@@ -535,6 +654,15 @@ namespace
       hdmarx->CCR = rx_ccr;
       hdmatx->CCR = tx_ccr;
       while ((spi->SR & SPI_SR_BSY) != 0);
+
+Benchmarking rxtx 1...
+               ... cycle = 1649 ns = 119 CLKs
+Benchmarking rxtx 2...
+               ... cycle = 2108 ns = 152 CLKs
+Benchmarking rxtx 3...
+               ... cycle = 2471 ns = 178 CLKs
+*/
+
       return 0;
     }
 
@@ -552,8 +680,17 @@ namespace
 
   protected:
     SPI_TypeDef* const m_spi;
-    DMA_Channel_TypeDef* m_hdmatx;
-    DMA_Channel_TypeDef* m_hdmarx;
+    DMA_Channel_TypeDef* m_dmatx;
+    DMA_Channel_TypeDef* m_dmarx;
+
+  protected:
+    void deinit()
+    {
+      //fixme: deselect
+      m_spi->CR1 = 0;
+      m_dmarx->CCR = 0;
+      m_dmatx->CCR = 0;
+    }
   };
 }
 

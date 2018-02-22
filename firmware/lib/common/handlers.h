@@ -1,9 +1,10 @@
 #pragma once
+#include <common/utils.h>
 #include <common/stm32.h>
 
 namespace Irq
 {
-  class Vectors
+  class Vectors : mstd::noncopyable
   {
   public:
     static inline void handle();
@@ -11,14 +12,13 @@ namespace Irq
     Vectors() = delete;
   };
 
-  class Handler
+  class Handler : mstd::noncopyable
   {
   public:
     // instance of Handler can only be installed once
     void install(IRQn_Type IRQn);
 
   protected:
-    Handler() = default;
     ~Handler()
     {
       Error_Handler();
@@ -27,9 +27,6 @@ namespace Irq
 
   protected:
     Handler* m_next = nullptr;
-
-    Handler(const Handler&) = delete;
-    Handler& operator =(const Handler&) = delete;
 
     friend class Vectors;
   };

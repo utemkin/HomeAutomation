@@ -856,3 +856,20 @@ void enc28j60_poll(
 #endif
 
 #include <enc28j60/enc28j60.h>
+
+class Enc28j60Impl : public Enc28j60
+{
+public:
+  Enc28j60Impl(const std::shared_ptr<Enc28j60spi>& spi)
+    : m_spi(spi)
+  {
+  }
+
+protected:
+  const std::shared_ptr<Enc28j60spi> m_spi;
+};
+
+std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi)
+{
+  return std::make_unique<Enc28j60Impl>(spi);
+}
