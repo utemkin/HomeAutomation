@@ -857,17 +857,149 @@ void enc28j60_poll(
 
 #include <enc28j60/enc28j60.h>
 
-class Enc28j60Impl : public Enc28j60
+namespace
 {
-public:
-  Enc28j60Impl(const std::shared_ptr<Enc28j60spi>& spi)
-    : m_spi(spi)
+  class Enc28j60Impl : public Enc28j60
   {
-  }
+  public:
+    Enc28j60Impl(const std::shared_ptr<Enc28j60spi>& spi)
+      : m_spi(spi)
+    {
+    }
 
-protected:
-  const std::shared_ptr<Enc28j60spi> m_spi;
-};
+  protected:
+    const std::shared_ptr<Enc28j60spi> m_spi;
+    uint8_t m_failureFlags = 0;
+
+  protected:
+    static constexpr uint8_t c_RCR = 0b00000000;
+    static constexpr uint8_t c_RBM = 0b00111010;
+    static constexpr uint8_t c_WCR = 0b01000000;
+    static constexpr uint8_t c_WBM = 0b01111010;
+    static constexpr uint8_t c_BFS = 0b10000000;
+    static constexpr uint8_t c_BFC = 0b10100000;
+    static constexpr uint8_t c_SRC = 0b11111111;
+
+  protected:
+    uint8_t opRCRE(uint8_t num)
+    {
+      if (m_failureFlags)
+        return 0;
+
+      uint8_t buf[2];
+      buf[0] = c_RCR | num;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return 0;
+      }
+ 
+      return buf[1];
+    }
+
+    uint8_t opRCRM(uint8_t num)
+    {
+      if (m_failureFlags)
+        return 0;
+
+      uint8_t buf[3];
+      buf[0] = c_RCR | num;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return 0;
+      }
+      return buf[2];
+    }
+
+    void opRBM(uint8_t* data, size_t data_len)
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[1];
+      buf[0] = c_RBM;
+      if (m_spi->txThenRx(buf, sizeof(buf), data, data_len) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+
+    void opWCR(uint8_t num, uint8_t val)
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[2];
+      buf[0] = c_WCR | num;
+      buf[1] = val;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+
+    void opWBM(const uint8_t* data, size_t data_len)
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[1];
+      buf[0] = c_WBM;
+      if (m_spi->txThenTx(buf, sizeof(buf), data, data_len) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+
+    void opBFS(struct enc28j60_impl* enc_impl, uint8_t num, uint8_t val)
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[2];
+      buf[0] = c_BFS | num;
+      buf[1] = val;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+
+    void opBFC(uint8_t num, uint8_t val)
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[2];
+      buf[0] = c_BFC | num;
+      buf[1] = val;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+
+    void opSRC()
+    {
+      if (m_failureFlags)
+        return;
+
+      uint8_t buf[2];
+      buf[0] = c_SRC;
+      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      {
+        m_failureFlags |= 1;
+        return;
+      }
+    }
+  };
+}
 
 std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi)
 {
