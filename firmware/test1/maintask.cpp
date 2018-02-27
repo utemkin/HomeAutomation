@@ -63,6 +63,8 @@ extern "C" void maintask()
   auto spi = mstd::to_shared(CreateEnc28j60spiStm32(SPI1, SPI1_CS_GPIO_Port, SPI1_CS_Pin, true));
   auto enc = mstd::to_shared(CreateEnc28j60(spi));
 
+  enc->test();
+
   benchmark_all(spi.get());
 
 

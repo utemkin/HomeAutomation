@@ -859,6 +859,48 @@ void enc28j60_poll(
 
 namespace
 {
+#if 0
+template<uint8_t pbank, uint8_t pnum, bool peth>
+class RegImpl : public Reg
+{
+public:
+  constexpr RegImpl()
+    : Reg(pbank, pnum, peth)
+  {
+  }
+};
+
+class Reg
+{
+public:
+  constexpr uint8_t bank() const
+  {
+    return m_addr >> c_BANK_SHIFT;
+  }
+  constexpr uint8_t num() const
+  {
+    return m_addr & c_NUM_MASK;
+  }
+  constexpr bool eth() const
+  {
+    return !!(m_addr & c_ETH_MASK);
+  }
+
+public:
+  using R1 = RegImpl<1, 2, true>;
+
+protected:
+  static constexpr uint8_t c_BANK_SHIFT = 6;
+  static constexpr uint8_t c_ETH_MASK = 0b00100000;
+  static constexpr uint8_t c_NUM_MASK = 0b00011111;
+  uint8_t m_addr;
+
+  constexpr Reg(uint8_t bank, uint8_t num, bool eth)
+    : m_addr((bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0))
+  {
+  }
+};
+#endif
   struct Reg
   {
     static constexpr uint8_t c_BANK_SHIFT = 6;
@@ -1214,6 +1256,14 @@ namespace
     void memWrite(const uint8_t* data, size_t data_len)
     {
       opWBM(data, data_len);
+    }
+
+  public:
+    virtual void test() override
+    {
+
+      regRead(c_ECON1);
+
     }
   };
 }

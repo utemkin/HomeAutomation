@@ -33,6 +33,8 @@ extern int enc28j60_packet_read_finish(
 
 class Enc28j60 : mstd::noncopyable
 {
+public:
+  virtual void test() = 0;
 };
 
 std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi);
