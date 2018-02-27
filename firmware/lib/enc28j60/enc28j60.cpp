@@ -859,6 +859,30 @@ void enc28j60_poll(
 
 namespace
 {
+  struct Reg
+  {
+    static constexpr uint8_t c_BANK_SHIFT = 6;
+    static constexpr uint8_t c_ETH_MASK   = 0b00100000;
+    static constexpr uint8_t c_NUM_MASK   = 0b00011111;
+    uint8_t addr;
+    constexpr Reg(uint8_t bank, uint8_t num, bool eth)
+      : addr((bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0))
+    {
+    }
+    constexpr uint8_t bank() const
+    {
+      return addr >> c_BANK_SHIFT;
+    }
+    constexpr uint8_t num() const
+    {
+      return addr & c_NUM_MASK;
+    }
+    constexpr bool eth() const
+    {
+      return !!(addr & c_ETH_MASK);
+    }
+  };
+
   class Enc28j60Impl : public Enc28j60
   {
   public:
@@ -870,6 +894,7 @@ namespace
   protected:
     const std::shared_ptr<Enc28j60spi> m_spi;
     uint8_t m_failureFlags = 0;
+    uint8_t m_bank = 0;
 
   protected:
     static constexpr uint8_t c_RCR = 0b00000000;
@@ -955,7 +980,7 @@ namespace
       }
     }
 
-    void opBFS(struct enc28j60_impl* enc_impl, uint8_t num, uint8_t val)
+    void opBFS(uint8_t num, uint8_t val)
     {
       if (m_failureFlags)
         return;
@@ -997,6 +1022,198 @@ namespace
         m_failureFlags |= 1;
         return;
       }
+    }
+
+  protected:
+    static constexpr Reg c_EIE                = {3, 0x1b, true};
+    static constexpr uint8_t c_EIE_INTIE      = 0b10000000;
+    static constexpr uint8_t c_EIE_PKTIE      = 0b01000000;
+    static constexpr uint8_t c_EIE_DMAIE      = 0b00100000;
+    static constexpr uint8_t c_EIE_LINKIE     = 0b00010000;
+    static constexpr uint8_t c_EIE_TXIE       = 0b00001000;
+    static constexpr uint8_t c_EIE_TXERIE     = 0b00000010;
+    static constexpr uint8_t c_EIE_RXERIE     = 0b00000001;
+    static constexpr Reg c_EIR                = {3, 0x1c, true};
+    static constexpr uint8_t c_EIR_PKTIF      = 0b01000000;
+    static constexpr uint8_t c_EIR_DMAIF      = 0b00100000;
+    static constexpr uint8_t c_EIR_LINKIF     = 0b00010000;
+    static constexpr uint8_t c_EIR_TXIF       = 0b00001000;
+    static constexpr uint8_t c_EIR_TXERIF     = 0b00000010;
+    static constexpr uint8_t c_EIR_RXERIF     = 0b00000001;
+    static constexpr Reg c_ESTAT              = {3, 0x1d, true};
+    static constexpr uint8_t c_ESTAT_INT      = 0b10000000;
+    static constexpr uint8_t c_ESTAT_BUFER    = 0b01000000;
+    static constexpr uint8_t c_ESTAT_LATECOL  = 0b00010000;
+    static constexpr uint8_t c_ESTAT_RXBUSY   = 0b00000100;
+    static constexpr uint8_t c_ESTAT_TXABRT   = 0b00000010;
+    static constexpr uint8_t c_ESTAT_CLKRDY   = 0b00000001;
+    static constexpr Reg c_ECON2              = {3, 0x1e, true};
+    static constexpr uint8_t c_ECON2_AUTOINC  = 0b10000000;
+    static constexpr uint8_t c_ECON2_PKTDEC   = 0b01000000;
+    static constexpr uint8_t c_ECON2_PWRSV    = 0b00100000;
+    static constexpr uint8_t c_ECON2_VRPS     = 0b00001000;
+    static constexpr Reg c_ECON1              = {3, 0x1f, true};
+    static constexpr uint8_t c_ECON1_TXRST    = 0b10000000;
+    static constexpr uint8_t c_ECON1_RXRST    = 0b01000000;
+    static constexpr uint8_t c_ECON1_DMAST    = 0b00100000;
+    static constexpr uint8_t c_ECON1_CSUMEN   = 0b00010000;
+    static constexpr uint8_t c_ECON1_TXRTS    = 0b00001000;
+    static constexpr uint8_t c_ECON1_RXEN     = 0b00000100;
+    static constexpr uint8_t c_ECON1_BSEL1    = 0b00000010;
+    static constexpr uint8_t c_ECON1_BSEL0    = 0b00000001;
+
+    static constexpr Reg c_ERDPT16            = {0, 0x00, true};
+    static constexpr Reg c_EWRPT16            = {0, 0x02, true};
+    static constexpr Reg c_ETXST16            = {0, 0x04, true};
+    static constexpr Reg c_ETXND16            = {0, 0x06, true};
+    static constexpr Reg c_ERXST16            = {0, 0x08, true};
+    static constexpr Reg c_ERXND16            = {0, 0x0a, true};
+    static constexpr Reg c_ERXRDPT16          = {0, 0x0c, true};
+    static constexpr Reg c_ERXWRPT16          = {0, 0x0e, true};
+    static constexpr Reg c_EDMAST16           = {0, 0x10, true};
+    static constexpr Reg c_EDMAND16           = {0, 0x12, true};
+    static constexpr Reg c_EDMADST16          = {0, 0x14, true};
+    static constexpr Reg c_EDMACS16           = {0, 0x16, true};
+
+    static constexpr Reg c_EHT0               = {1, 0x00, true};
+    static constexpr Reg c_EHT1               = {1, 0x01, true};
+    static constexpr Reg c_EHT2               = {1, 0x02, true};
+    static constexpr Reg c_EHT3               = {1, 0x03, true};
+    static constexpr Reg c_EHT4               = {1, 0x04, true};
+    static constexpr Reg c_EHT5               = {1, 0x05, true};
+    static constexpr Reg c_EHT6               = {1, 0x06, true};
+    static constexpr Reg c_EHT7               = {1, 0x07, true};
+    static constexpr Reg c_EPMM0              = {1, 0x08, true};
+    static constexpr Reg c_EPMM1              = {1, 0x09, true};
+    static constexpr Reg c_EPMM2              = {1, 0x0a, true};
+    static constexpr Reg c_EPMM3              = {1, 0x0b, true};
+    static constexpr Reg c_EPMM4              = {1, 0x0c, true};
+    static constexpr Reg c_EPMM5              = {1, 0x0d, true};
+    static constexpr Reg c_EPMM6              = {1, 0x0e, true};
+    static constexpr Reg c_EPMM7              = {1, 0x0f, true};
+    static constexpr Reg c_EPMCS16            = {1, 0x10, true};
+    static constexpr Reg c_EPMO16             = {1, 0x14, true};
+    static constexpr Reg c_ERXFCON            = {1, 0x18, true};
+    static constexpr Reg c_EPKTCNT            = {1, 0x19, true};
+
+    static constexpr Reg c_MACON1             = {2, 0x00, false};
+    static constexpr uint8_t c_MACON1_TXPAUS  = 0b00001000;
+    static constexpr uint8_t c_MACON1_RXPAUS  = 0b00000100;
+    static constexpr uint8_t c_MACON1_PASSALL = 0b00000010;
+    static constexpr uint8_t c_MACON1_MARXEN  = 0b00000001;
+    static constexpr Reg c_MACON3             = {2, 0x02, false};
+    static constexpr uint8_t c_MACON3_PADCFG2 = 0b10000000;
+    static constexpr uint8_t c_MACON3_PADCFG1 = 0b01000000;
+    static constexpr uint8_t c_MACON3_PADCFG0 = 0b00100000;
+    static constexpr uint8_t c_MACON3_TXCRCEN = 0b00010000;
+    static constexpr uint8_t c_MACON3_PHDREN  = 0b00001000;
+    static constexpr uint8_t c_MACON3_HFRMEN  = 0b00000100;
+    static constexpr uint8_t c_MACON3_FRMLNEN = 0b00000010;
+    static constexpr uint8_t c_MACON3_FULDPX  = 0b00000001;
+    static constexpr Reg c_MACON4             = {2, 0x03, false};
+    static constexpr Reg c_MABBIPG            = {2, 0x04, false};
+    static constexpr Reg c_MAIPG16            = {2, 0x06, false};
+    static constexpr Reg c_MACLCON1           = {2, 0x08, false};
+    static constexpr Reg c_MACLCON2           = {2, 0x09, false};
+    static constexpr Reg c_MAMXFL16           = {2, 0x0a, false};
+    static constexpr Reg c_MICMD              = {2, 0x12, false};
+    static constexpr uint8_t c_MICMD_MIISCAN  = 0b00000010;
+    static constexpr uint8_t c_MICMD_MIIRD    = 0b00000001;
+    static constexpr Reg c_MIREGADR           = {2, 0x14, false};
+    static constexpr Reg c_MIWR16             = {2, 0x16, false};
+    static constexpr Reg c_MIRD16             = {2, 0x18, false};
+
+    static constexpr Reg c_MAADR5             = {3, 0x00, false};
+    static constexpr Reg c_MAADR6             = {3, 0x01, false};
+    static constexpr Reg c_MAADR3             = {3, 0x02, false};
+    static constexpr Reg c_MAADR4             = {3, 0x03, false};
+    static constexpr Reg c_MAADR1             = {3, 0x04, false};
+    static constexpr Reg c_MAADR2             = {3, 0x05, false};
+    static constexpr Reg c_EBSTSD             = {3, 0x06, true};
+    static constexpr Reg c_EBSTCON            = {3, 0x07, true};
+    static constexpr Reg c_EBSTCS16           = {3, 0x08, true};
+    static constexpr Reg c_MISTAT             = {3, 0x0a, false};
+    static constexpr Reg c_EREVID             = {3, 0x12, true};
+    static constexpr Reg c_ECOCON             = {3, 0x15, true};
+    static constexpr Reg c_EFLOCON            = {3, 0x17, true};
+    static constexpr Reg c_EPAUS16            = {3, 0x18, true};
+
+  protected:
+    void setBank(const Reg reg)
+    {
+      if (reg.addr >= c_EIE.addr)
+      {
+        return;
+      }
+      uint8_t bank = reg.bank();
+      if (m_bank == bank)
+      {
+        return;
+      }
+      uint8_t clr = m_bank & ~bank;
+      uint8_t set = ~m_bank & bank;
+      m_bank = bank;
+      if (clr)
+      {
+        opBFC(c_ECON1.num(), clr);
+      }
+      if (set)
+      {
+        opBFS(c_ECON1.num(), set);
+      }
+    }
+
+    uint8_t regRead(const Reg reg)
+    {
+      setBank(reg);
+      if (reg.eth())
+        return opRCRE(reg.num());
+      else
+        return opRCRM(reg.num());
+    }
+
+    uint16_t regRead16(const Reg reg)
+    {
+      setBank(reg);
+      if (reg.eth())
+        return opRCRE(reg.num()) | (opRCRE(reg.num() + 1) << 8);
+      else
+        return opRCRM(reg.num()) | (opRCRM(reg.num() + 1) << 8);
+    }
+
+    void regWrite(const Reg reg, uint8_t val)
+    {
+      setBank(reg);
+      opWCR(reg.num(), val);
+    }
+
+    void regWrite16(const Reg reg, uint16_t val)
+    {
+      setBank(reg);
+      opWCR(reg.num(), val & 0xff);
+      opWCR(reg.num() + 1, val >> 8);
+    }
+
+    void regSet(const Reg reg, uint8_t val)
+    {
+      setBank(reg);
+      opBFS(reg.num(), val);
+    }
+
+    void regClr(const Reg reg, uint8_t val)
+    {
+      setBank(reg);
+      opBFC(reg.num(), val);
+    }
+
+    void memRead(uint8_t* data, size_t data_len)
+    {
+      opRBM(data, data_len);
+    }
+
+    void memWrite(const uint8_t* data, size_t data_len)
+    {
+      opWBM(data, data_len);
     }
   };
 }
