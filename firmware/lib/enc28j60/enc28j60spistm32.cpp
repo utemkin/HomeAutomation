@@ -508,6 +508,9 @@ namespace
   public:
     Enc28j60spiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert)
       : m_spi(spi)
+      , m_csBsrr(&csGPIO->BSRR)
+      , m_csSelect(csInvert ? csPin << 16 : csPin)
+      , m_csDeselect(csInvert ? csPin : csPin << 16)
     {
 #if defined(STM32F1)
       if (m_spi == SPI1)
@@ -552,6 +555,8 @@ namespace
     {
       //fixme: deinit() ?
 
+      *m_csBsrr = m_csDeselect;
+
       uint32_t pclk = std::numeric_limits<decltype(pclk)>::max();
 #if defined(STM32F1)
       if (m_spi == SPI1)
@@ -589,10 +594,10 @@ namespace
         return 1;   //fixme
 
       m_dmatx->CPAR = m_dmarx->CPAR = uint32_t(&m_spi->DR);
-      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC; // | DMA_CCR_EN;
-      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
+//      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC; // | DMA_CCR_EN;
+//      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
 
-      m_spi->CR1 = SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
+      m_spi->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
       m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 
       return 0;
@@ -600,6 +605,8 @@ namespace
   
     virtual int txrx(uint8_t* txrx, size_t txrx_len) override
     {
+      *m_csBsrr = m_csSelect;
+
       DMA_Channel_TypeDef* const hdmarx = m_dmarx;
       hdmarx->CMAR = uint32_t(txrx);
       hdmarx->CNDTR = txrx_len;
@@ -614,6 +621,8 @@ namespace
       hdmarx->CCR = 0;
       hdmatx->CCR = 0;
       while ((spi->SR & SPI_SR_BSY) != 0);
+
+      *m_csBsrr = m_csDeselect;
 /*
       DMA_Channel_TypeDef* const hdmarx = m_dmarx;
       hdmarx->CMAR = uint32_t(txrx);
@@ -680,13 +689,16 @@ Benchmarking rxtx 3...
 
   protected:
     SPI_TypeDef* const m_spi;
+    __IO uint32_t* const m_csBsrr;
+    const uint32_t m_csSelect;
+    const uint32_t m_csDeselect;
     DMA_Channel_TypeDef* m_dmatx;
     DMA_Channel_TypeDef* m_dmarx;
 
   protected:
     void deinit()
     {
-      //fixme: deselect
+      *m_csBsrr = m_csDeselect;
       m_spi->CR1 = 0;
       m_dmarx->CCR = 0;
       m_dmatx->CCR = 0;

@@ -825,32 +825,32 @@ namespace
 
     void dumpState()
     {
-    #define DUMP(reg) printf(#reg " = %01x\n", (val & reg) ? 1 : 0)
+    #define DUMP(reg) printf(#reg " = %01x\n", (val & Reg::c_##reg) ? 1 : 0)
 
       uint8_t val;
 
       val = regRead(Reg::Addr::EIR);
-      DUMP(Reg::c_EIR_PKTIF);
-      DUMP(Reg::c_EIR_DMAIF);
-      DUMP(Reg::c_EIR_LINKIF);
-      DUMP(Reg::c_EIR_TXIF);
-      DUMP(Reg::c_EIR_TXERIF);
-      DUMP(Reg::c_EIR_RXERIF);
+      DUMP(EIR_PKTIF);
+      DUMP(EIR_DMAIF);
+      DUMP(EIR_LINKIF);
+      DUMP(EIR_TXIF);
+      DUMP(EIR_TXERIF);
+      DUMP(EIR_RXERIF);
 
       val = regRead(Reg::Addr::ESTAT);
-      DUMP(Reg::c_ESTAT_INT);
-      DUMP(Reg::c_ESTAT_BUFER);
-      DUMP(Reg::c_ESTAT_LATECOL);
-      DUMP(Reg::c_ESTAT_RXBUSY);
-      DUMP(Reg::c_ESTAT_TXABRT);
-      DUMP(Reg::c_ESTAT_CLKRDY);
+      DUMP(ESTAT_INT);
+      DUMP(ESTAT_BUFER);
+      DUMP(ESTAT_LATECOL);
+      DUMP(ESTAT_RXBUSY);
+      DUMP(ESTAT_TXABRT);
+      DUMP(ESTAT_CLKRDY);
 
       val = regRead(Reg::Addr::ECON1);
-      DUMP(Reg::c_ECON1_TXRTS);
+      DUMP(ECON1_TXRTS);
 
       val = regRead(Reg::Addr::ECON2);
-      DUMP(Reg::c_ECON2_PWRSV);
-      DUMP(Reg::c_ECON2_VRPS);
+      DUMP(ECON2_PWRSV);
+      DUMP(ECON2_VRPS);
 
       printf("\n");
 
@@ -937,7 +937,7 @@ namespace
   public:
     virtual void test() override
     {
-      validate();
+//      validate();
       dumpRegs();
       dumpState();
     }
