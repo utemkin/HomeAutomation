@@ -28,369 +28,6 @@ struct enc28j60_impl
   TickType_t timeout_ticks;
 };
 
-#define RCR               (0b00000000)
-#define RBM               (0b00111010)
-#define WCR               (0b01000000)
-#define WBM               (0b01111010)
-#define BFS               (0b10000000)
-#define BFC               (0b10100000)
-#define SRC               (0b11111111)
-
-static uint8_t op_RCR_E(struct enc28j60_impl* enc_impl, uint8_t num)
-{
-  if (enc_impl->failure_flags)
-  {
-    return 0;
-  }
-  enc_impl->buf2[0] = RCR | num;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf2, sizeof(enc_impl->buf2)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return 0;
-  }
-  return enc_impl->buf2[1];
-}
-
-static uint8_t op_RCR_M(struct enc28j60_impl* enc_impl, uint8_t num)
-{
-  if (enc_impl->failure_flags)
-  {
-    return 0;
-  }
-  enc_impl->buf3[0] = RCR | num;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf3, sizeof(enc_impl->buf3)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return 0;
-  }
-  return enc_impl->buf3[2];
-}
-
-static void op_RBM(struct enc28j60_impl* enc_impl, uint8_t* data, size_t data_len)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf1[0] = RBM;
-  if (enc_impl->spi->tx_then_rx(enc_impl->spi, enc_impl->buf1, sizeof(enc_impl->buf1), data, data_len) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-static void op_WCR(struct enc28j60_impl* enc_impl, uint8_t num, uint8_t val)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf2[0] = WCR | num;
-  enc_impl->buf2[1] = val;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf2, sizeof(enc_impl->buf2)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-static void op_WBM(struct enc28j60_impl* enc_impl, const uint8_t* data, size_t data_len)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf1[0] = WBM;
-  if (enc_impl->spi->tx_then_tx(enc_impl->spi, enc_impl->buf1, sizeof(enc_impl->buf1), data, data_len) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-static void op_BFS(struct enc28j60_impl* enc_impl, uint8_t num, uint8_t val)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf2[0] = BFS | num;
-  enc_impl->buf2[1] = val;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf2, sizeof(enc_impl->buf2)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-static void op_BFC(struct enc28j60_impl* enc_impl, uint8_t num, uint8_t val)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf2[0] = BFC | num;
-  enc_impl->buf2[1] = val;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf2, sizeof(enc_impl->buf2)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-static void op_SRC(struct enc28j60_impl* enc_impl)
-{
-  if (enc_impl->failure_flags)
-  {
-    return;
-  }
-  enc_impl->buf1[0] = SRC;
-  if (enc_impl->spi->txrx(enc_impl->spi, enc_impl->buf1, sizeof(enc_impl->buf1)) != 0)
-  {
-    enc_impl->failure_flags |= 1;
-    return;
-  }
-}
-
-#define REG_BANK_SHIFT    (6)
-#define REG_E_MASK        (0x20)
-#define REG_NUM_MASK      (0x1f)
-#define REG_E(bank, num)  (((bank) << REG_BANK_SHIFT) | (num) | REG_E_MASK)
-#define REG_M(bank, num)  (((bank) << REG_BANK_SHIFT) | (num))
-
-#define EIE               REG_E(3, 0x1b)
-#define EIE_INTIE           (0b10000000)
-#define EIE_PKTIE           (0b01000000)
-#define EIE_DMAIE           (0b00100000)
-#define EIE_LINKIE          (0b00010000)
-#define EIE_TXIE            (0b00001000)
-#define EIE_TXERIE          (0b00000010)
-#define EIE_RXERIE          (0b00000001)
-#define EIR               REG_E(3, 0x1c)
-#define EIR_PKTIF           (0b01000000)
-#define EIR_DMAIF           (0b00100000)
-#define EIR_LINKIF          (0b00010000)
-#define EIR_TXIF            (0b00001000)
-#define EIR_TXERIF          (0b00000010)
-#define EIR_RXERIF          (0b00000001)
-#define ESTAT             REG_E(3, 0x1d)
-#define ESTAT_INT           (0b10000000)
-#define ESTAT_BUFER         (0b01000000)
-#define ESTAT_LATECOL       (0b00010000)
-#define ESTAT_RXBUSY        (0b00000100)
-#define ESTAT_TXABRT        (0b00000010)
-#define ESTAT_CLKRDY        (0b00000001)
-#define ECON2             REG_E(3, 0x1e)
-#define ECON2_AUTOINC       (0b10000000)
-#define ECON2_PKTDEC        (0b01000000)
-#define ECON2_PWRSV         (0b00100000)
-#define ECON2_VRPS          (0b00001000)
-#define ECON1             REG_E(3, 0x1f)
-#define ECON1_TXRST         (0b10000000)
-#define ECON1_RXRST         (0b01000000)
-#define ECON1_DMAST         (0b00100000)
-#define ECON1_CSUMEN        (0b00010000)
-#define ECON1_TXRTS         (0b00001000)
-#define ECON1_RXEN          (0b00000100)
-#define ECON1_BSEL1         (0b00000010)
-#define ECON1_BSEL0         (0b00000001)
-
-#define ERDPT16           REG_E(0, 0x00)
-#define EWRPT16           REG_E(0, 0x02)
-#define ETXST16           REG_E(0, 0x04)
-#define ETXND16           REG_E(0, 0x06)
-#define ERXST16           REG_E(0, 0x08)
-#define ERXND16           REG_E(0, 0x0a)
-#define ERXRDPT16         REG_E(0, 0x0c)
-#define ERXWRPT16         REG_E(0, 0x0e)
-#define EDMAST16          REG_E(0, 0x10)
-#define EDMAND16          REG_E(0, 0x12)
-#define EDMADST16         REG_E(0, 0x14)
-#define EDMACS16          REG_E(0, 0x16)
-
-#define EHT0              REG_E(1, 0x00)
-#define EHT1              REG_E(1, 0x01)
-#define EHT2              REG_E(1, 0x02)
-#define EHT3              REG_E(1, 0x03)
-#define EHT4              REG_E(1, 0x04)
-#define EHT5              REG_E(1, 0x05)
-#define EHT6              REG_E(1, 0x06)
-#define EHT7              REG_E(1, 0x07)
-#define EPMM0             REG_E(1, 0x08)
-#define EPMM1             REG_E(1, 0x09)
-#define EPMM2             REG_E(1, 0x0a)
-#define EPMM3             REG_E(1, 0x0b)
-#define EPMM4             REG_E(1, 0x0c)
-#define EPMM5             REG_E(1, 0x0d)
-#define EPMM6             REG_E(1, 0x0e)
-#define EPMM7             REG_E(1, 0x0f)
-#define EPMCS16           REG_E(1, 0x10)
-#define EPMO16            REG_E(1, 0x14)
-#define ERXFCON           REG_E(1, 0x18)
-#define EPKTCNT           REG_E(1, 0x19)
-
-#define MACON1            REG_M(2, 0x00)
-#define MACON1_TXPAUS       (0b00001000)
-#define MACON1_RXPAUS       (0b00000100)
-#define MACON1_PASSALL      (0b00000010)
-#define MACON1_MARXEN       (0b00000001)
-#define MACON3            REG_M(2, 0x02)
-#define MACON3_PADCFG2      (0b10000000)
-#define MACON3_PADCFG1      (0b01000000)
-#define MACON3_PADCFG0      (0b00100000)
-#define MACON3_TXCRCEN      (0b00010000)
-#define MACON3_PHDREN       (0b00001000)
-#define MACON3_HFRMEN       (0b00000100)
-#define MACON3_FRMLNEN      (0b00000010)
-#define MACON3_FULDPX       (0b00000001)
-#define MACON4            REG_M(2, 0x03)
-#define MABBIPG           REG_M(2, 0x04)
-#define MAIPG16           REG_M(2, 0x06)
-#define MACLCON1          REG_M(2, 0x08)
-#define MACLCON2          REG_M(2, 0x09)
-#define MAMXFL16          REG_M(2, 0x0a)
-#define MICMD             REG_M(2, 0x12)
-#define MICMD_MIISCAN       (0b00000010)
-#define MICMD_MIIRD         (0b00000001)
-#define MIREGADR          REG_M(2, 0x14)
-#define MIWR16            REG_M(2, 0x16)
-#define MIRD16            REG_M(2, 0x18)
-
-#define MAADR5            REG_M(3, 0x00)
-#define MAADR6            REG_M(3, 0x01)
-#define MAADR3            REG_M(3, 0x02)
-#define MAADR4            REG_M(3, 0x03)
-#define MAADR1            REG_M(3, 0x04)
-#define MAADR2            REG_M(3, 0x05)
-#define EBSTSD            REG_E(3, 0x06)
-#define EBSTCON           REG_E(3, 0x07)
-#define EBSTCS16          REG_E(3, 0x08)
-#define MISTAT            REG_M(3, 0x0a)
-#define EREVID            REG_E(3, 0x12)
-#define ECOCON            REG_E(3, 0x15)
-#define EFLOCON           REG_E(3, 0x17)
-#define EPAUS16           REG_E(3, 0x18)
-
-#define PHCON1            (0x00)
-#define PHCON1_PRST         (0b1000000000000000)
-#define PHCON1_PLOOPBK      (0b0100000000000000)
-#define PHCON1_PPWRSV       (0b0000100000000000)
-#define PHCON1_PDPXMD       (0b0000000100000000)
-#define PHSTAT1           (0x01)
-#define PHID1             (0x02)
-#define PHID2             (0x03)
-#define PHCON2            (0x10)
-#define PHSTAT2           (0x11)
-#define PHSTAT2_TXSTAT      (0b0010000000000000)
-#define PHSTAT2_RXSTAT      (0b0001000000000000)
-#define PHSTAT2_COLSTAT     (0b0000100000000000)
-#define PHSTAT2_LSTAT       (0b0000010000000000)
-#define PHSTAT2_DPXSTAT     (0b0000001000000000)
-#define PHSTAT2_PLRITY      (0b0000000000100000)
-#define PHIE              (0x12)
-#define PHIE_PLNKIE         (0b0000000000010000)
-#define PHIE_PGEIE          (0b0000000000000010)
-#define PHIR              (0x13)
-#define PHLCON            (0x14)
-
-static void set_bank(struct enc28j60_impl* enc_impl, uint8_t reg)
-{
-  if (reg >= EIE)
-  {
-    return;
-  }
-  uint8_t bank = reg >> REG_BANK_SHIFT;
-  if (enc_impl->bank == bank)
-  {
-    return;
-  }
-  uint8_t clr = enc_impl->bank & ~bank;
-  uint8_t set = ~enc_impl->bank & bank;
-  enc_impl->bank = bank;
-  if (clr)
-  {
-    op_BFC(enc_impl, ECON1 & REG_NUM_MASK, clr);
-  }
-  if (set)
-  {
-    op_BFS(enc_impl, ECON1 & REG_NUM_MASK, set);
-  }
-}
-
-static uint8_t reg_read(struct enc28j60_impl* enc_impl, uint8_t reg)
-{
-  set_bank(enc_impl, reg);
-  return (reg & REG_E_MASK ? op_RCR_E : op_RCR_M)(enc_impl, reg & REG_NUM_MASK);
-}
-
-static uint16_t reg_read16(struct enc28j60_impl* enc_impl, uint8_t reg)
-{
-  set_bank(enc_impl, reg);
-  if (reg & REG_E_MASK)
-  {
-    reg &= REG_NUM_MASK;
-    return op_RCR_E(enc_impl, reg) | (op_RCR_E(enc_impl, reg + 1) << 8);
-  }
-  else
-  {
-    reg &= REG_NUM_MASK;
-    return op_RCR_M(enc_impl, reg) | (op_RCR_M(enc_impl, reg + 1) << 8);
-  }
-}
-
-static void reg_write(struct enc28j60_impl* enc_impl, uint8_t reg, uint8_t val)
-{
-  set_bank(enc_impl, reg);
-  op_WCR(enc_impl, reg & REG_NUM_MASK, val);
-}
-
-static void reg_write16(struct enc28j60_impl* enc_impl, uint8_t reg, uint16_t val)
-{
-  set_bank(enc_impl, reg);
-  reg &= REG_NUM_MASK;
-  op_WCR(enc_impl, reg, val & 0xff);
-  op_WCR(enc_impl, reg + 1, val >> 8);
-}
-
-static void reg_set(struct enc28j60_impl* enc_impl, uint8_t reg, uint8_t val)
-{
-  set_bank(enc_impl, reg);
-  op_BFS(enc_impl, reg & REG_NUM_MASK, val);
-}
-
-static void reg_clr(struct enc28j60_impl* enc_impl, uint8_t reg, uint8_t val)
-{
-  set_bank(enc_impl, reg);
-  op_BFC(enc_impl, reg & REG_NUM_MASK, val);
-}
-
-static void mem_read(struct enc28j60_impl* enc_impl, uint8_t* data, size_t data_len)
-{
-  op_RBM(enc_impl, data, data_len);
-}
-
-static void mem_write(struct enc28j60_impl* enc_impl, const uint8_t* data, size_t data_len)
-{
-  op_WBM(enc_impl, data, data_len);
-}
-
-static uint16_t phy_read(struct enc28j60_impl* enc_impl, uint8_t reg)
-{
-  reg_write(enc_impl, MIREGADR, reg);
-  reg_write(enc_impl, MICMD, MICMD_MIIRD);
-  mem_read(enc_impl, enc_impl->buf_wait_phy, sizeof(enc_impl->buf_wait_phy));
-  reg_write(enc_impl, MICMD, 0);
-  return reg_read16(enc_impl, MIRD16);
-}
-
-static void phy_write(struct enc28j60_impl* enc_impl, uint8_t reg, uint16_t val)
-{
-  reg_write(enc_impl, MIREGADR, reg);
-  reg_write16(enc_impl, MIWR16, val);
-  mem_read(enc_impl, enc_impl->buf_wait_phy, sizeof(enc_impl->buf_wait_phy));
-}
-
 static void reset(struct enc28j60_impl* enc_impl)
 {
   reg_clr(enc_impl, ECON2, ECON2_PWRSV);
@@ -402,144 +39,9 @@ static void reset(struct enc28j60_impl* enc_impl)
   enc_impl->next_packet = 0;
 }
 
-static void dump_regs(struct enc28j60_impl* enc_impl)
-{
-#define DUMP(reg) ENC28J60_printf(#reg " = %02x\n", reg_read(enc_impl, reg))
-#define DUMP16(reg) ENC28J60_printf(#reg " = %04x\n", reg_read16(enc_impl, reg))
-#define DUMP_PHY(reg) ENC28J60_printf(#reg " = %04x\n", phy_read(enc_impl, reg))
-
-  ENC28J60_printf("All banks:\n");
-  DUMP(EIE);
-  DUMP(EIR);
-  DUMP(ESTAT);
-  DUMP(ECON2);
-  DUMP(ECON1);
-  ENC28J60_printf("\n");
-
-  ENC28J60_printf("Bank 0:\n");
-  DUMP16(ERDPT16);
-  DUMP16(EWRPT16);
-  DUMP16(ETXST16);
-  DUMP16(ETXND16);
-  DUMP16(ERXST16);
-  DUMP16(ERXND16);
-  DUMP16(ERXRDPT16);
-  DUMP16(ERXWRPT16);
-  DUMP16(EDMAST16);
-  DUMP16(EDMAND16);
-  DUMP16(EDMADST16);
-  DUMP16(EDMACS16);
-  ENC28J60_printf("\n");
-
-  ENC28J60_printf("Bank 1:\n");
-  DUMP(EHT0);
-  DUMP(EHT1);
-  DUMP(EHT2);
-  DUMP(EHT3);
-  DUMP(EHT4);
-  DUMP(EHT5);
-  DUMP(EHT6);
-  DUMP(EHT7);
-  DUMP(EPMM0);
-  DUMP(EPMM1);
-  DUMP(EPMM2);
-  DUMP(EPMM3);
-  DUMP(EPMM4);
-  DUMP(EPMM5);
-  DUMP(EPMM6);
-  DUMP(EPMM7);
-  DUMP16(EPMCS16);
-  DUMP16(EPMO16);
-  DUMP(ERXFCON);
-  DUMP(EPKTCNT);
-  ENC28J60_printf("\n");
-
-  ENC28J60_printf("Bank 2:\n");
-  DUMP(MACON1);
-  DUMP(MACON3);
-  DUMP(MACON4);
-  DUMP(MABBIPG);
-  DUMP16(MAIPG16);
-  DUMP(MACLCON1);
-  DUMP(MACLCON2);
-  DUMP16(MAMXFL16);
-  DUMP(MICMD);
-  DUMP(MIREGADR);
-  DUMP16(MIWR16);
-  DUMP16(MIRD16);
-  ENC28J60_printf("\n");
-
-  ENC28J60_printf("Bank 3:\n");
-  DUMP(MAADR5);
-  DUMP(MAADR6);
-  DUMP(MAADR3);
-  DUMP(MAADR4);
-  DUMP(MAADR1);
-  DUMP(MAADR2);
-  DUMP(EBSTSD);
-  DUMP(EBSTCON);
-  DUMP16(EBSTCS16);
-  DUMP(MISTAT);
-  DUMP(EREVID);
-  DUMP(ECOCON);
-  DUMP(EFLOCON);
-  DUMP16(EPAUS16);
-  ENC28J60_printf("\n");
-
-  ENC28J60_printf("PHY:\n");
-  DUMP_PHY(PHCON1);
-  DUMP_PHY(PHSTAT1);
-  DUMP_PHY(PHID1);
-  DUMP_PHY(PHID2);
-  DUMP_PHY(PHCON2);
-  DUMP_PHY(PHSTAT2);
-  DUMP_PHY(PHIE);
-  DUMP_PHY(PHIR);
-  DUMP_PHY(PHLCON);
-  ENC28J60_printf("\n");
-
-#undef DUMP
-#undef DUMP16
-#undef DUMP_PHY
-}
-
-static void dump_state(struct enc28j60_impl* enc_impl)
-{
-#define DUMP(reg) ENC28J60_printf(#reg " = %01x\n", (val & reg) ? 1 : 0)
-
-  uint8_t val;
-
-  val = reg_read(enc_impl, EIR);
-  DUMP(EIR_PKTIF);
-  DUMP(EIR_DMAIF);
-  DUMP(EIR_LINKIF);
-  DUMP(EIR_TXIF);
-  DUMP(EIR_TXERIF);
-  DUMP(EIR_RXERIF);
-
-  val = reg_read(enc_impl, ESTAT);
-  DUMP(ESTAT_INT);
-  DUMP(ESTAT_BUFER);
-  DUMP(ESTAT_LATECOL);
-  DUMP(ESTAT_RXBUSY);
-  DUMP(ESTAT_TXABRT);
-  DUMP(ESTAT_CLKRDY);
-
-  val = reg_read(enc_impl, ECON1);
-  DUMP(ECON1_TXRTS);
-
-  val = reg_read(enc_impl, ECON2);
-  DUMP(ECON2_PWRSV);
-  DUMP(ECON2_VRPS);
-
-  ENC28J60_printf("\n");
-
-#undef DUMP
-}
-
 static unsigned benchmark(const char* name, void(*test_fn)(struct enc28j60_impl* enc_impl, void* ctx), struct enc28j60_impl* enc, void* ctx, unsigned offset)
 {
-  ENC28J60_printf("Benchmarking %s...\n", name);
+  printf("Benchmarking %s...\n", name);
   TickType_t start = xTaskGetTickCount();
   while (start == xTaskGetTickCount());
   start = xTaskGetTickCount();
@@ -556,7 +58,7 @@ static unsigned benchmark(const char* name, void(*test_fn)(struct enc28j60_impl*
   unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
   unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
   unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
-  ENC28J60_printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
+  printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
   return cycle_ns;
 }
 
@@ -607,81 +109,6 @@ static void benchmark_all(struct enc28j60_impl* enc_impl)
   benchmark("phy_read", &benchmark_phy_read, enc_impl, 0, offset);
   benchmark("phy_write", &benchmark_phy_write, enc_impl, 0, offset);
 }
-
-static uint32_t update_crc(uint32_t crc, uint8_t byte)
-{
-  crc = crc ^ byte;
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  crc = ((crc & 1) ? 0xedB88320 : 0) ^ (crc >> 1);
-  return crc;
-}
-
-static int test1(struct enc28j60_impl* enc_impl)
-{
-  uint32_t crc = 0xffffffff;
-  for (int i = 0; i <= 0x17; ++i)
-  {
-    crc = update_crc(crc, op_RCR_E(enc_impl, i));
-  }
-  if (~crc != 0xeebd948d)
-  {
-    return 1;
-  }
-  return 0;
-}
-
-static int test2(struct enc28j60_impl* enc_impl)
-{
-  static const uint8_t reg[] = {
-      ERDPT16,
-      EWRPT16,
-      ETXST16,
-      ETXND16,
-      ERXST16,
-      ERXND16,
-      ERXRDPT16,
-      EDMAST16,
-      EDMAND16,
-      EDMADST16};
-  uint32_t crc = 0xffffffff;
-  for (int i = 0; i < sizeof(reg)/sizeof(reg[0]); ++i)
-  {
-    crc = update_crc(crc, i);
-    reg_write16(enc_impl, reg[i], crc & 0x1fff);
-  }
-  crc = 0xffffffff;
-  for (int i = 0; i < sizeof(reg)/sizeof(reg[0]); ++i)
-  {
-    crc = update_crc(crc, i);
-    if (reg_read16(enc_impl, reg[i]) != (crc & 0x1fff))
-    {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-static int test3(struct enc28j60_impl* enc_impl)
-{
-  if (reg_read(enc_impl, EREVID) != 6 || phy_read(enc_impl, PHID1) != 0x0083 || phy_read(enc_impl, PHID2) != 0x1400)
-  {
-    return 1;
-  }
-  return 0;
-}
-
-static void validate(struct enc28j60_impl* enc_impl)
-{
-  ENC28J60_printf("test1 returned %i\n", test1(enc_impl));
-  ENC28J60_printf("test2 returned %i\n", test2(enc_impl));
-  ENC28J60_printf("test3 returned %i\n", test3(enc_impl));
-}
   
 // assumes there's no tx currently
 static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uint16_t len)
@@ -726,14 +153,14 @@ static void check_link(struct enc28j60_impl* enc_impl, uint8_t eir)
     if (enc_impl->lstat)
     {
       //fixme
-      ENC28J60_printf("link pulsed down then up\n");
+      printf("link pulsed down then up\n");
       enc_impl->lstat = 0;
       enc_impl->lstat = 1;
     }
     else
     {
       //fixme
-      ENC28J60_printf("link up\n");
+      printf("link up\n");
       enc_impl->lstat = 1;
     }
   }
@@ -742,13 +169,13 @@ static void check_link(struct enc28j60_impl* enc_impl, uint8_t eir)
     if (enc_impl->lstat)
     {
       //fixme
-      ENC28J60_printf("link down\n");
+      printf("link down\n");
       enc_impl->lstat = 0;
     }
     else
     {
       //fixme
-      ENC28J60_printf("link pulsed up then down\n");
+      printf("link pulsed up then down\n");
     }
   }
 }
@@ -758,7 +185,7 @@ static void check_rx(struct enc28j60_impl* enc_impl, uint8_t eir)
   if (eir & EIR_RXERIF)
   {
     //fixme
-    ENC28J60_printf("buffer overflow\n");
+    printf("buffer overflow\n");
   }
   while (reg_read(enc_impl, EPKTCNT))
   {
@@ -768,7 +195,7 @@ static void check_rx(struct enc28j60_impl* enc_impl, uint8_t eir)
     mem_read(enc_impl, rsv, sizeof(rsv));
     uint16_t next_packet = rsv[0] | (rsv[1] << 8);
     uint16_t len = rsv[2] | (rsv[3] << 8);
-    ENC28J60_printf("packet received %u\n", len);
+    printf("packet received %u\n", len);
     reg_write16(enc_impl, ERXRDPT16, next_packet ? next_packet - 1 : 0x19ff);
     enc_impl->next_packet = next_packet;
   }
@@ -811,9 +238,9 @@ void enc28j60_test(struct enc28j60spi* spi)
   {
     uint8_t byte;
     mem_read(&enc, &byte, 1);
-    ENC28J60_printf("%02x ", byte);
+    printf("%02x ", byte);
   }
-  ENC28J60_printf("\n");
+  printf("\n");
 }
 
 void enc28j60_poll(
@@ -856,74 +283,195 @@ void enc28j60_poll(
 #endif
 
 #include <enc28j60/enc28j60.h>
+#include <type_traits>
 
 namespace
 {
-#if 0
-template<uint8_t pbank, uint8_t pnum, bool peth>
-class RegImpl : public Reg
-{
-public:
-  constexpr RegImpl()
-    : Reg(pbank, pnum, peth)
-  {
-  }
-};
-
-class Reg
-{
-public:
-  constexpr uint8_t bank() const
-  {
-    return m_addr >> c_BANK_SHIFT;
-  }
-  constexpr uint8_t num() const
-  {
-    return m_addr & c_NUM_MASK;
-  }
-  constexpr bool eth() const
-  {
-    return !!(m_addr & c_ETH_MASK);
-  }
-
-public:
-  using R1 = RegImpl<1, 2, true>;
-
-protected:
-  static constexpr uint8_t c_BANK_SHIFT = 6;
-  static constexpr uint8_t c_ETH_MASK = 0b00100000;
-  static constexpr uint8_t c_NUM_MASK = 0b00011111;
-  uint8_t m_addr;
-
-  constexpr Reg(uint8_t bank, uint8_t num, bool eth)
-    : m_addr((bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0))
-  {
-  }
-};
-#endif
-  struct Reg
+  namespace Reg
   {
     static constexpr uint8_t c_BANK_SHIFT = 6;
     static constexpr uint8_t c_ETH_MASK   = 0b00100000;
     static constexpr uint8_t c_NUM_MASK   = 0b00011111;
-    uint8_t addr;
-    constexpr Reg(uint8_t bank, uint8_t num, bool eth)
-      : addr((bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0))
+
+    constexpr uint8_t makeAddr(const uint8_t bank, const uint8_t num, const bool eth)
     {
+      return (bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0);
     }
-    constexpr uint8_t bank() const
+
+    enum class Addr : uint8_t
     {
-      return addr >> c_BANK_SHIFT;
-    }
-    constexpr uint8_t num() const
+      EIE       = makeAddr(3, 0x1b, true),
+      EIR       = makeAddr(3, 0x1c, true),
+      ESTAT     = makeAddr(3, 0x1d, true),
+      ECON2     = makeAddr(3, 0x1e, true),
+      ECON1     = makeAddr(3, 0x1f, true),
+
+      ERDPT16   = makeAddr(0, 0x00, true),
+      EWRPT16   = makeAddr(0, 0x02, true),
+      ETXST16   = makeAddr(0, 0x04, true),
+      ETXND16   = makeAddr(0, 0x06, true),
+      ERXST16   = makeAddr(0, 0x08, true),
+      ERXND16   = makeAddr(0, 0x0a, true),
+      ERXRDPT16 = makeAddr(0, 0x0c, true),
+      ERXWRPT16 = makeAddr(0, 0x0e, true),
+      EDMAST16  = makeAddr(0, 0x10, true),
+      EDMAND16  = makeAddr(0, 0x12, true),
+      EDMADST16 = makeAddr(0, 0x14, true),
+      EDMACS16  = makeAddr(0, 0x16, true),
+
+      EHT0      = makeAddr(1, 0x00, true),
+      EHT1      = makeAddr(1, 0x01, true),
+      EHT2      = makeAddr(1, 0x02, true),
+      EHT3      = makeAddr(1, 0x03, true),
+      EHT4      = makeAddr(1, 0x04, true),
+      EHT5      = makeAddr(1, 0x05, true),
+      EHT6      = makeAddr(1, 0x06, true),
+      EHT7      = makeAddr(1, 0x07, true),
+      EPMM0     = makeAddr(1, 0x08, true),
+      EPMM1     = makeAddr(1, 0x09, true),
+      EPMM2     = makeAddr(1, 0x0a, true),
+      EPMM3     = makeAddr(1, 0x0b, true),
+      EPMM4     = makeAddr(1, 0x0c, true),
+      EPMM5     = makeAddr(1, 0x0d, true),
+      EPMM6     = makeAddr(1, 0x0e, true),
+      EPMM7     = makeAddr(1, 0x0f, true),
+      EPMCS16   = makeAddr(1, 0x10, true),
+      EPMO16    = makeAddr(1, 0x14, true),
+      ERXFCON   = makeAddr(1, 0x18, true),
+      EPKTCNT   = makeAddr(1, 0x19, true),
+
+      MACON1    = makeAddr(2, 0x00, false),
+      MACON3    = makeAddr(2, 0x02, false),
+      MACON4    = makeAddr(2, 0x03, false),
+      MABBIPG   = makeAddr(2, 0x04, false),
+      MAIPG16   = makeAddr(2, 0x06, false),
+      MACLCON1  = makeAddr(2, 0x08, false),
+      MACLCON2  = makeAddr(2, 0x09, false),
+      MAMXFL16  = makeAddr(2, 0x0a, false),
+      MICMD     = makeAddr(2, 0x12, false),
+      MIREGADR  = makeAddr(2, 0x14, false),
+      MIWR16    = makeAddr(2, 0x16, false),
+      MIRD16    = makeAddr(2, 0x18, false),
+
+      MAADR5    = makeAddr(3, 0x00, false),
+      MAADR6    = makeAddr(3, 0x01, false),
+      MAADR3    = makeAddr(3, 0x02, false),
+      MAADR4    = makeAddr(3, 0x03, false),
+      MAADR1    = makeAddr(3, 0x04, false),
+      MAADR2    = makeAddr(3, 0x05, false),
+      EBSTSD    = makeAddr(3, 0x06, true),
+      EBSTCON   = makeAddr(3, 0x07, true),
+      EBSTCS16  = makeAddr(3, 0x08, true),
+      MISTAT    = makeAddr(3, 0x0a, false),
+      EREVID    = makeAddr(3, 0x12, true),
+      ECOCON    = makeAddr(3, 0x15, true),
+      EFLOCON   = makeAddr(3, 0x17, true),
+      EPAUS16   = makeAddr(3, 0x18, true),
+    };
+
+    constexpr uint8_t bank(const Addr addr)
     {
-      return addr & c_NUM_MASK;
+      return uint8_t(addr) >> c_BANK_SHIFT;
     }
-    constexpr bool eth() const
+    constexpr uint8_t num(const Addr addr)
     {
-      return !!(addr & c_ETH_MASK);
+      return uint8_t(addr) & c_NUM_MASK;
     }
-  };
+    constexpr bool eth(const Addr addr)
+    {
+      return !!(uint8_t(addr) & c_ETH_MASK);
+    }
+    constexpr bool anyBank(const Addr addr)
+    {
+      return addr >= Addr::EIE;
+    }
+
+    static constexpr uint8_t c_EIE_INTIE      = 0b10000000;
+    static constexpr uint8_t c_EIE_PKTIE      = 0b01000000;
+    static constexpr uint8_t c_EIE_DMAIE      = 0b00100000;
+    static constexpr uint8_t c_EIE_LINKIE     = 0b00010000;
+    static constexpr uint8_t c_EIE_TXIE       = 0b00001000;
+    static constexpr uint8_t c_EIE_TXERIE     = 0b00000010;
+    static constexpr uint8_t c_EIE_RXERIE     = 0b00000001;
+
+    static constexpr uint8_t c_EIR_PKTIF      = 0b01000000;
+    static constexpr uint8_t c_EIR_DMAIF      = 0b00100000;
+    static constexpr uint8_t c_EIR_LINKIF     = 0b00010000;
+    static constexpr uint8_t c_EIR_TXIF       = 0b00001000;
+    static constexpr uint8_t c_EIR_TXERIF     = 0b00000010;
+    static constexpr uint8_t c_EIR_RXERIF     = 0b00000001;
+
+    static constexpr uint8_t c_ESTAT_INT      = 0b10000000;
+    static constexpr uint8_t c_ESTAT_BUFER    = 0b01000000;
+    static constexpr uint8_t c_ESTAT_LATECOL  = 0b00010000;
+    static constexpr uint8_t c_ESTAT_RXBUSY   = 0b00000100;
+    static constexpr uint8_t c_ESTAT_TXABRT   = 0b00000010;
+    static constexpr uint8_t c_ESTAT_CLKRDY   = 0b00000001;
+
+    static constexpr uint8_t c_ECON2_AUTOINC  = 0b10000000;
+    static constexpr uint8_t c_ECON2_PKTDEC   = 0b01000000;
+    static constexpr uint8_t c_ECON2_PWRSV    = 0b00100000;
+    static constexpr uint8_t c_ECON2_VRPS     = 0b00001000;
+
+    static constexpr uint8_t c_ECON1_TXRST    = 0b10000000;
+    static constexpr uint8_t c_ECON1_RXRST    = 0b01000000;
+    static constexpr uint8_t c_ECON1_DMAST    = 0b00100000;
+    static constexpr uint8_t c_ECON1_CSUMEN   = 0b00010000;
+    static constexpr uint8_t c_ECON1_TXRTS    = 0b00001000;
+    static constexpr uint8_t c_ECON1_RXEN     = 0b00000100;
+    static constexpr uint8_t c_ECON1_BSEL1    = 0b00000010;
+    static constexpr uint8_t c_ECON1_BSEL0    = 0b00000001;
+
+    static constexpr uint8_t c_MACON1_TXPAUS  = 0b00001000;
+    static constexpr uint8_t c_MACON1_RXPAUS  = 0b00000100;
+    static constexpr uint8_t c_MACON1_PASSALL = 0b00000010;
+    static constexpr uint8_t c_MACON1_MARXEN  = 0b00000001;
+
+    static constexpr uint8_t c_MACON3_PADCFG2 = 0b10000000;
+    static constexpr uint8_t c_MACON3_PADCFG1 = 0b01000000;
+    static constexpr uint8_t c_MACON3_PADCFG0 = 0b00100000;
+    static constexpr uint8_t c_MACON3_TXCRCEN = 0b00010000;
+    static constexpr uint8_t c_MACON3_PHDREN  = 0b00001000;
+    static constexpr uint8_t c_MACON3_HFRMEN  = 0b00000100;
+    static constexpr uint8_t c_MACON3_FRMLNEN = 0b00000010;
+    static constexpr uint8_t c_MACON3_FULDPX  = 0b00000001;
+
+    static constexpr uint8_t c_MICMD_MIISCAN  = 0b00000010;
+    static constexpr uint8_t c_MICMD_MIIRD    = 0b00000001;
+
+    enum class PhyAddr : uint8_t
+    {
+      PHCON1  = 0x00,
+      PHSTAT1 = 0x01,
+      PHID1   = 0x02,
+      PHID2   = 0x03,
+      PHCON2  = 0x10,
+      PHSTAT2 = 0x11,
+      PHIE    = 0x12,
+      PHIR    = 0x13,
+      PHLCON  = 0x14,
+    };
+
+    constexpr uint8_t num(const PhyAddr addr)
+    {
+      return uint8_t(addr);
+    }
+
+    static constexpr uint16_t c_PHCON1_PRST     = 0b1000000000000000;
+    static constexpr uint16_t c_PHCON1_PLOOPBK  = 0b0100000000000000;
+    static constexpr uint16_t c_PHCON1_PPWRSV   = 0b0000100000000000;
+    static constexpr uint16_t c_PHCON1_PDPXMD   = 0b0000000100000000;
+
+    static constexpr uint16_t c_PHSTAT2_TXSTAT  = 0b0010000000000000;
+    static constexpr uint16_t c_PHSTAT2_RXSTAT  = 0b0001000000000000;
+    static constexpr uint16_t c_PHSTAT2_COLSTAT = 0b0000100000000000;
+    static constexpr uint16_t c_PHSTAT2_LSTAT   = 0b0000010000000000;
+    static constexpr uint16_t c_PHSTAT2_DPXSTAT = 0b0000001000000000;
+    static constexpr uint16_t c_PHSTAT2_PLRITY  = 0b0000000000100000;
+
+    static constexpr uint16_t c_PHIE_PLNKIE     = 0b0000000000010000;
+    static constexpr uint16_t c_PHIE_PGEIE      = 0b0000000000000010;
+  }
 
   class Enc28j60Impl : public Enc28j60
   {
@@ -948,7 +496,7 @@ protected:
     static constexpr uint8_t c_SRC = 0b11111111;
 
   protected:
-    uint8_t opRCRE(uint8_t num)
+    uint8_t opRCRE(const uint8_t num)
     {
       if (m_failureFlags)
         return 0;
@@ -964,7 +512,7 @@ protected:
       return buf[1];
     }
 
-    uint8_t opRCRM(uint8_t num)
+    uint8_t opRCRM(const uint8_t num)
     {
       if (m_failureFlags)
         return 0;
@@ -979,7 +527,7 @@ protected:
       return buf[2];
     }
 
-    void opRBM(uint8_t* data, size_t data_len)
+    void opRBM(uint8_t* data, const size_t data_len)
     {
       if (m_failureFlags)
         return;
@@ -993,7 +541,7 @@ protected:
       }
     }
 
-    void opWCR(uint8_t num, uint8_t val)
+    void opWCR(const uint8_t num, const uint8_t val)
     {
       if (m_failureFlags)
         return;
@@ -1008,7 +556,7 @@ protected:
       }
     }
 
-    void opWBM(const uint8_t* data, size_t data_len)
+    void opWBM(const uint8_t* data, const size_t data_len)
     {
       if (m_failureFlags)
         return;
@@ -1022,7 +570,7 @@ protected:
       }
     }
 
-    void opBFS(uint8_t num, uint8_t val)
+    void opBFS(const uint8_t num, const uint8_t val)
     {
       if (m_failureFlags)
         return;
@@ -1037,7 +585,7 @@ protected:
       }
     }
 
-    void opBFC(uint8_t num, uint8_t val)
+    void opBFC(const uint8_t num, const uint8_t val)
     {
       if (m_failureFlags)
         return;
@@ -1067,203 +615,331 @@ protected:
     }
 
   protected:
-    static constexpr Reg c_EIE                = {3, 0x1b, true};
-    static constexpr uint8_t c_EIE_INTIE      = 0b10000000;
-    static constexpr uint8_t c_EIE_PKTIE      = 0b01000000;
-    static constexpr uint8_t c_EIE_DMAIE      = 0b00100000;
-    static constexpr uint8_t c_EIE_LINKIE     = 0b00010000;
-    static constexpr uint8_t c_EIE_TXIE       = 0b00001000;
-    static constexpr uint8_t c_EIE_TXERIE     = 0b00000010;
-    static constexpr uint8_t c_EIE_RXERIE     = 0b00000001;
-    static constexpr Reg c_EIR                = {3, 0x1c, true};
-    static constexpr uint8_t c_EIR_PKTIF      = 0b01000000;
-    static constexpr uint8_t c_EIR_DMAIF      = 0b00100000;
-    static constexpr uint8_t c_EIR_LINKIF     = 0b00010000;
-    static constexpr uint8_t c_EIR_TXIF       = 0b00001000;
-    static constexpr uint8_t c_EIR_TXERIF     = 0b00000010;
-    static constexpr uint8_t c_EIR_RXERIF     = 0b00000001;
-    static constexpr Reg c_ESTAT              = {3, 0x1d, true};
-    static constexpr uint8_t c_ESTAT_INT      = 0b10000000;
-    static constexpr uint8_t c_ESTAT_BUFER    = 0b01000000;
-    static constexpr uint8_t c_ESTAT_LATECOL  = 0b00010000;
-    static constexpr uint8_t c_ESTAT_RXBUSY   = 0b00000100;
-    static constexpr uint8_t c_ESTAT_TXABRT   = 0b00000010;
-    static constexpr uint8_t c_ESTAT_CLKRDY   = 0b00000001;
-    static constexpr Reg c_ECON2              = {3, 0x1e, true};
-    static constexpr uint8_t c_ECON2_AUTOINC  = 0b10000000;
-    static constexpr uint8_t c_ECON2_PKTDEC   = 0b01000000;
-    static constexpr uint8_t c_ECON2_PWRSV    = 0b00100000;
-    static constexpr uint8_t c_ECON2_VRPS     = 0b00001000;
-    static constexpr Reg c_ECON1              = {3, 0x1f, true};
-    static constexpr uint8_t c_ECON1_TXRST    = 0b10000000;
-    static constexpr uint8_t c_ECON1_RXRST    = 0b01000000;
-    static constexpr uint8_t c_ECON1_DMAST    = 0b00100000;
-    static constexpr uint8_t c_ECON1_CSUMEN   = 0b00010000;
-    static constexpr uint8_t c_ECON1_TXRTS    = 0b00001000;
-    static constexpr uint8_t c_ECON1_RXEN     = 0b00000100;
-    static constexpr uint8_t c_ECON1_BSEL1    = 0b00000010;
-    static constexpr uint8_t c_ECON1_BSEL0    = 0b00000001;
-
-    static constexpr Reg c_ERDPT16            = {0, 0x00, true};
-    static constexpr Reg c_EWRPT16            = {0, 0x02, true};
-    static constexpr Reg c_ETXST16            = {0, 0x04, true};
-    static constexpr Reg c_ETXND16            = {0, 0x06, true};
-    static constexpr Reg c_ERXST16            = {0, 0x08, true};
-    static constexpr Reg c_ERXND16            = {0, 0x0a, true};
-    static constexpr Reg c_ERXRDPT16          = {0, 0x0c, true};
-    static constexpr Reg c_ERXWRPT16          = {0, 0x0e, true};
-    static constexpr Reg c_EDMAST16           = {0, 0x10, true};
-    static constexpr Reg c_EDMAND16           = {0, 0x12, true};
-    static constexpr Reg c_EDMADST16          = {0, 0x14, true};
-    static constexpr Reg c_EDMACS16           = {0, 0x16, true};
-
-    static constexpr Reg c_EHT0               = {1, 0x00, true};
-    static constexpr Reg c_EHT1               = {1, 0x01, true};
-    static constexpr Reg c_EHT2               = {1, 0x02, true};
-    static constexpr Reg c_EHT3               = {1, 0x03, true};
-    static constexpr Reg c_EHT4               = {1, 0x04, true};
-    static constexpr Reg c_EHT5               = {1, 0x05, true};
-    static constexpr Reg c_EHT6               = {1, 0x06, true};
-    static constexpr Reg c_EHT7               = {1, 0x07, true};
-    static constexpr Reg c_EPMM0              = {1, 0x08, true};
-    static constexpr Reg c_EPMM1              = {1, 0x09, true};
-    static constexpr Reg c_EPMM2              = {1, 0x0a, true};
-    static constexpr Reg c_EPMM3              = {1, 0x0b, true};
-    static constexpr Reg c_EPMM4              = {1, 0x0c, true};
-    static constexpr Reg c_EPMM5              = {1, 0x0d, true};
-    static constexpr Reg c_EPMM6              = {1, 0x0e, true};
-    static constexpr Reg c_EPMM7              = {1, 0x0f, true};
-    static constexpr Reg c_EPMCS16            = {1, 0x10, true};
-    static constexpr Reg c_EPMO16             = {1, 0x14, true};
-    static constexpr Reg c_ERXFCON            = {1, 0x18, true};
-    static constexpr Reg c_EPKTCNT            = {1, 0x19, true};
-
-    static constexpr Reg c_MACON1             = {2, 0x00, false};
-    static constexpr uint8_t c_MACON1_TXPAUS  = 0b00001000;
-    static constexpr uint8_t c_MACON1_RXPAUS  = 0b00000100;
-    static constexpr uint8_t c_MACON1_PASSALL = 0b00000010;
-    static constexpr uint8_t c_MACON1_MARXEN  = 0b00000001;
-    static constexpr Reg c_MACON3             = {2, 0x02, false};
-    static constexpr uint8_t c_MACON3_PADCFG2 = 0b10000000;
-    static constexpr uint8_t c_MACON3_PADCFG1 = 0b01000000;
-    static constexpr uint8_t c_MACON3_PADCFG0 = 0b00100000;
-    static constexpr uint8_t c_MACON3_TXCRCEN = 0b00010000;
-    static constexpr uint8_t c_MACON3_PHDREN  = 0b00001000;
-    static constexpr uint8_t c_MACON3_HFRMEN  = 0b00000100;
-    static constexpr uint8_t c_MACON3_FRMLNEN = 0b00000010;
-    static constexpr uint8_t c_MACON3_FULDPX  = 0b00000001;
-    static constexpr Reg c_MACON4             = {2, 0x03, false};
-    static constexpr Reg c_MABBIPG            = {2, 0x04, false};
-    static constexpr Reg c_MAIPG16            = {2, 0x06, false};
-    static constexpr Reg c_MACLCON1           = {2, 0x08, false};
-    static constexpr Reg c_MACLCON2           = {2, 0x09, false};
-    static constexpr Reg c_MAMXFL16           = {2, 0x0a, false};
-    static constexpr Reg c_MICMD              = {2, 0x12, false};
-    static constexpr uint8_t c_MICMD_MIISCAN  = 0b00000010;
-    static constexpr uint8_t c_MICMD_MIIRD    = 0b00000001;
-    static constexpr Reg c_MIREGADR           = {2, 0x14, false};
-    static constexpr Reg c_MIWR16             = {2, 0x16, false};
-    static constexpr Reg c_MIRD16             = {2, 0x18, false};
-
-    static constexpr Reg c_MAADR5             = {3, 0x00, false};
-    static constexpr Reg c_MAADR6             = {3, 0x01, false};
-    static constexpr Reg c_MAADR3             = {3, 0x02, false};
-    static constexpr Reg c_MAADR4             = {3, 0x03, false};
-    static constexpr Reg c_MAADR1             = {3, 0x04, false};
-    static constexpr Reg c_MAADR2             = {3, 0x05, false};
-    static constexpr Reg c_EBSTSD             = {3, 0x06, true};
-    static constexpr Reg c_EBSTCON            = {3, 0x07, true};
-    static constexpr Reg c_EBSTCS16           = {3, 0x08, true};
-    static constexpr Reg c_MISTAT             = {3, 0x0a, false};
-    static constexpr Reg c_EREVID             = {3, 0x12, true};
-    static constexpr Reg c_ECOCON             = {3, 0x15, true};
-    static constexpr Reg c_EFLOCON            = {3, 0x17, true};
-    static constexpr Reg c_EPAUS16            = {3, 0x18, true};
-
-  protected:
-    void setBank(const Reg reg)
+    void setBank(const Reg::Addr addr)
     {
-      if (reg.addr >= c_EIE.addr)
+      if (Reg::anyBank(addr))
       {
         return;
       }
-      uint8_t bank = reg.bank();
+
+      uint8_t bank = Reg::bank(addr);
       if (m_bank == bank)
       {
         return;
       }
+
       uint8_t clr = m_bank & ~bank;
       uint8_t set = ~m_bank & bank;
       m_bank = bank;
       if (clr)
       {
-        opBFC(c_ECON1.num(), clr);
+        opBFC(Reg::num(Reg::Addr::ECON1), clr);
       }
+
       if (set)
       {
-        opBFS(c_ECON1.num(), set);
+        opBFS(Reg::num(Reg::Addr::ECON1), set);
       }
     }
 
-    uint8_t regRead(const Reg reg)
+    uint8_t regRead(const Reg::Addr addr)
     {
-      setBank(reg);
-      if (reg.eth())
-        return opRCRE(reg.num());
+      setBank(addr);
+      if (Reg::eth(addr))
+        return opRCRE(Reg::num(addr));
       else
-        return opRCRM(reg.num());
+        return opRCRM(Reg::num(addr));
     }
 
-    uint16_t regRead16(const Reg reg)
+    uint16_t regRead16(const Reg::Addr addr)
     {
-      setBank(reg);
-      if (reg.eth())
-        return opRCRE(reg.num()) | (opRCRE(reg.num() + 1) << 8);
+      setBank(addr);
+      if (Reg::eth(addr))
+        return opRCRE(Reg::num(addr)) | (opRCRE(Reg::num(addr) + 1) << 8);
       else
-        return opRCRM(reg.num()) | (opRCRM(reg.num() + 1) << 8);
+        return opRCRM(Reg::num(addr)) | (opRCRM(Reg::num(addr) + 1) << 8);
     }
 
-    void regWrite(const Reg reg, uint8_t val)
+    void regWrite(const Reg::Addr addr, const uint8_t val)
     {
-      setBank(reg);
-      opWCR(reg.num(), val);
+      setBank(addr);
+      opWCR(Reg::num(addr), val);
     }
 
-    void regWrite16(const Reg reg, uint16_t val)
+    void regWrite16(const Reg::Addr addr, const uint16_t val)
     {
-      setBank(reg);
-      opWCR(reg.num(), val & 0xff);
-      opWCR(reg.num() + 1, val >> 8);
+      setBank(addr);
+      opWCR(Reg::num(addr), val & 0xff);
+      opWCR(Reg::num(addr) + 1, val >> 8);
     }
 
-    void regSet(const Reg reg, uint8_t val)
+    void regSet(const Reg::Addr addr, const uint8_t val)
     {
-      setBank(reg);
-      opBFS(reg.num(), val);
+      setBank(addr);
+      opBFS(Reg::num(addr), val);
     }
 
-    void regClr(const Reg reg, uint8_t val)
+    void regClr(const Reg::Addr addr, const uint8_t val)
     {
-      setBank(reg);
-      opBFC(reg.num(), val);
+      setBank(addr);
+      opBFC(Reg::num(addr), val);
     }
 
-    void memRead(uint8_t* data, size_t data_len)
+    void memRead(uint8_t* data, const size_t data_len)
     {
       opRBM(data, data_len);
     }
 
-    void memWrite(const uint8_t* data, size_t data_len)
+    void memWrite(const uint8_t* data, const size_t data_len)
     {
       opWBM(data, data_len);
+    }
+
+    uint16_t phyRead(const Reg::PhyAddr addr)
+    {
+      regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
+      regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
+      uint8_t buf[26];            // Need to delay at least 10240ns here.
+                                  // Minimum bit period for enc28j60 is 50ns.
+                                  // 10240/50 = 204.8 bits = 25.6 bytes
+      memRead(buf, sizeof(buf));
+      regWrite(Reg::Addr::MICMD, 0);
+      return regRead16(Reg::Addr::MIRD16);
+    }
+
+    void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
+    {
+      regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
+      regWrite16(Reg::Addr::MIWR16, val);
+      uint8_t buf[26];            // Need to delay at least 10240ns here.
+                                  // Minimum bit period for enc28j60 is 50ns.
+                                  // 10240/50 = 204.8 bits = 25.6 bytes
+      memRead(buf, sizeof(buf));
+    }
+
+    void reset()
+    {
+      opSRC();
+    }
+
+    void dumpRegs()
+    {
+    #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
+    #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
+    #define DUMP_PHY(reg) printf(#reg " = %04x\n", phyRead(Reg::PhyAddr::reg))
+
+      printf("All banks:\n");
+      DUMP(EIE);
+      DUMP(EIR);
+      DUMP(ESTAT);
+      DUMP(ECON2);
+      DUMP(ECON1);
+      printf("\n");
+
+      printf("Bank 0:\n");
+      DUMP16(ERDPT16);
+      DUMP16(EWRPT16);
+      DUMP16(ETXST16);
+      DUMP16(ETXND16);
+      DUMP16(ERXST16);
+      DUMP16(ERXND16);
+      DUMP16(ERXRDPT16);
+      DUMP16(ERXWRPT16);
+      DUMP16(EDMAST16);
+      DUMP16(EDMAND16);
+      DUMP16(EDMADST16);
+      DUMP16(EDMACS16);
+      printf("\n");
+
+      printf("Bank 1:\n");
+      DUMP(EHT0);
+      DUMP(EHT1);
+      DUMP(EHT2);
+      DUMP(EHT3);
+      DUMP(EHT4);
+      DUMP(EHT5);
+      DUMP(EHT6);
+      DUMP(EHT7);
+      DUMP(EPMM0);
+      DUMP(EPMM1);
+      DUMP(EPMM2);
+      DUMP(EPMM3);
+      DUMP(EPMM4);
+      DUMP(EPMM5);
+      DUMP(EPMM6);
+      DUMP(EPMM7);
+      DUMP16(EPMCS16);
+      DUMP16(EPMO16);
+      DUMP(ERXFCON);
+      DUMP(EPKTCNT);
+      printf("\n");
+
+      printf("Bank 2:\n");
+      DUMP(MACON1);
+      DUMP(MACON3);
+      DUMP(MACON4);
+      DUMP(MABBIPG);
+      DUMP16(MAIPG16);
+      DUMP(MACLCON1);
+      DUMP(MACLCON2);
+      DUMP16(MAMXFL16);
+      DUMP(MICMD);
+      DUMP(MIREGADR);
+      DUMP16(MIWR16);
+      DUMP16(MIRD16);
+      printf("\n");
+
+      printf("Bank 3:\n");
+      DUMP(MAADR5);
+      DUMP(MAADR6);
+      DUMP(MAADR3);
+      DUMP(MAADR4);
+      DUMP(MAADR1);
+      DUMP(MAADR2);
+      DUMP(EBSTSD);
+      DUMP(EBSTCON);
+      DUMP16(EBSTCS16);
+      DUMP(MISTAT);
+      DUMP(EREVID);
+      DUMP(ECOCON);
+      DUMP(EFLOCON);
+      DUMP16(EPAUS16);
+      printf("\n");
+
+      printf("PHY:\n");
+      DUMP_PHY(PHCON1);
+      DUMP_PHY(PHSTAT1);
+      DUMP_PHY(PHID1);
+      DUMP_PHY(PHID2);
+      DUMP_PHY(PHCON2);
+      DUMP_PHY(PHSTAT2);
+      DUMP_PHY(PHIE);
+      DUMP_PHY(PHIR);
+      DUMP_PHY(PHLCON);
+      printf("\n");
+
+    #undef DUMP
+    #undef DUMP16
+    #undef DUMP_PHY
+    }
+
+    void dumpState()
+    {
+    #define DUMP(reg) printf(#reg " = %01x\n", (val & reg) ? 1 : 0)
+
+      uint8_t val;
+
+      val = regRead(Reg::Addr::EIR);
+      DUMP(Reg::c_EIR_PKTIF);
+      DUMP(Reg::c_EIR_DMAIF);
+      DUMP(Reg::c_EIR_LINKIF);
+      DUMP(Reg::c_EIR_TXIF);
+      DUMP(Reg::c_EIR_TXERIF);
+      DUMP(Reg::c_EIR_RXERIF);
+
+      val = regRead(Reg::Addr::ESTAT);
+      DUMP(Reg::c_ESTAT_INT);
+      DUMP(Reg::c_ESTAT_BUFER);
+      DUMP(Reg::c_ESTAT_LATECOL);
+      DUMP(Reg::c_ESTAT_RXBUSY);
+      DUMP(Reg::c_ESTAT_TXABRT);
+      DUMP(Reg::c_ESTAT_CLKRDY);
+
+      val = regRead(Reg::Addr::ECON1);
+      DUMP(Reg::c_ECON1_TXRTS);
+
+      val = regRead(Reg::Addr::ECON2);
+      DUMP(Reg::c_ECON2_PWRSV);
+      DUMP(Reg::c_ECON2_VRPS);
+
+      printf("\n");
+
+    #undef DUMP
+    }
+
+    static uint32_t updateCrc(const uint32_t crc, const uint8_t byte)
+    {
+      uint32_t result = crc;
+      result = result ^ byte;
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+      return result;
+    }
+
+    int test1()
+    {
+      uint32_t crc = 0xffffffff;
+      for (uint8_t i = 0; i <= 0x17; ++i)
+      {
+        crc = updateCrc(crc, opRCRE(i));
+      }
+      if (~crc != 0xeebd948d)
+      {
+        return 1;
+      }
+      return 0;
+    }
+
+    int test2()
+    {
+      static const Reg::Addr addrs[] = {
+        Reg::Addr::ERDPT16,
+        Reg::Addr::EWRPT16,
+        Reg::Addr::ETXST16,
+        Reg::Addr::ETXND16,
+        Reg::Addr::ERXST16,
+        Reg::Addr::ERXND16,
+        Reg::Addr::ERXRDPT16,
+        Reg::Addr::EDMAST16,
+        Reg::Addr::EDMAND16,
+        Reg::Addr::EDMADST16,
+      };
+      uint32_t crc = 0xffffffff;
+      for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+      {
+        crc = updateCrc(crc, i);
+        regWrite16(addrs[i], crc & 0x1fff);
+      }
+      crc = 0xffffffff;
+      for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+      {
+        crc = updateCrc(crc, i);
+        if (regRead16(addrs[i]) != (crc & 0x1fff))
+        {
+          return 1;
+        }
+      }
+      return 0;
+    }
+
+    int test3()
+    {
+      if (regRead(Reg::Addr::EREVID) != 6 || phyRead(Reg::PhyAddr::PHID1) != 0x0083 || phyRead(Reg::PhyAddr::PHID2) != 0x1400)
+      {
+        return 1;
+      }
+      return 0;
+    }
+
+    void validate()
+    {
+      printf("test1 returned %i\n", test1());
+      printf("test2 returned %i\n", test2());
+      printf("test3 returned %i\n", test3());
     }
 
   public:
     virtual void test() override
     {
-
-      regRead(c_ECON1);
-
+      validate();
+      dumpRegs();
+      dumpState();
     }
   };
 }
