@@ -14,7 +14,7 @@
       c_preprocessor_definitions="USE_HAL_DRIVER;STM32F103xE"
       c_user_include_directories=".;.\\Inc;..\\lib;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\include;.\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS;.\\Drivers\\STM32F1xx_HAL_Driver\\Inc;.\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include;.\\Drivers\\CMSIS\\Include"
       debug_leave_target_running="Yes"
-      debug_register_definition_file="$(ProjectDir)/../STM32F103.svd"
+      debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F103xx.svd"
       debug_start_from_entry_point_symbol="No"
       debug_target_connection="J-Link"
       gcc_c_language_standard="gnu11"
