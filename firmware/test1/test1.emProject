@@ -92,6 +92,9 @@
       <file file_name="../lib/enc28j60/enc28j60spistm32.cpp" />
       <file file_name="../lib/enc28j60/enc28j60.cpp" />
     </folder>
+    <folder Name="microlan">
+      <file file_name="../lib/microlan/microlan.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"

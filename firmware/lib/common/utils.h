@@ -63,21 +63,28 @@ namespace OS
   };
 
   template<class T>
-  class Locker : mstd::noncopyable
+  class Lock : mstd::noncopyable
   {
   public:
-    Locker(T& obj)
+    explicit Lock(T& obj)
+      : m_obj(&obj)
+    {
+      m_obj->lock();
+    }
+    explicit Lock(T* obj)
       : m_obj(obj)
     {
-      m_obj.lock();
+      if (m_obj)
+        m_obj->lock();
     }
-    ~Locker()
+    ~Lock()
     {
-      m_obj.unlock();
+      if (m_obj)
+        m_obj->unlock();
     }
 
   protected:
-    T& m_obj;
+    T* m_obj;
   };
 
   class Mutex : mstd::noncopyable
@@ -106,6 +113,6 @@ namespace OS
   protected:
     osMutexId m_mutex;
 
-    friend class Locker<Mutex>;
+    friend class Lock<Mutex>;
   };
 }
