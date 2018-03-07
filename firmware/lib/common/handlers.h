@@ -31,6 +31,10 @@ namespace Irq
     friend class Vectors;
   };
 
+  class SignalingHandler : public Handler, public OS::BinarySemaphore
+  {
+  };
+
   template<class P, class T, bool(T::*func)(IRQn_Type)>
   class DelegatedHandler : public P
   {

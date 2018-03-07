@@ -115,4 +115,58 @@ namespace OS
 
     friend class Lock<Mutex>;
   };
+
+  class RecursiveMutex : mstd::noncopyable
+  {
+  public:
+    RecursiveMutex()
+    {
+      osMutexDef(mutex);
+      m_mutex = osRecursiveMutexCreate(osMutex(mutex));
+    }
+    ~RecursiveMutex()
+    {
+      osMutexDelete(m_mutex);
+    }
+
+  protected:
+    void lock()
+    {
+      osRecursiveMutexWait(m_mutex, osWaitForever);
+    }
+    void unlock()
+    {
+      osRecursiveMutexRelease(m_mutex);
+    }
+
+  protected:
+    osMutexId m_mutex;
+
+    friend class Lock<Mutex>;
+  };
+
+  class BinarySemaphore : mstd::noncopyable
+  {
+  public:
+    BinarySemaphore()
+    {
+      osSemaphoreDef(semaphore);
+      m_semaphore = osSemaphoreCreate(osSemaphore(semaphore), 1);
+    }
+    ~BinarySemaphore()
+    {
+      osSemaphoreDelete(m_semaphore);
+    }
+    void signal()
+    {
+      osSemaphoreRelease(m_semaphore);
+    }
+    bool wait(uint32_t timeout = osWaitForever)    //returns false if timeout, true otherwise
+    {
+      return !!(osSemaphoreWait(m_semaphore, timeout) == osOK);
+    }
+
+  protected:
+    osSemaphoreId m_semaphore;
+  };
 }

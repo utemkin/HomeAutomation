@@ -34,7 +34,7 @@
       c_additional_options="-O2 -g" />
     <configuration
       Name="External GNU"
-      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-6-2017-q2-update-win32/bin"
+      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/bin"
       external_link_command="&quot;$(ToolChainDir)/arm-none-eabi-g++&quot; $(LinkOptions) -T &quot;$(RelLinkerScriptPath)&quot; $(Objects) -o &quot;$(RelTargetPath)&quot; -Xlinker -Map=&quot;$(RelMapPath)&quot;"
       link_linker_script_file="$(ProjectDir)/test1.ld"
       link_use_linker_script_file="Yes"
