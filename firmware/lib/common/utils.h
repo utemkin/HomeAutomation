@@ -169,4 +169,28 @@ namespace OS
   protected:
     osSemaphoreId m_semaphore;
   };
+
+  class ExpirationTimer
+  {
+  public:
+    constexpr static uint32_t tickPeriodus()
+    {
+      return uint32_t(1000000ul / configTICK_RATE_HZ);
+    }
+    constexpr static TickType_t usToTicks(const uint32_t us)
+    {
+      return TickType_t((us + tickPeriodus() - 1) / tickPeriodus());
+    }
+    static void delay(const TickType_t ticks)     // delay until at least ticks whole tick periods have passed
+    {
+      vTaskDelay(ticks + 1);
+    }
+    bool expired(const TickType_t ticks) const    // returns true if at least ticks whole tick periods have passed
+    {
+      return TickType_t(xTaskGetTickCount() - m_initial) > TickType_t(ticks);
+    }
+
+  protected:
+    TickType_t m_initial = xTaskGetTickCount();
+  };
 }

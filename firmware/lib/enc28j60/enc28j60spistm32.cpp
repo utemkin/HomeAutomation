@@ -606,22 +606,24 @@ namespace
     virtual int txrx(uint8_t* txrx, size_t txrx_len) override
     {
       *m_csBsrr = m_csSelect;
+      //fixme: delay according to spec
 
-      DMA_Channel_TypeDef* const hdmarx = m_dmarx;
-      hdmarx->CMAR = uint32_t(txrx);
-      hdmarx->CNDTR = txrx_len;
-      hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      DMA_Channel_TypeDef* const dmarx = m_dmarx;
+      dmarx->CMAR = uint32_t(txrx);
+      dmarx->CNDTR = txrx_len;
+      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
       SPI_TypeDef* const spi = m_spi;
       spi->DR = *txrx;
-      DMA_Channel_TypeDef* const hdmatx = m_dmatx;
-      hdmatx->CMAR = uint32_t(txrx+1);
-      hdmatx->CNDTR = txrx_len-1;
-      hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-      while (hdmarx->CNDTR != 0);
-      hdmarx->CCR = 0;
-      hdmatx->CCR = 0;
+      DMA_Channel_TypeDef* const dmatx = m_dmatx;
+      dmatx->CMAR = uint32_t(txrx+1);
+      dmatx->CNDTR = txrx_len-1;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (dmarx->CNDTR != 0);
+      dmarx->CCR = 0;
+      dmatx->CCR = 0;
       while ((spi->SR & SPI_SR_BSY) != 0);
 
+      //fixme: delay according to spec
       *m_csBsrr = m_csDeselect;
 /*
       DMA_Channel_TypeDef* const hdmarx = m_dmarx;
@@ -677,13 +679,62 @@ Benchmarking rxtx 3...
 
     virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) override
     {
-      //fixme
+      *m_csBsrr = m_csSelect;
+      //fixme: delay according to spec
+
+      SPI_TypeDef* const spi = m_spi;
+      spi->DR = *tx;
+      DMA_Channel_TypeDef* const dmatx = m_dmatx;
+      dmatx->CMAR = (uint32_t)tx+1;
+      dmatx->CNDTR = tx_len-1;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (dmatx->CNDTR != 0);
+      dmatx->CCR = 0;
+      dmatx->CMAR = (uint32_t)tx2;
+      dmatx->CNDTR = tx2_len;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (dmatx->CNDTR != 0);
+      dmatx->CCR = 0;
+      while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
+      spi->DR;
+      spi->SR;
+
+      //fixme: delay according to spec
+      *m_csBsrr = m_csDeselect;
       return 1;
     }
   
     virtual int txThenRx(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len) override
     {
-      //fixme
+      *m_csBsrr = m_csSelect;
+      //fixme: delay according to spec
+
+      SPI_TypeDef* spi = m_spi;
+      spi->DR = *tx;
+      DMA_Channel_TypeDef* dmatx = m_dmatx;
+      dmatx->CMAR = (uint32_t)tx+1;
+      dmatx->CNDTR = tx_len-1;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (dmatx->CNDTR != 0);
+      dmatx->CCR = 0;
+      DMA_Channel_TypeDef* dmarx = m_dmarx;
+      dmarx->CMAR = (uint32_t)rx;
+      dmarx->CNDTR = rx_len;
+      while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
+      spi->DR;
+      spi->SR;
+      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      spi->DR = 0;
+      dmatx->CMAR = (uint32_t)rx;
+      dmatx->CNDTR = rx_len-1;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      while (dmarx->CNDTR != 0);
+      dmarx->CCR = 0;
+      dmatx->CCR = 0;
+      while ((spi->SR & SPI_SR_BSY) != 0);
+
+      //fixme: delay according to spec
+      *m_csBsrr = m_csDeselect;
       return 1;
     }
 
