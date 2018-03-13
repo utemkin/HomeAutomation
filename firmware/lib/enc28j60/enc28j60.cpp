@@ -934,12 +934,88 @@ namespace
       printf("test3 returned %i\n", test3());
     }
 
+    unsigned benchmark(const char* name, void(Enc28j60Impl::*test_fn)(void* ctx), void* ctx, unsigned offset)
+    {
+      printf("Benchmarking %s...\n", name);
+      TickType_t start = xTaskGetTickCount();
+      while (start == xTaskGetTickCount());
+      start = xTaskGetTickCount();
+      TickType_t finish = start + 1000 / portTICK_PERIOD_MS;
+      unsigned count = 0;
+      while (xTaskGetTickCount() < finish)
+      {
+        (this->*test_fn)(ctx);
+        ++count;
+      }
+      finish = xTaskGetTickCount();
+      unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
+      unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
+      unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
+      unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
+      unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
+      printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
+      return cycle_ns;
+    }
+
+    void benchmarkNull(void* /*ctx*/)
+    {
+    }
+
+    void benchmarkRxtx(void* ctx)
+    {
+      static uint8_t buf[1000];
+      m_spi->txrx(buf, (size_t)ctx);
+    }
+
+    void benchmarkMemRead(void* ctx)
+    {
+      static uint8_t buf[1000];
+      memRead(buf, (size_t)ctx);
+    }
+
+    void benchmarkMemWrite(void* ctx)
+    {
+      static uint8_t buf[1000];
+      memWrite(buf, (size_t)ctx);
+    }
+
+    void benchmarkPhyRead(void* ctx)
+    {
+      phyRead(Reg::PhyAddr::PHLCON);
+    }
+
+    void benchmarkPhyWrite(void* ctx)
+    {
+      phyWrite(Reg::PhyAddr::PHLCON, 0x1234);
+    }
+
+    void benchmark_all()
+    {
+      unsigned offset = benchmark("null", &Enc28j60Impl::benchmarkNull, 0, 0);
+      benchmark("rxtx 1", &Enc28j60Impl::benchmarkRxtx, (void*)1, offset);
+      benchmark("rxtx 2", &Enc28j60Impl::benchmarkRxtx, (void*)2, offset);
+      benchmark("rxtx 3", &Enc28j60Impl::benchmarkRxtx, (void*)3, offset);
+      benchmark("memRead 1000", &Enc28j60Impl::benchmarkMemRead, (void*)1000, offset);
+      benchmark("memRead 100", &Enc28j60Impl::benchmarkMemRead, (void*)100, offset);
+      benchmark("memRead 10", &Enc28j60Impl::benchmarkMemRead, (void*)10, offset);
+      benchmark("memWrite 1000", &Enc28j60Impl::benchmarkMemWrite, (void*)1000, offset);
+      benchmark("memWrite 100", &Enc28j60Impl::benchmarkMemWrite, (void*)100, offset);
+      benchmark("memWrite 10", &Enc28j60Impl::benchmarkMemWrite, (void*)10, offset);
+      benchmark("phyRead", &Enc28j60Impl::benchmarkPhyRead, 0, offset);
+      benchmark("phyWrite", &Enc28j60Impl::benchmarkPhyWrite, 0, offset);
+    }
+
   public:
     virtual void test() override
     {
-//      validate();
-      dumpRegs();
-      dumpState();
+      regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
+      OS::ExpirationTimer::delay(1);
+      opSRC();
+      OS::ExpirationTimer::delay(1);
+      //dumpRegs();
+      //dumpState();
+      validate();
+      benchmark_all();
     }
   };
 }
