@@ -607,6 +607,8 @@ namespace
     {
       *m_csBsrr = m_csSelect;
       //fixme: delay according to spec
+      __DMB();
+      RT::stall(20);
 
       DMA_Channel_TypeDef* const dmarx = m_dmarx;
       dmarx->CMAR = uint32_t(txrx);
@@ -624,6 +626,8 @@ namespace
       while ((spi->SR & SPI_SR_BSY) != 0);
 
       //fixme: delay according to spec
+      __DMB();
+      RT::stall(20);
       *m_csBsrr = m_csDeselect;
 /*
       DMA_Channel_TypeDef* const hdmarx = m_dmarx;
@@ -681,6 +685,7 @@ Benchmarking rxtx 3...
     {
       *m_csBsrr = m_csSelect;
       //fixme: delay according to spec
+      RT::stall(20);
 
       SPI_TypeDef* const spi = m_spi;
       spi->DR = *tx;
@@ -700,6 +705,7 @@ Benchmarking rxtx 3...
       spi->SR;
 
       //fixme: delay according to spec
+      RT::stall(20);
       *m_csBsrr = m_csDeselect;
       return 0;
     }
@@ -708,6 +714,7 @@ Benchmarking rxtx 3...
     {
       *m_csBsrr = m_csSelect;
       //fixme: delay according to spec
+      RT::stall(20);
 
       SPI_TypeDef* spi = m_spi;
       spi->DR = *tx;
@@ -734,6 +741,7 @@ Benchmarking rxtx 3...
       while ((spi->SR & SPI_SR_BSY) != 0);
 
       //fixme: delay according to spec
+      RT::stall(20);
       *m_csBsrr = m_csDeselect;
       return 0;
     }

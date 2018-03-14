@@ -1012,9 +1012,11 @@ namespace
       OS::ExpirationTimer::delay(1);
       opSRC();
       OS::ExpirationTimer::delay(1);
+      validate();
+      dumpRegs();
       //dumpRegs();
       //dumpState();
-      validate();
+      regRead(Reg::Addr::ERDPT16);
       benchmark_all();
     }
   };
