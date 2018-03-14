@@ -605,7 +605,7 @@ namespace
       if (m_failureFlags)
         return;
 
-      uint8_t buf[2];
+      uint8_t buf[1];
       buf[0] = c_SRC;
       if (m_spi->txrx(buf, sizeof(buf)) != 0)
       {
@@ -1016,8 +1016,8 @@ namespace
       dumpRegs();
       //dumpRegs();
       //dumpState();
-      regRead(Reg::Addr::ERDPT16);
-      benchmark_all();
+//      regRead(Reg::Addr::ERDPT16);
+//      benchmark_all();
     }
   };
 }
