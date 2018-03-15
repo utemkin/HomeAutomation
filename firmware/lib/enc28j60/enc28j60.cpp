@@ -728,6 +728,15 @@ namespace
     #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
     #define DUMP_PHY(reg) printf(#reg " = %04x\n", phyRead(Reg::PhyAddr::reg))
 
+      uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
+      uint8_t savedBank = m_bank;
+
+      uint16_t savedERDPT16 = regRead16(Reg::Addr::ERDPT16);
+      uint8_t savedMIREGADR = regRead(Reg::Addr::MIREGADR);
+
+      regWrite(Reg::Addr::ECON1, savedECON1);
+      m_bank = savedBank;
+
       printf("All banks:\n");
       DUMP(EIE);
       DUMP(EIR);
@@ -814,9 +823,15 @@ namespace
       DUMP_PHY(PHCON2);
       DUMP_PHY(PHSTAT2);
       DUMP_PHY(PHIE);
-      DUMP_PHY(PHIR);
+      //DUMP_PHY(PHIR); this read would affect LINKIF, PGIF and PLNKIF flags
       DUMP_PHY(PHLCON);
       printf("\n");
+
+      regWrite16(Reg::Addr::ERDPT16, savedERDPT16);
+      regWrite(Reg::Addr::MIREGADR, savedMIREGADR);
+
+      regWrite(Reg::Addr::ECON1, savedECON1);
+      m_bank = savedBank;
 
     #undef DUMP
     #undef DUMP16
@@ -825,36 +840,51 @@ namespace
 
     void dumpState()
     {
-    #define DUMP(reg) printf(#reg " = %01x\n", (val & Reg::c_##reg) ? 1 : 0)
+    #define DUMP_BIT(reg) printf(#reg " = %01x\n", (val & Reg::c_##reg) ? 1 : 0)
+    #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
+    #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
+
+      uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
+      uint8_t savedBank = m_bank;
 
       uint8_t val;
 
       val = regRead(Reg::Addr::EIR);
-      DUMP(EIR_PKTIF);
-      DUMP(EIR_DMAIF);
-      DUMP(EIR_LINKIF);
-      DUMP(EIR_TXIF);
-      DUMP(EIR_TXERIF);
-      DUMP(EIR_RXERIF);
+      DUMP_BIT(EIR_PKTIF);
+      DUMP_BIT(EIR_DMAIF);
+      DUMP_BIT(EIR_LINKIF);
+      DUMP_BIT(EIR_TXIF);
+      DUMP_BIT(EIR_TXERIF);
+      DUMP_BIT(EIR_RXERIF);
 
       val = regRead(Reg::Addr::ESTAT);
-      DUMP(ESTAT_INT);
-      DUMP(ESTAT_BUFER);
-      DUMP(ESTAT_LATECOL);
-      DUMP(ESTAT_RXBUSY);
-      DUMP(ESTAT_TXABRT);
-      DUMP(ESTAT_CLKRDY);
-
-      val = regRead(Reg::Addr::ECON1);
-      DUMP(ECON1_TXRTS);
+      DUMP_BIT(ESTAT_INT);
+      DUMP_BIT(ESTAT_BUFER);
+      DUMP_BIT(ESTAT_LATECOL);
+      DUMP_BIT(ESTAT_RXBUSY);
+      DUMP_BIT(ESTAT_TXABRT);
+      DUMP_BIT(ESTAT_CLKRDY);
 
       val = regRead(Reg::Addr::ECON2);
-      DUMP(ECON2_PWRSV);
-      DUMP(ECON2_VRPS);
+      DUMP_BIT(ECON2_PWRSV);
+      DUMP_BIT(ECON2_VRPS);
+
+      val = regRead(Reg::Addr::ECON1);
+      DUMP_BIT(ECON1_TXRTS);
+      DUMP_BIT(ECON1_RXEN);
+
+      DUMP16(ERXRDPT16);
+      DUMP16(ERXWRPT16);
+      DUMP(EPKTCNT);
 
       printf("\n");
 
+      regWrite(Reg::Addr::ECON1, savedECON1);
+      m_bank = savedBank;
+
+    #undef DUMP_BIT
     #undef DUMP
+    #undef DUMP16
     }
 
     static uint32_t updateCrc(const uint32_t crc, const uint8_t byte)
@@ -1012,12 +1042,10 @@ namespace
       OS::ExpirationTimer::delay(1);
       opSRC();
       OS::ExpirationTimer::delay(1);
-      validate();
       dumpRegs();
-      //dumpRegs();
-      //dumpState();
-//      regRead(Reg::Addr::ERDPT16);
-//      benchmark_all();
+      dumpState();
+      validate();
+      benchmark_all();
     }
   };
 }
