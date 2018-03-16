@@ -1,7 +1,8 @@
 /**
-  ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
+ ******************************************************************************
+  * File Name          : ethernetif.h
+  * Description        : This file provides initialization code for LWIP
+  *                      middleWare.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -45,87 +46,30 @@
   *
   ******************************************************************************
   */
+  
 
-/* Includes ------------------------------------------------------------------*/
-#include "FreeRTOS.h"
-#include "task.h"
+#ifndef __ETHERNETIF_H__
+#define __ETHERNETIF_H__
+
+#include "lwip/err.h"
+#include "lwip/netif.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
+/* Within 'USER CODE' section, code will be kept by default at each generation */
+/* USER CODE BEGIN 0 */
 
-/* USER CODE END Includes */
+/* USER CODE END 0 */
 
-/* Variables -----------------------------------------------------------------*/
-osThreadId defaultTaskHandle;
+/* Exported functions ------------------------------------------------------- */
+err_t ethernetif_init(struct netif *netif);
 
-/* USER CODE BEGIN Variables */
+void ethernetif_input( void const * argument );
+void ethernetif_update_config(struct netif *netif);
+void ethernetif_notify_conn_changed(struct netif *netif);
 
-/* USER CODE END Variables */
+/* USER CODE BEGIN 1 */
 
-/* Function prototypes -------------------------------------------------------*/
-void StartDefaultTask(void const * argument);
-
-void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
-
-/* USER CODE BEGIN FunctionPrototypes */
-
-/* USER CODE END FunctionPrototypes */
-
-/* Hook prototypes */
-
-/* Init FreeRTOS */
-
-void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
-       
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-}
-
-/* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
-{
-
-  /* USER CODE BEGIN StartDefaultTask */
-  MX_LWIP_Init();
-
-  extern void maintask();
-  maintask();
-
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartDefaultTask */
-}
-
-/* USER CODE BEGIN Application */
-     
-/* USER CODE END Application */
+/* USER CODE END 1 */
+#endif
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

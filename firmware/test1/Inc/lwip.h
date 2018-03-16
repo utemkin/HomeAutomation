@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
+  * File Name          : LWIP.h
+  * Description        : This file provides code for the configuration
+  *                      of the LWIP.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -43,89 +44,64 @@
   * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
-  ******************************************************************************
+  *************************************************************************  
+
   */
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __mx_lwip_H
+#define __mx_lwip_H
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "FreeRTOS.h"
-#include "task.h"
-#include "cmsis_os.h"
+#include "lwip/opt.h"
+#include "lwip/mem.h"
+#include "lwip/memp.h"
+#include "netif/etharp.h"
+#include "lwip/dhcp.h"
+#include "lwip/netif.h"
+#include "lwip/timeouts.h"
+#include "ethernetif.h"
 
-/* USER CODE BEGIN Includes */     
+/* Includes for RTOS ---------------------------------------------------------*/
+#if WITH_RTOS
+#include "lwip/tcpip.h"
+#endif /* WITH_RTOS */
 
-/* USER CODE END Includes */
+/* USER CODE BEGIN 0 */
 
-/* Variables -----------------------------------------------------------------*/
-osThreadId defaultTaskHandle;
+/* USER CODE END 0 */
 
-/* USER CODE BEGIN Variables */
+/* Global Variables ----------------------------------------------------------*/
+//extern ETH_HandleTypeDef heth;
 
-/* USER CODE END Variables */
+/* LWIP init function */	
+void MX_LWIP_Init(void);
 
-/* Function prototypes -------------------------------------------------------*/
-void StartDefaultTask(void const * argument);
+#if !WITH_RTOS
+/* USER CODE BEGIN 1 */
+/* Function defined in lwip.c to:
+ *   - Read a received packet from the Ethernet buffers 
+ *   - Send it to the lwIP stack for handling
+ *   - Handle timeouts if NO_SYS_NO_TIMERS not set
+ */ 
+void MX_LWIP_Process(void);
 
-void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
+/* USER CODE END 1 */
+#endif /* WITH_RTOS */
 
-/* USER CODE BEGIN FunctionPrototypes */
-
-/* USER CODE END FunctionPrototypes */
-
-/* Hook prototypes */
-
-/* Init FreeRTOS */
-
-void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
-       
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
+#ifdef __cplusplus
 }
+#endif
+#endif /*__ mx_lwip_H */
 
-/* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
-{
+/**
+  * @}
+  */
 
-  /* USER CODE BEGIN StartDefaultTask */
-  MX_LWIP_Init();
-
-  extern void maintask();
-  maintask();
-
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartDefaultTask */
-}
-
-/* USER CODE BEGIN Application */
-     
-/* USER CODE END Application */
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
