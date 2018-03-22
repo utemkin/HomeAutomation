@@ -594,8 +594,8 @@ namespace
         return 1;   //fixme
 
       m_dmatx->CPAR = m_dmarx->CPAR = uint32_t(&m_spi->DR);
-//      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC; // | DMA_CCR_EN;
-//      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
+//      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC; // | DMA_CCR_EN;
+//      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
 
       m_spi->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
       m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
@@ -613,13 +613,13 @@ namespace
       DMA_Channel_TypeDef* const dmarx = m_dmarx;
       dmarx->CMAR = uint32_t(txrx);
       dmarx->CNDTR = txrx_len;
-      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
       SPI_TypeDef* const spi = m_spi;
       spi->DR = *txrx;
       DMA_Channel_TypeDef* const dmatx = m_dmatx;
       dmatx->CMAR = uint32_t(txrx+1);
       dmatx->CNDTR = txrx_len-1;
-      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (dmarx->CNDTR != 0);
       dmarx->CCR = 0;
       dmatx->CCR = 0;
@@ -633,13 +633,13 @@ namespace
       DMA_Channel_TypeDef* const hdmarx = m_dmarx;
       hdmarx->CMAR = uint32_t(txrx);
       hdmarx->CNDTR = txrx_len;
-      hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
       SPI_TypeDef* const spi = m_spi;
       spi->DR = *txrx;
       DMA_Channel_TypeDef* const hdmatx = m_dmatx;
       hdmatx->CMAR = uint32_t(txrx+1);
       hdmatx->CNDTR = txrx_len-1;
-      hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (hdmarx->CNDTR != 0);
       hdmarx->CCR = 0;
       hdmatx->CCR = 0;
@@ -692,12 +692,12 @@ Benchmarking rxtx 3...
       DMA_Channel_TypeDef* const dmatx = m_dmatx;
       dmatx->CMAR = uint32_t(tx+1);
       dmatx->CNDTR = tx_len-1;
-      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (dmatx->CNDTR != 0);
       dmatx->CCR = 0;
       dmatx->CMAR = uint32_t(tx2);
       dmatx->CNDTR = tx2_len;
-      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (dmatx->CNDTR != 0);
       dmatx->CCR = 0;
       while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
@@ -721,7 +721,7 @@ Benchmarking rxtx 3...
       DMA_Channel_TypeDef* dmatx = m_dmatx;
       dmatx->CMAR = uint32_t(tx+1);
       dmatx->CNDTR = tx_len-1;
-      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (dmatx->CNDTR != 0);
       dmatx->CCR = 0;
       DMA_Channel_TypeDef* dmarx = m_dmarx;
@@ -730,11 +730,11 @@ Benchmarking rxtx 3...
       while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
       spi->DR;
       spi->SR;
-      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_EN;
+      dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
       spi->DR = 0;
       dmatx->CMAR = uint32_t(rx);
       dmatx->CNDTR = rx_len-1;
-      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+      dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
       while (dmarx->CNDTR != 0);
       dmarx->CCR = 0;
       dmatx->CCR = 0;
