@@ -31,9 +31,26 @@ extern int enc28j60_packet_read_finish(
 #include <common/utils.h>
 #include <memory>
 
+class Enc28j60Pbuf : mstd::noncopyable
+{
+public:
+  virtual size_t size() const = 0;
+  virtual bool next(uint8_t** data, size_t* size) = 0;
+  virtual bool next(const uint8_t** data, size_t* size) const = 0;
+};
+
+class Enc28j60Services
+{
+public:
+  virtual std::unique_ptr<Enc28j60Pbuf> allocatePbuf(size_t size) = 0;
+  virtual void input(std::unique_ptr<Enc28j60Pbuf>&& packet) = 0;
+  virtual void setLinkState(bool linked) = 0;
+};
+
 class Enc28j60 : mstd::noncopyable
 {
 public:
+  //virtual void output(std::unique_ptr<Enc28j60Pbuf>&& packet) = 0;
   virtual void test() = 0;
 };
 
