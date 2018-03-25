@@ -39,7 +39,7 @@ public:
   virtual bool next(const uint8_t** data, size_t* size) const = 0;
 };
 
-class Enc28j60Services
+class Enc28j60Services : mstd::noncopyable
 {
 public:
   virtual std::unique_ptr<Enc28j60Pbuf> allocatePbuf(size_t size) = 0;
