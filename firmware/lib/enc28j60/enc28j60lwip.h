@@ -3,10 +3,13 @@
 #include <common/utils.h>
 #include <memory>
 
-class Enc28j60lwip : public Enc28j60Services
+namespace Enc28j60
 {
-public:
-  static void initLwip();
-};
+  class LwipNetif : public Env
+  {
+  public:
+    static void initLwip();
+  };
 
-std::unique_ptr<Enc28j60lwip> CreateEnc28j60lwip();
+  std::unique_ptr<LwipNetif> CreateLwipNetif();
+}

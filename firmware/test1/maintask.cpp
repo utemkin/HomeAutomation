@@ -10,10 +10,10 @@ extern "C" void maintask()
   HAL_GetUID(uid);
   printf("Device %08lx%08lx%08lx is running at %lu\n", uid[0], uid[1], uid[2], HAL_RCC_GetHCLKFreq());
 
-  auto spi = mstd::to_shared(CreateEnc28j60spiStm32(SPI1, SPI1_CS_GPIO_Port, SPI1_CS_Pin, true));
-  auto enc = mstd::to_shared(CreateEnc28j60(spi));
+  auto spi = mstd::to_shared(Enc28j60::CreateSpiStm32(SPI1, SPI1_CS_GPIO_Port, SPI1_CS_Pin, true));
+//  auto enc = mstd::to_shared(Enc28j60::CreateDevice(spi));
 
-  enc->test();
+//  enc->test();
 
   for(;;);
 }

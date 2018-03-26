@@ -1,6 +1,9 @@
 #pragma once
-#include <enc28j60/enc28j60spi.h>
+#include <enc28j60/enc28j60.h>
 #include <common/stm32.h>
 #include <memory>
 
-std::unique_ptr<Enc28j60spi> CreateEnc28j60spiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert);
+namespace Enc28j60
+{
+  std::unique_ptr<Spi> CreateSpiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert);
+}

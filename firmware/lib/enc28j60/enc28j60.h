@@ -27,31 +27,54 @@ extern int enc28j60_packet_read_finish(
 */
 
 #pragma once
-#include <enc28j60/enc28j60spi.h>
+#include <enc28j60/enc28j60.h>
 #include <common/utils.h>
 #include <memory>
 
-class Enc28j60Pbuf : mstd::noncopyable
+namespace Enc28j60
 {
-public:
-  virtual size_t size() const = 0;
-  virtual bool next(uint8_t** data, size_t* size) = 0;
-  virtual bool next(const uint8_t** data, size_t* size) const = 0;
-};
+  class Pbuf : mstd::noncopyable
+  {
+  public:
+    virtual size_t size() const = 0;
+    virtual bool next(uint8_t** data, size_t* size) = 0;
+    virtual bool next(const uint8_t** data, size_t* size) const = 0;
+  };
 
-class Enc28j60Services : mstd::noncopyable
-{
-public:
-  virtual std::unique_ptr<Enc28j60Pbuf> allocatePbuf(size_t size) = 0;
-  virtual void input(std::unique_ptr<Enc28j60Pbuf>&& packet) = 0;
-  virtual void setLinkState(bool linked) = 0;
-};
+  class Env : mstd::noncopyable
+  {
+  public:
+    virtual std::unique_ptr<Pbuf> allocatePbuf(size_t size) = 0;
+    virtual void input(std::unique_ptr<Pbuf>&& packet) = 0;
+    virtual void setLinkState(bool linked) = 0;
+  };
 
-class Enc28j60 : mstd::noncopyable
-{
-public:
-  //virtual void output(std::unique_ptr<Enc28j60Pbuf>&& packet) = 0;
-  virtual void test() = 0;
-};
+  // - CS must be activated 50ns before transfer start and stay active 210ns after transfer end, then deactivated.
+  // - Buffers can't be NULL or zero-sized.
+  // - All calls are synchronous and expected to block.
+  //   Implementation must decide whether to busy-loop or yield basing on the following hints:
+  //     - txrx_len is in range [1, 3]
+  //     - tx_len is 1
+  //     - tx2_len and rx_len is in range [1, ~1520]
+  // - Return value is 0 if no error and non-zero otherwise.
+  //   If error occurs, the transfer is aborted at unknown stage, so reinit() must be called before any other call
+  // - reinit() must re-initialize SPI hardware and CS pin state, must be able to recover from all function's failures
+  // - fixme: ??? Implementation may expect initialization and all subsequent calls to be done from the same thread
+  class Spi : mstd::noncopyable
+  {
+  public:
+    virtual int reinit() = 0;
+    virtual int txrx(uint8_t* txrx, size_t txrx_len) = 0;
+    virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) = 0;
+    virtual int txThenRx(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len) = 0;
+  };
 
-std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi);
+  class Device : mstd::noncopyable
+  {
+  public:
+    //virtual void output(std::unique_ptr<Pbuf>&& packet) = 0;
+    virtual void test() = 0;
+  };
+
+  std::unique_ptr<Device> CreateDevice(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi);
+}

@@ -285,772 +285,777 @@ void enc28j60_poll(
 #include <enc28j60/enc28j60.h>
 #include <type_traits>
 
-namespace
+namespace Enc28j60
 {
-  namespace Reg
+  namespace
   {
-    static constexpr uint8_t c_BANK_SHIFT = 6;
-    static constexpr uint8_t c_ETH_MASK   = 0b00100000;
-    static constexpr uint8_t c_NUM_MASK   = 0b00011111;
-
-    constexpr uint8_t makeAddr(const uint8_t bank, const uint8_t num, const bool eth)
+    namespace Reg
     {
-      return (bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0);
-    }
+      static constexpr uint8_t c_BANK_SHIFT = 6;
+      static constexpr uint8_t c_ETH_MASK   = 0b00100000;
+      static constexpr uint8_t c_NUM_MASK   = 0b00011111;
 
-    enum class Addr : uint8_t
-    {
-      EIE       = makeAddr(3, 0x1b, true),
-      EIR       = makeAddr(3, 0x1c, true),
-      ESTAT     = makeAddr(3, 0x1d, true),
-      ECON2     = makeAddr(3, 0x1e, true),
-      ECON1     = makeAddr(3, 0x1f, true),
-
-      ERDPT16   = makeAddr(0, 0x00, true),
-      EWRPT16   = makeAddr(0, 0x02, true),
-      ETXST16   = makeAddr(0, 0x04, true),
-      ETXND16   = makeAddr(0, 0x06, true),
-      ERXST16   = makeAddr(0, 0x08, true),
-      ERXND16   = makeAddr(0, 0x0a, true),
-      ERXRDPT16 = makeAddr(0, 0x0c, true),
-      ERXWRPT16 = makeAddr(0, 0x0e, true),
-      EDMAST16  = makeAddr(0, 0x10, true),
-      EDMAND16  = makeAddr(0, 0x12, true),
-      EDMADST16 = makeAddr(0, 0x14, true),
-      EDMACS16  = makeAddr(0, 0x16, true),
-
-      EHT0      = makeAddr(1, 0x00, true),
-      EHT1      = makeAddr(1, 0x01, true),
-      EHT2      = makeAddr(1, 0x02, true),
-      EHT3      = makeAddr(1, 0x03, true),
-      EHT4      = makeAddr(1, 0x04, true),
-      EHT5      = makeAddr(1, 0x05, true),
-      EHT6      = makeAddr(1, 0x06, true),
-      EHT7      = makeAddr(1, 0x07, true),
-      EPMM0     = makeAddr(1, 0x08, true),
-      EPMM1     = makeAddr(1, 0x09, true),
-      EPMM2     = makeAddr(1, 0x0a, true),
-      EPMM3     = makeAddr(1, 0x0b, true),
-      EPMM4     = makeAddr(1, 0x0c, true),
-      EPMM5     = makeAddr(1, 0x0d, true),
-      EPMM6     = makeAddr(1, 0x0e, true),
-      EPMM7     = makeAddr(1, 0x0f, true),
-      EPMCS16   = makeAddr(1, 0x10, true),
-      EPMO16    = makeAddr(1, 0x14, true),
-      ERXFCON   = makeAddr(1, 0x18, true),
-      EPKTCNT   = makeAddr(1, 0x19, true),
-
-      MACON1    = makeAddr(2, 0x00, false),
-      MACON3    = makeAddr(2, 0x02, false),
-      MACON4    = makeAddr(2, 0x03, false),
-      MABBIPG   = makeAddr(2, 0x04, false),
-      MAIPG16   = makeAddr(2, 0x06, false),
-      MACLCON1  = makeAddr(2, 0x08, false),
-      MACLCON2  = makeAddr(2, 0x09, false),
-      MAMXFL16  = makeAddr(2, 0x0a, false),
-      MICMD     = makeAddr(2, 0x12, false),
-      MIREGADR  = makeAddr(2, 0x14, false),
-      MIWR16    = makeAddr(2, 0x16, false),
-      MIRD16    = makeAddr(2, 0x18, false),
-
-      MAADR5    = makeAddr(3, 0x00, false),
-      MAADR6    = makeAddr(3, 0x01, false),
-      MAADR3    = makeAddr(3, 0x02, false),
-      MAADR4    = makeAddr(3, 0x03, false),
-      MAADR1    = makeAddr(3, 0x04, false),
-      MAADR2    = makeAddr(3, 0x05, false),
-      EBSTSD    = makeAddr(3, 0x06, true),
-      EBSTCON   = makeAddr(3, 0x07, true),
-      EBSTCS16  = makeAddr(3, 0x08, true),
-      MISTAT    = makeAddr(3, 0x0a, false),
-      EREVID    = makeAddr(3, 0x12, true),
-      ECOCON    = makeAddr(3, 0x15, true),
-      EFLOCON   = makeAddr(3, 0x17, true),
-      EPAUS16   = makeAddr(3, 0x18, true),
-    };
-
-    constexpr uint8_t bank(const Addr addr)
-    {
-      return uint8_t(addr) >> c_BANK_SHIFT;
-    }
-    constexpr uint8_t num(const Addr addr)
-    {
-      return uint8_t(addr) & c_NUM_MASK;
-    }
-    constexpr bool eth(const Addr addr)
-    {
-      return !!(uint8_t(addr) & c_ETH_MASK);
-    }
-    constexpr bool anyBank(const Addr addr)
-    {
-      return addr >= Addr::EIE;
-    }
-
-    static constexpr uint8_t c_EIE_INTIE      = 0b10000000;
-    static constexpr uint8_t c_EIE_PKTIE      = 0b01000000;
-    static constexpr uint8_t c_EIE_DMAIE      = 0b00100000;
-    static constexpr uint8_t c_EIE_LINKIE     = 0b00010000;
-    static constexpr uint8_t c_EIE_TXIE       = 0b00001000;
-    static constexpr uint8_t c_EIE_TXERIE     = 0b00000010;
-    static constexpr uint8_t c_EIE_RXERIE     = 0b00000001;
-
-    static constexpr uint8_t c_EIR_PKTIF      = 0b01000000;
-    static constexpr uint8_t c_EIR_DMAIF      = 0b00100000;
-    static constexpr uint8_t c_EIR_LINKIF     = 0b00010000;
-    static constexpr uint8_t c_EIR_TXIF       = 0b00001000;
-    static constexpr uint8_t c_EIR_TXERIF     = 0b00000010;
-    static constexpr uint8_t c_EIR_RXERIF     = 0b00000001;
-
-    static constexpr uint8_t c_ESTAT_INT      = 0b10000000;
-    static constexpr uint8_t c_ESTAT_BUFER    = 0b01000000;
-    static constexpr uint8_t c_ESTAT_LATECOL  = 0b00010000;
-    static constexpr uint8_t c_ESTAT_RXBUSY   = 0b00000100;
-    static constexpr uint8_t c_ESTAT_TXABRT   = 0b00000010;
-    static constexpr uint8_t c_ESTAT_CLKRDY   = 0b00000001;
-
-    static constexpr uint8_t c_ECON2_AUTOINC  = 0b10000000;
-    static constexpr uint8_t c_ECON2_PKTDEC   = 0b01000000;
-    static constexpr uint8_t c_ECON2_PWRSV    = 0b00100000;
-    static constexpr uint8_t c_ECON2_VRPS     = 0b00001000;
-
-    static constexpr uint8_t c_ECON1_TXRST    = 0b10000000;
-    static constexpr uint8_t c_ECON1_RXRST    = 0b01000000;
-    static constexpr uint8_t c_ECON1_DMAST    = 0b00100000;
-    static constexpr uint8_t c_ECON1_CSUMEN   = 0b00010000;
-    static constexpr uint8_t c_ECON1_TXRTS    = 0b00001000;
-    static constexpr uint8_t c_ECON1_RXEN     = 0b00000100;
-    static constexpr uint8_t c_ECON1_BSEL1    = 0b00000010;
-    static constexpr uint8_t c_ECON1_BSEL0    = 0b00000001;
-
-    static constexpr uint8_t c_MACON1_TXPAUS  = 0b00001000;
-    static constexpr uint8_t c_MACON1_RXPAUS  = 0b00000100;
-    static constexpr uint8_t c_MACON1_PASSALL = 0b00000010;
-    static constexpr uint8_t c_MACON1_MARXEN  = 0b00000001;
-
-    static constexpr uint8_t c_MACON3_PADCFG2 = 0b10000000;
-    static constexpr uint8_t c_MACON3_PADCFG1 = 0b01000000;
-    static constexpr uint8_t c_MACON3_PADCFG0 = 0b00100000;
-    static constexpr uint8_t c_MACON3_TXCRCEN = 0b00010000;
-    static constexpr uint8_t c_MACON3_PHDREN  = 0b00001000;
-    static constexpr uint8_t c_MACON3_HFRMEN  = 0b00000100;
-    static constexpr uint8_t c_MACON3_FRMLNEN = 0b00000010;
-    static constexpr uint8_t c_MACON3_FULDPX  = 0b00000001;
-
-    static constexpr uint8_t c_MICMD_MIISCAN  = 0b00000010;
-    static constexpr uint8_t c_MICMD_MIIRD    = 0b00000001;
-
-    enum class PhyAddr : uint8_t
-    {
-      PHCON1  = 0x00,
-      PHSTAT1 = 0x01,
-      PHID1   = 0x02,
-      PHID2   = 0x03,
-      PHCON2  = 0x10,
-      PHSTAT2 = 0x11,
-      PHIE    = 0x12,
-      PHIR    = 0x13,
-      PHLCON  = 0x14,
-    };
-
-    constexpr uint8_t num(const PhyAddr addr)
-    {
-      return uint8_t(addr);
-    }
-
-    static constexpr uint16_t c_PHCON1_PRST     = 0b1000000000000000;
-    static constexpr uint16_t c_PHCON1_PLOOPBK  = 0b0100000000000000;
-    static constexpr uint16_t c_PHCON1_PPWRSV   = 0b0000100000000000;
-    static constexpr uint16_t c_PHCON1_PDPXMD   = 0b0000000100000000;
-
-    static constexpr uint16_t c_PHSTAT2_TXSTAT  = 0b0010000000000000;
-    static constexpr uint16_t c_PHSTAT2_RXSTAT  = 0b0001000000000000;
-    static constexpr uint16_t c_PHSTAT2_COLSTAT = 0b0000100000000000;
-    static constexpr uint16_t c_PHSTAT2_LSTAT   = 0b0000010000000000;
-    static constexpr uint16_t c_PHSTAT2_DPXSTAT = 0b0000001000000000;
-    static constexpr uint16_t c_PHSTAT2_PLRITY  = 0b0000000000100000;
-
-    static constexpr uint16_t c_PHIE_PLNKIE     = 0b0000000000010000;
-    static constexpr uint16_t c_PHIE_PGEIE      = 0b0000000000000010;
-  }
-
-  class Enc28j60Impl : public Enc28j60
-  {
-  public:
-    Enc28j60Impl(const std::shared_ptr<Enc28j60spi>& spi)
-      : m_spi(spi)
-    {
-    }
-
-  protected:
-    const std::shared_ptr<Enc28j60spi> m_spi;
-    uint8_t m_failureFlags = 0;
-    uint8_t m_bank = 0;
-
-  protected:
-    static constexpr uint8_t c_RCR = 0b00000000;
-    static constexpr uint8_t c_RBM = 0b00111010;
-    static constexpr uint8_t c_WCR = 0b01000000;
-    static constexpr uint8_t c_WBM = 0b01111010;
-    static constexpr uint8_t c_BFS = 0b10000000;
-    static constexpr uint8_t c_BFC = 0b10100000;
-    static constexpr uint8_t c_SRC = 0b11111111;
-
-  protected:
-    uint8_t opRCRE(const uint8_t num)
-    {
-      if (m_failureFlags)
-        return 0;
-
-      uint8_t buf[2];
-      buf[0] = c_RCR | num;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
+      constexpr uint8_t makeAddr(const uint8_t bank, const uint8_t num, const bool eth)
       {
-        m_failureFlags |= 1;
-        return 0;
-      }
- 
-      return buf[1];
-    }
-
-    uint8_t opRCRM(const uint8_t num)
-    {
-      if (m_failureFlags)
-        return 0;
-
-      uint8_t buf[3];
-      buf[0] = c_RCR | num;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
-      {
-        m_failureFlags |= 1;
-        return 0;
-      }
-      return buf[2];
-    }
-
-    void opRBM(uint8_t* data, const size_t data_len)
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[1];
-      buf[0] = c_RBM;
-      if (m_spi->txThenRx(buf, sizeof(buf), data, data_len) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-    void opWCR(const uint8_t num, const uint8_t val)
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[2];
-      buf[0] = c_WCR | num;
-      buf[1] = val;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-    void opWBM(const uint8_t* data, const size_t data_len)
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[1];
-      buf[0] = c_WBM;
-      if (m_spi->txThenTx(buf, sizeof(buf), data, data_len) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-    void opBFS(const uint8_t num, const uint8_t val)
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[2];
-      buf[0] = c_BFS | num;
-      buf[1] = val;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-    void opBFC(const uint8_t num, const uint8_t val)
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[2];
-      buf[0] = c_BFC | num;
-      buf[1] = val;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-    void opSRC()
-    {
-      if (m_failureFlags)
-        return;
-
-      uint8_t buf[1];
-      buf[0] = c_SRC;
-      if (m_spi->txrx(buf, sizeof(buf)) != 0)
-      {
-        m_failureFlags |= 1;
-        return;
-      }
-    }
-
-  protected:
-    void setBank(const Reg::Addr addr)
-    {
-      if (Reg::anyBank(addr))
-      {
-        return;
+        return (bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0);
       }
 
-      uint8_t bank = Reg::bank(addr);
-      if (m_bank == bank)
+      enum class Addr : uint8_t
       {
-        return;
-      }
+        EIE       = makeAddr(3, 0x1b, true),
+        EIR       = makeAddr(3, 0x1c, true),
+        ESTAT     = makeAddr(3, 0x1d, true),
+        ECON2     = makeAddr(3, 0x1e, true),
+        ECON1     = makeAddr(3, 0x1f, true),
 
-      uint8_t clr = m_bank & ~bank;
-      uint8_t set = ~m_bank & bank;
-      m_bank = bank;
-      if (clr)
-      {
-        opBFC(Reg::num(Reg::Addr::ECON1), clr);
-      }
+        ERDPT16   = makeAddr(0, 0x00, true),
+        EWRPT16   = makeAddr(0, 0x02, true),
+        ETXST16   = makeAddr(0, 0x04, true),
+        ETXND16   = makeAddr(0, 0x06, true),
+        ERXST16   = makeAddr(0, 0x08, true),
+        ERXND16   = makeAddr(0, 0x0a, true),
+        ERXRDPT16 = makeAddr(0, 0x0c, true),
+        ERXWRPT16 = makeAddr(0, 0x0e, true),
+        EDMAST16  = makeAddr(0, 0x10, true),
+        EDMAND16  = makeAddr(0, 0x12, true),
+        EDMADST16 = makeAddr(0, 0x14, true),
+        EDMACS16  = makeAddr(0, 0x16, true),
 
-      if (set)
-      {
-        opBFS(Reg::num(Reg::Addr::ECON1), set);
-      }
-    }
+        EHT0      = makeAddr(1, 0x00, true),
+        EHT1      = makeAddr(1, 0x01, true),
+        EHT2      = makeAddr(1, 0x02, true),
+        EHT3      = makeAddr(1, 0x03, true),
+        EHT4      = makeAddr(1, 0x04, true),
+        EHT5      = makeAddr(1, 0x05, true),
+        EHT6      = makeAddr(1, 0x06, true),
+        EHT7      = makeAddr(1, 0x07, true),
+        EPMM0     = makeAddr(1, 0x08, true),
+        EPMM1     = makeAddr(1, 0x09, true),
+        EPMM2     = makeAddr(1, 0x0a, true),
+        EPMM3     = makeAddr(1, 0x0b, true),
+        EPMM4     = makeAddr(1, 0x0c, true),
+        EPMM5     = makeAddr(1, 0x0d, true),
+        EPMM6     = makeAddr(1, 0x0e, true),
+        EPMM7     = makeAddr(1, 0x0f, true),
+        EPMCS16   = makeAddr(1, 0x10, true),
+        EPMO16    = makeAddr(1, 0x14, true),
+        ERXFCON   = makeAddr(1, 0x18, true),
+        EPKTCNT   = makeAddr(1, 0x19, true),
 
-    uint8_t regRead(const Reg::Addr addr)
-    {
-      setBank(addr);
-      if (Reg::eth(addr))
-        return opRCRE(Reg::num(addr));
-      else
-        return opRCRM(Reg::num(addr));
-    }
+        MACON1    = makeAddr(2, 0x00, false),
+        MACON3    = makeAddr(2, 0x02, false),
+        MACON4    = makeAddr(2, 0x03, false),
+        MABBIPG   = makeAddr(2, 0x04, false),
+        MAIPG16   = makeAddr(2, 0x06, false),
+        MACLCON1  = makeAddr(2, 0x08, false),
+        MACLCON2  = makeAddr(2, 0x09, false),
+        MAMXFL16  = makeAddr(2, 0x0a, false),
+        MICMD     = makeAddr(2, 0x12, false),
+        MIREGADR  = makeAddr(2, 0x14, false),
+        MIWR16    = makeAddr(2, 0x16, false),
+        MIRD16    = makeAddr(2, 0x18, false),
 
-    uint16_t regRead16(const Reg::Addr addr)
-    {
-      setBank(addr);
-      if (Reg::eth(addr))
-        return opRCRE(Reg::num(addr)) | (opRCRE(Reg::num(addr) + 1) << 8);
-      else
-        return opRCRM(Reg::num(addr)) | (opRCRM(Reg::num(addr) + 1) << 8);
-    }
-
-    void regWrite(const Reg::Addr addr, const uint8_t val)
-    {
-      setBank(addr);
-      opWCR(Reg::num(addr), val);
-    }
-
-    void regWrite16(const Reg::Addr addr, const uint16_t val)
-    {
-      setBank(addr);
-      opWCR(Reg::num(addr), val & 0xff);
-      opWCR(Reg::num(addr) + 1, val >> 8);
-    }
-
-    void regSet(const Reg::Addr addr, const uint8_t val)
-    {
-      setBank(addr);
-      opBFS(Reg::num(addr), val);
-    }
-
-    void regClr(const Reg::Addr addr, const uint8_t val)
-    {
-      setBank(addr);
-      opBFC(Reg::num(addr), val);
-    }
-
-    void memRead(uint8_t* data, const size_t data_len)
-    {
-      opRBM(data, data_len);
-    }
-
-    void memWrite(const uint8_t* data, const size_t data_len)
-    {
-      opWBM(data, data_len);
-    }
-
-    uint16_t phyRead(const Reg::PhyAddr addr)
-    {
-      regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
-      regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
-      uint8_t buf[26];            // Need to delay at least 10240ns here.
-                                  // Minimum bit period for enc28j60 is 50ns.
-                                  // 10240/50 = 204.8 bits = 25.6 bytes
-      memRead(buf, sizeof(buf));
-      regWrite(Reg::Addr::MICMD, 0);
-      return regRead16(Reg::Addr::MIRD16);
-    }
-
-    void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
-    {
-      regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
-      regWrite16(Reg::Addr::MIWR16, val);
-      uint8_t buf[26];            // Need to delay at least 10240ns here.
-                                  // Minimum bit period for enc28j60 is 50ns.
-                                  // 10240/50 = 204.8 bits = 25.6 bytes
-      memRead(buf, sizeof(buf));
-    }
-
-    void reset()
-    {
-      opSRC();
-    }
-
-    void dumpRegs()
-    {
-    #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
-    #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
-    #define DUMP_PHY(reg) printf(#reg " = %04x\n", phyRead(Reg::PhyAddr::reg))
-
-      uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
-      uint8_t savedBank = m_bank;
-
-      uint16_t savedERDPT16 = regRead16(Reg::Addr::ERDPT16);
-      uint8_t savedMIREGADR = regRead(Reg::Addr::MIREGADR);
-
-      regWrite(Reg::Addr::ECON1, savedECON1);
-      m_bank = savedBank;
-
-      printf("All banks:\n");
-      DUMP(EIE);
-      DUMP(EIR);
-      DUMP(ESTAT);
-      DUMP(ECON2);
-      DUMP(ECON1);
-      printf("\n");
-
-      printf("Bank 0:\n");
-      DUMP16(ERDPT16);
-      DUMP16(EWRPT16);
-      DUMP16(ETXST16);
-      DUMP16(ETXND16);
-      DUMP16(ERXST16);
-      DUMP16(ERXND16);
-      DUMP16(ERXRDPT16);
-      DUMP16(ERXWRPT16);
-      DUMP16(EDMAST16);
-      DUMP16(EDMAND16);
-      DUMP16(EDMADST16);
-      DUMP16(EDMACS16);
-      printf("\n");
-
-      printf("Bank 1:\n");
-      DUMP(EHT0);
-      DUMP(EHT1);
-      DUMP(EHT2);
-      DUMP(EHT3);
-      DUMP(EHT4);
-      DUMP(EHT5);
-      DUMP(EHT6);
-      DUMP(EHT7);
-      DUMP(EPMM0);
-      DUMP(EPMM1);
-      DUMP(EPMM2);
-      DUMP(EPMM3);
-      DUMP(EPMM4);
-      DUMP(EPMM5);
-      DUMP(EPMM6);
-      DUMP(EPMM7);
-      DUMP16(EPMCS16);
-      DUMP16(EPMO16);
-      DUMP(ERXFCON);
-      DUMP(EPKTCNT);
-      printf("\n");
-
-      printf("Bank 2:\n");
-      DUMP(MACON1);
-      DUMP(MACON3);
-      DUMP(MACON4);
-      DUMP(MABBIPG);
-      DUMP16(MAIPG16);
-      DUMP(MACLCON1);
-      DUMP(MACLCON2);
-      DUMP16(MAMXFL16);
-      DUMP(MICMD);
-      DUMP(MIREGADR);
-      DUMP16(MIWR16);
-      DUMP16(MIRD16);
-      printf("\n");
-
-      printf("Bank 3:\n");
-      DUMP(MAADR5);
-      DUMP(MAADR6);
-      DUMP(MAADR3);
-      DUMP(MAADR4);
-      DUMP(MAADR1);
-      DUMP(MAADR2);
-      DUMP(EBSTSD);
-      DUMP(EBSTCON);
-      DUMP16(EBSTCS16);
-      DUMP(MISTAT);
-      DUMP(EREVID);
-      DUMP(ECOCON);
-      DUMP(EFLOCON);
-      DUMP16(EPAUS16);
-      printf("\n");
-
-      printf("PHY:\n");
-      DUMP_PHY(PHCON1);
-      DUMP_PHY(PHSTAT1);
-      DUMP_PHY(PHID1);
-      DUMP_PHY(PHID2);
-      DUMP_PHY(PHCON2);
-      DUMP_PHY(PHSTAT2);
-      DUMP_PHY(PHIE);
-      //DUMP_PHY(PHIR); this read would affect LINKIF, PGIF and PLNKIF flags
-      DUMP_PHY(PHLCON);
-      printf("\n");
-
-      regWrite16(Reg::Addr::ERDPT16, savedERDPT16);
-      regWrite(Reg::Addr::MIREGADR, savedMIREGADR);
-
-      regWrite(Reg::Addr::ECON1, savedECON1);
-      m_bank = savedBank;
-
-    #undef DUMP
-    #undef DUMP16
-    #undef DUMP_PHY
-    }
-
-    void dumpState()
-    {
-    #define DUMP_BIT(reg) printf(#reg " = %01x\n", (val & Reg::c_##reg) ? 1 : 0)
-    #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
-    #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
-
-      uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
-      uint8_t savedBank = m_bank;
-
-      uint8_t val;
-
-      val = regRead(Reg::Addr::EIR);
-      DUMP_BIT(EIR_PKTIF);
-      DUMP_BIT(EIR_DMAIF);
-      DUMP_BIT(EIR_LINKIF);
-      DUMP_BIT(EIR_TXIF);
-      DUMP_BIT(EIR_TXERIF);
-      DUMP_BIT(EIR_RXERIF);
-
-      val = regRead(Reg::Addr::ESTAT);
-      DUMP_BIT(ESTAT_INT);
-      DUMP_BIT(ESTAT_BUFER);
-      DUMP_BIT(ESTAT_LATECOL);
-      DUMP_BIT(ESTAT_RXBUSY);
-      DUMP_BIT(ESTAT_TXABRT);
-      DUMP_BIT(ESTAT_CLKRDY);
-
-      val = regRead(Reg::Addr::ECON2);
-      DUMP_BIT(ECON2_PWRSV);
-      DUMP_BIT(ECON2_VRPS);
-
-      val = regRead(Reg::Addr::ECON1);
-      DUMP_BIT(ECON1_TXRTS);
-      DUMP_BIT(ECON1_RXEN);
-
-      DUMP16(ERXRDPT16);
-      DUMP16(ERXWRPT16);
-      DUMP(EPKTCNT);
-
-      printf("\n");
-
-      regWrite(Reg::Addr::ECON1, savedECON1);
-      m_bank = savedBank;
-
-    #undef DUMP_BIT
-    #undef DUMP
-    #undef DUMP16
-    }
-
-    static uint32_t updateCrc(const uint32_t crc, const uint8_t byte)
-    {
-      uint32_t result = crc;
-      result = result ^ byte;
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-      return result;
-    }
-
-    int test1()
-    {
-      uint32_t crc = 0xffffffff;
-      for (uint8_t i = 0; i <= 0x17; ++i)
-      {
-        crc = updateCrc(crc, opRCRE(i));
-      }
-      if (~crc != 0xeebd948d)
-      {
-        return 1;
-      }
-      return 0;
-    }
-
-    int test2()
-    {
-      static const Reg::Addr addrs[] = {
-        Reg::Addr::ERDPT16,
-        Reg::Addr::EWRPT16,
-        Reg::Addr::ETXST16,
-        Reg::Addr::ETXND16,
-        Reg::Addr::ERXST16,
-        Reg::Addr::ERXND16,
-        Reg::Addr::ERXRDPT16,
-        Reg::Addr::EDMAST16,
-        Reg::Addr::EDMAND16,
-        Reg::Addr::EDMADST16,
+        MAADR5    = makeAddr(3, 0x00, false),
+        MAADR6    = makeAddr(3, 0x01, false),
+        MAADR3    = makeAddr(3, 0x02, false),
+        MAADR4    = makeAddr(3, 0x03, false),
+        MAADR1    = makeAddr(3, 0x04, false),
+        MAADR2    = makeAddr(3, 0x05, false),
+        EBSTSD    = makeAddr(3, 0x06, true),
+        EBSTCON   = makeAddr(3, 0x07, true),
+        EBSTCS16  = makeAddr(3, 0x08, true),
+        MISTAT    = makeAddr(3, 0x0a, false),
+        EREVID    = makeAddr(3, 0x12, true),
+        ECOCON    = makeAddr(3, 0x15, true),
+        EFLOCON   = makeAddr(3, 0x17, true),
+        EPAUS16   = makeAddr(3, 0x18, true),
       };
-      uint32_t crc = 0xffffffff;
-      for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+
+      constexpr uint8_t bank(const Addr addr)
       {
-        crc = updateCrc(crc, i);
-        regWrite16(addrs[i], crc & 0x1fff);
+        return uint8_t(addr) >> c_BANK_SHIFT;
       }
-      crc = 0xffffffff;
-      for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+      constexpr uint8_t num(const Addr addr)
       {
-        crc = updateCrc(crc, i);
-        if (regRead16(addrs[i]) != (crc & 0x1fff))
+        return uint8_t(addr) & c_NUM_MASK;
+      }
+      constexpr bool eth(const Addr addr)
+      {
+        return !!(uint8_t(addr) & c_ETH_MASK);
+      }
+      constexpr bool anyBank(const Addr addr)
+      {
+        return addr >= Addr::EIE;
+      }
+
+      static constexpr uint8_t c_EIE_INTIE      = 0b10000000;
+      static constexpr uint8_t c_EIE_PKTIE      = 0b01000000;
+      static constexpr uint8_t c_EIE_DMAIE      = 0b00100000;
+      static constexpr uint8_t c_EIE_LINKIE     = 0b00010000;
+      static constexpr uint8_t c_EIE_TXIE       = 0b00001000;
+      static constexpr uint8_t c_EIE_TXERIE     = 0b00000010;
+      static constexpr uint8_t c_EIE_RXERIE     = 0b00000001;
+
+      static constexpr uint8_t c_EIR_PKTIF      = 0b01000000;
+      static constexpr uint8_t c_EIR_DMAIF      = 0b00100000;
+      static constexpr uint8_t c_EIR_LINKIF     = 0b00010000;
+      static constexpr uint8_t c_EIR_TXIF       = 0b00001000;
+      static constexpr uint8_t c_EIR_TXERIF     = 0b00000010;
+      static constexpr uint8_t c_EIR_RXERIF     = 0b00000001;
+
+      static constexpr uint8_t c_ESTAT_INT      = 0b10000000;
+      static constexpr uint8_t c_ESTAT_BUFER    = 0b01000000;
+      static constexpr uint8_t c_ESTAT_LATECOL  = 0b00010000;
+      static constexpr uint8_t c_ESTAT_RXBUSY   = 0b00000100;
+      static constexpr uint8_t c_ESTAT_TXABRT   = 0b00000010;
+      static constexpr uint8_t c_ESTAT_CLKRDY   = 0b00000001;
+
+      static constexpr uint8_t c_ECON2_AUTOINC  = 0b10000000;
+      static constexpr uint8_t c_ECON2_PKTDEC   = 0b01000000;
+      static constexpr uint8_t c_ECON2_PWRSV    = 0b00100000;
+      static constexpr uint8_t c_ECON2_VRPS     = 0b00001000;
+
+      static constexpr uint8_t c_ECON1_TXRST    = 0b10000000;
+      static constexpr uint8_t c_ECON1_RXRST    = 0b01000000;
+      static constexpr uint8_t c_ECON1_DMAST    = 0b00100000;
+      static constexpr uint8_t c_ECON1_CSUMEN   = 0b00010000;
+      static constexpr uint8_t c_ECON1_TXRTS    = 0b00001000;
+      static constexpr uint8_t c_ECON1_RXEN     = 0b00000100;
+      static constexpr uint8_t c_ECON1_BSEL1    = 0b00000010;
+      static constexpr uint8_t c_ECON1_BSEL0    = 0b00000001;
+
+      static constexpr uint8_t c_MACON1_TXPAUS  = 0b00001000;
+      static constexpr uint8_t c_MACON1_RXPAUS  = 0b00000100;
+      static constexpr uint8_t c_MACON1_PASSALL = 0b00000010;
+      static constexpr uint8_t c_MACON1_MARXEN  = 0b00000001;
+
+      static constexpr uint8_t c_MACON3_PADCFG2 = 0b10000000;
+      static constexpr uint8_t c_MACON3_PADCFG1 = 0b01000000;
+      static constexpr uint8_t c_MACON3_PADCFG0 = 0b00100000;
+      static constexpr uint8_t c_MACON3_TXCRCEN = 0b00010000;
+      static constexpr uint8_t c_MACON3_PHDREN  = 0b00001000;
+      static constexpr uint8_t c_MACON3_HFRMEN  = 0b00000100;
+      static constexpr uint8_t c_MACON3_FRMLNEN = 0b00000010;
+      static constexpr uint8_t c_MACON3_FULDPX  = 0b00000001;
+
+      static constexpr uint8_t c_MICMD_MIISCAN  = 0b00000010;
+      static constexpr uint8_t c_MICMD_MIIRD    = 0b00000001;
+
+      enum class PhyAddr : uint8_t
+      {
+        PHCON1  = 0x00,
+        PHSTAT1 = 0x01,
+        PHID1   = 0x02,
+        PHID2   = 0x03,
+        PHCON2  = 0x10,
+        PHSTAT2 = 0x11,
+        PHIE    = 0x12,
+        PHIR    = 0x13,
+        PHLCON  = 0x14,
+      };
+
+      constexpr uint8_t num(const PhyAddr addr)
+      {
+        return uint8_t(addr);
+      }
+
+      static constexpr uint16_t c_PHCON1_PRST     = 0b1000000000000000;
+      static constexpr uint16_t c_PHCON1_PLOOPBK  = 0b0100000000000000;
+      static constexpr uint16_t c_PHCON1_PPWRSV   = 0b0000100000000000;
+      static constexpr uint16_t c_PHCON1_PDPXMD   = 0b0000000100000000;
+
+      static constexpr uint16_t c_PHSTAT2_TXSTAT  = 0b0010000000000000;
+      static constexpr uint16_t c_PHSTAT2_RXSTAT  = 0b0001000000000000;
+      static constexpr uint16_t c_PHSTAT2_COLSTAT = 0b0000100000000000;
+      static constexpr uint16_t c_PHSTAT2_LSTAT   = 0b0000010000000000;
+      static constexpr uint16_t c_PHSTAT2_DPXSTAT = 0b0000001000000000;
+      static constexpr uint16_t c_PHSTAT2_PLRITY  = 0b0000000000100000;
+
+      static constexpr uint16_t c_PHIE_PLNKIE     = 0b0000000000010000;
+      static constexpr uint16_t c_PHIE_PGEIE      = 0b0000000000000010;
+    }
+
+    class DeviceImpl : public Device
+    {
+    public:
+      DeviceImpl(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi)
+        : m_env(env)
+        , m_spi(spi)
+      {
+      }
+
+    protected:
+      const std::shared_ptr<Env> m_env;
+      const std::shared_ptr<Spi> m_spi;
+      uint8_t m_failureFlags = 0;
+      uint8_t m_bank = 0;
+
+    protected:
+      static constexpr uint8_t c_RCR = 0b00000000;
+      static constexpr uint8_t c_RBM = 0b00111010;
+      static constexpr uint8_t c_WCR = 0b01000000;
+      static constexpr uint8_t c_WBM = 0b01111010;
+      static constexpr uint8_t c_BFS = 0b10000000;
+      static constexpr uint8_t c_BFC = 0b10100000;
+      static constexpr uint8_t c_SRC = 0b11111111;
+
+    protected:
+      uint8_t opRCRE(const uint8_t num)
+      {
+        if (m_failureFlags)
+          return 0;
+
+        uint8_t buf[2];
+        buf[0] = c_RCR | num;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return 0;
+        }
+ 
+        return buf[1];
+      }
+
+      uint8_t opRCRM(const uint8_t num)
+      {
+        if (m_failureFlags)
+          return 0;
+
+        uint8_t buf[3];
+        buf[0] = c_RCR | num;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return 0;
+        }
+        return buf[2];
+      }
+
+      void opRBM(uint8_t* data, const size_t data_len)
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[1];
+        buf[0] = c_RBM;
+        if (m_spi->txThenRx(buf, sizeof(buf), data, data_len) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+      void opWCR(const uint8_t num, const uint8_t val)
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[2];
+        buf[0] = c_WCR | num;
+        buf[1] = val;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+      void opWBM(const uint8_t* data, const size_t data_len)
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[1];
+        buf[0] = c_WBM;
+        if (m_spi->txThenTx(buf, sizeof(buf), data, data_len) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+      void opBFS(const uint8_t num, const uint8_t val)
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[2];
+        buf[0] = c_BFS | num;
+        buf[1] = val;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+      void opBFC(const uint8_t num, const uint8_t val)
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[2];
+        buf[0] = c_BFC | num;
+        buf[1] = val;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+      void opSRC()
+      {
+        if (m_failureFlags)
+          return;
+
+        uint8_t buf[1];
+        buf[0] = c_SRC;
+        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        {
+          m_failureFlags |= 1;
+          return;
+        }
+      }
+
+    protected:
+      void setBank(const Reg::Addr addr)
+      {
+        if (Reg::anyBank(addr))
+        {
+          return;
+        }
+
+        uint8_t bank = Reg::bank(addr);
+        if (m_bank == bank)
+        {
+          return;
+        }
+
+        uint8_t clr = m_bank & ~bank;
+        uint8_t set = ~m_bank & bank;
+        m_bank = bank;
+        if (clr)
+        {
+          opBFC(Reg::num(Reg::Addr::ECON1), clr);
+        }
+
+        if (set)
+        {
+          opBFS(Reg::num(Reg::Addr::ECON1), set);
+        }
+      }
+
+      uint8_t regRead(const Reg::Addr addr)
+      {
+        setBank(addr);
+        if (Reg::eth(addr))
+          return opRCRE(Reg::num(addr));
+        else
+          return opRCRM(Reg::num(addr));
+      }
+
+      uint16_t regRead16(const Reg::Addr addr)
+      {
+        setBank(addr);
+        if (Reg::eth(addr))
+          return opRCRE(Reg::num(addr)) | (opRCRE(Reg::num(addr) + 1) << 8);
+        else
+          return opRCRM(Reg::num(addr)) | (opRCRM(Reg::num(addr) + 1) << 8);
+      }
+
+      void regWrite(const Reg::Addr addr, const uint8_t val)
+      {
+        setBank(addr);
+        opWCR(Reg::num(addr), val);
+      }
+
+      void regWrite16(const Reg::Addr addr, const uint16_t val)
+      {
+        setBank(addr);
+        opWCR(Reg::num(addr), val & 0xff);
+        opWCR(Reg::num(addr) + 1, val >> 8);
+      }
+
+      void regSet(const Reg::Addr addr, const uint8_t val)
+      {
+        setBank(addr);
+        opBFS(Reg::num(addr), val);
+      }
+
+      void regClr(const Reg::Addr addr, const uint8_t val)
+      {
+        setBank(addr);
+        opBFC(Reg::num(addr), val);
+      }
+
+      void memRead(uint8_t* data, const size_t data_len)
+      {
+        opRBM(data, data_len);
+      }
+
+      void memWrite(const uint8_t* data, const size_t data_len)
+      {
+        opWBM(data, data_len);
+      }
+
+      uint16_t phyRead(const Reg::PhyAddr addr)
+      {
+        regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
+        regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
+        uint8_t buf[26];            // Need to delay at least 10240ns here.
+                                    // Minimum bit period for enc28j60 is 50ns.
+                                    // 10240/50 = 204.8 bits = 25.6 bytes
+        memRead(buf, sizeof(buf));
+        regWrite(Reg::Addr::MICMD, 0);
+        return regRead16(Reg::Addr::MIRD16);
+      }
+
+      void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
+      {
+        regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
+        regWrite16(Reg::Addr::MIWR16, val);
+        uint8_t buf[26];            // Need to delay at least 10240ns here.
+                                    // Minimum bit period for enc28j60 is 50ns.
+                                    // 10240/50 = 204.8 bits = 25.6 bytes
+        memRead(buf, sizeof(buf));
+      }
+
+      void reset()
+      {
+        opSRC();
+      }
+
+      void dumpRegs()
+      {
+      #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
+      #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
+      #define DUMP_PHY(reg) printf(#reg " = %04x\n", phyRead(Reg::PhyAddr::reg))
+
+        uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
+        uint8_t savedBank = m_bank;
+
+        uint16_t savedERDPT16 = regRead16(Reg::Addr::ERDPT16);
+        uint8_t savedMIREGADR = regRead(Reg::Addr::MIREGADR);
+
+        regWrite(Reg::Addr::ECON1, savedECON1);
+        m_bank = savedBank;
+
+        printf("All banks:\n");
+        DUMP(EIE);
+        DUMP(EIR);
+        DUMP(ESTAT);
+        DUMP(ECON2);
+        DUMP(ECON1);
+        printf("\n");
+
+        printf("Bank 0:\n");
+        DUMP16(ERDPT16);
+        DUMP16(EWRPT16);
+        DUMP16(ETXST16);
+        DUMP16(ETXND16);
+        DUMP16(ERXST16);
+        DUMP16(ERXND16);
+        DUMP16(ERXRDPT16);
+        DUMP16(ERXWRPT16);
+        DUMP16(EDMAST16);
+        DUMP16(EDMAND16);
+        DUMP16(EDMADST16);
+        DUMP16(EDMACS16);
+        printf("\n");
+
+        printf("Bank 1:\n");
+        DUMP(EHT0);
+        DUMP(EHT1);
+        DUMP(EHT2);
+        DUMP(EHT3);
+        DUMP(EHT4);
+        DUMP(EHT5);
+        DUMP(EHT6);
+        DUMP(EHT7);
+        DUMP(EPMM0);
+        DUMP(EPMM1);
+        DUMP(EPMM2);
+        DUMP(EPMM3);
+        DUMP(EPMM4);
+        DUMP(EPMM5);
+        DUMP(EPMM6);
+        DUMP(EPMM7);
+        DUMP16(EPMCS16);
+        DUMP16(EPMO16);
+        DUMP(ERXFCON);
+        DUMP(EPKTCNT);
+        printf("\n");
+
+        printf("Bank 2:\n");
+        DUMP(MACON1);
+        DUMP(MACON3);
+        DUMP(MACON4);
+        DUMP(MABBIPG);
+        DUMP16(MAIPG16);
+        DUMP(MACLCON1);
+        DUMP(MACLCON2);
+        DUMP16(MAMXFL16);
+        DUMP(MICMD);
+        DUMP(MIREGADR);
+        DUMP16(MIWR16);
+        DUMP16(MIRD16);
+        printf("\n");
+
+        printf("Bank 3:\n");
+        DUMP(MAADR5);
+        DUMP(MAADR6);
+        DUMP(MAADR3);
+        DUMP(MAADR4);
+        DUMP(MAADR1);
+        DUMP(MAADR2);
+        DUMP(EBSTSD);
+        DUMP(EBSTCON);
+        DUMP16(EBSTCS16);
+        DUMP(MISTAT);
+        DUMP(EREVID);
+        DUMP(ECOCON);
+        DUMP(EFLOCON);
+        DUMP16(EPAUS16);
+        printf("\n");
+
+        printf("PHY:\n");
+        DUMP_PHY(PHCON1);
+        DUMP_PHY(PHSTAT1);
+        DUMP_PHY(PHID1);
+        DUMP_PHY(PHID2);
+        DUMP_PHY(PHCON2);
+        DUMP_PHY(PHSTAT2);
+        DUMP_PHY(PHIE);
+        //DUMP_PHY(PHIR); this read would affect LINKIF, PGIF and PLNKIF flags
+        DUMP_PHY(PHLCON);
+        printf("\n");
+
+        regWrite16(Reg::Addr::ERDPT16, savedERDPT16);
+        regWrite(Reg::Addr::MIREGADR, savedMIREGADR);
+
+        regWrite(Reg::Addr::ECON1, savedECON1);
+        m_bank = savedBank;
+
+      #undef DUMP
+      #undef DUMP16
+      #undef DUMP_PHY
+      }
+
+      void dumpState()
+      {
+      #define DUMP_BIT(reg) printf(#reg " = %01x\n", (val & Reg::c_##reg) ? 1 : 0)
+      #define DUMP(reg) printf(#reg " = %02x\n", regRead(Reg::Addr::reg))
+      #define DUMP16(reg) printf(#reg " = %04x\n", regRead16(Reg::Addr::reg))
+
+        uint8_t savedECON1 = regRead(Reg::Addr::ECON1);
+        uint8_t savedBank = m_bank;
+
+        uint8_t val;
+
+        val = regRead(Reg::Addr::EIR);
+        DUMP_BIT(EIR_PKTIF);
+        DUMP_BIT(EIR_DMAIF);
+        DUMP_BIT(EIR_LINKIF);
+        DUMP_BIT(EIR_TXIF);
+        DUMP_BIT(EIR_TXERIF);
+        DUMP_BIT(EIR_RXERIF);
+
+        val = regRead(Reg::Addr::ESTAT);
+        DUMP_BIT(ESTAT_INT);
+        DUMP_BIT(ESTAT_BUFER);
+        DUMP_BIT(ESTAT_LATECOL);
+        DUMP_BIT(ESTAT_RXBUSY);
+        DUMP_BIT(ESTAT_TXABRT);
+        DUMP_BIT(ESTAT_CLKRDY);
+
+        val = regRead(Reg::Addr::ECON2);
+        DUMP_BIT(ECON2_PWRSV);
+        DUMP_BIT(ECON2_VRPS);
+
+        val = regRead(Reg::Addr::ECON1);
+        DUMP_BIT(ECON1_TXRTS);
+        DUMP_BIT(ECON1_RXEN);
+
+        DUMP16(ERXRDPT16);
+        DUMP16(ERXWRPT16);
+        DUMP(EPKTCNT);
+
+        printf("\n");
+
+        regWrite(Reg::Addr::ECON1, savedECON1);
+        m_bank = savedBank;
+
+      #undef DUMP_BIT
+      #undef DUMP
+      #undef DUMP16
+      }
+
+      static uint32_t updateCrc(const uint32_t crc, const uint8_t byte)
+      {
+        uint32_t result = crc;
+        result = result ^ byte;
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
+        return result;
+      }
+
+      int test1()
+      {
+        uint32_t crc = 0xffffffff;
+        for (uint8_t i = 0; i <= 0x17; ++i)
+        {
+          crc = updateCrc(crc, opRCRE(i));
+        }
+        if (~crc != 0xeebd948d)
         {
           return 1;
         }
+        return 0;
       }
-      return 0;
-    }
 
-    int test3()
-    {
-      if (regRead(Reg::Addr::EREVID) != 6 || phyRead(Reg::PhyAddr::PHID1) != 0x0083 || phyRead(Reg::PhyAddr::PHID2) != 0x1400)
+      int test2()
       {
-        return 1;
+        static const Reg::Addr addrs[] = {
+          Reg::Addr::ERDPT16,
+          Reg::Addr::EWRPT16,
+          Reg::Addr::ETXST16,
+          Reg::Addr::ETXND16,
+          Reg::Addr::ERXST16,
+          Reg::Addr::ERXND16,
+          Reg::Addr::ERXRDPT16,
+          Reg::Addr::EDMAST16,
+          Reg::Addr::EDMAND16,
+          Reg::Addr::EDMADST16,
+        };
+        uint32_t crc = 0xffffffff;
+        for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+        {
+          crc = updateCrc(crc, i);
+          regWrite16(addrs[i], crc & 0x1fff);
+        }
+        crc = 0xffffffff;
+        for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
+        {
+          crc = updateCrc(crc, i);
+          if (regRead16(addrs[i]) != (crc & 0x1fff))
+          {
+            return 1;
+          }
+        }
+        return 0;
       }
-      return 0;
-    }
 
-    void validate()
-    {
-      printf("test1 returned %i\n", test1());
-      printf("test2 returned %i\n", test2());
-      printf("test3 returned %i\n", test3());
-    }
-
-    unsigned benchmark(const char* name, void(Enc28j60Impl::*test_fn)(void* ctx), void* ctx, unsigned offset)
-    {
-      printf("Benchmarking %s...\n", name);
-      TickType_t start = xTaskGetTickCount();
-      while (start == xTaskGetTickCount());
-      start = xTaskGetTickCount();
-      TickType_t finish = start + 1000 / portTICK_PERIOD_MS;
-      unsigned count = 0;
-      while (xTaskGetTickCount() < finish)
+      int test3()
       {
-        (this->*test_fn)(ctx);
-        ++count;
+        if (regRead(Reg::Addr::EREVID) != 6 || phyRead(Reg::PhyAddr::PHID1) != 0x0083 || phyRead(Reg::PhyAddr::PHID2) != 0x1400)
+        {
+          return 1;
+        }
+        return 0;
       }
-      finish = xTaskGetTickCount();
-      unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
-      unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
-      unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
-      unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
-      unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
-      printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
-      return cycle_ns;
-    }
 
-    void benchmarkNull(void* /*ctx*/)
-    {
-    }
+      void validate()
+      {
+        printf("test1 returned %i\n", test1());
+        printf("test2 returned %i\n", test2());
+        printf("test3 returned %i\n", test3());
+      }
 
-    void benchmarkRxtx(void* ctx)
-    {
-      static uint8_t buf[1000];
-      m_spi->txrx(buf, (size_t)ctx);
-    }
+      unsigned benchmark(const char* name, void(DeviceImpl::*test_fn)(void* ctx), void* ctx, unsigned offset)
+      {
+        printf("Benchmarking %s...\n", name);
+        TickType_t start = xTaskGetTickCount();
+        while (start == xTaskGetTickCount());
+        start = xTaskGetTickCount();
+        TickType_t finish = start + 1000 / portTICK_PERIOD_MS;
+        unsigned count = 0;
+        while (xTaskGetTickCount() < finish)
+        {
+          (this->*test_fn)(ctx);
+          ++count;
+        }
+        finish = xTaskGetTickCount();
+        unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
+        unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
+        unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
+        unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
+        unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
+        printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
+        return cycle_ns;
+      }
 
-    void benchmarkMemRead(void* ctx)
-    {
-      static uint8_t buf[1000];
-      memRead(buf, (size_t)ctx);
-    }
+      void benchmarkNull(void* /*ctx*/)
+      {
+      }
 
-    void benchmarkMemWrite(void* ctx)
-    {
-      static uint8_t buf[1000];
-      memWrite(buf, (size_t)ctx);
-    }
+      void benchmarkRxtx(void* ctx)
+      {
+        static uint8_t buf[1000];
+        m_spi->txrx(buf, (size_t)ctx);
+      }
 
-    void benchmarkPhyRead(void* ctx)
-    {
-      phyRead(Reg::PhyAddr::PHLCON);
-    }
+      void benchmarkMemRead(void* ctx)
+      {
+        static uint8_t buf[1000];
+        memRead(buf, (size_t)ctx);
+      }
 
-    void benchmarkPhyWrite(void* ctx)
-    {
-      phyWrite(Reg::PhyAddr::PHLCON, 0x1234);
-    }
+      void benchmarkMemWrite(void* ctx)
+      {
+        static uint8_t buf[1000];
+        memWrite(buf, (size_t)ctx);
+      }
 
-    void benchmark_all()
-    {
-      unsigned offset = benchmark("null", &Enc28j60Impl::benchmarkNull, 0, 0);
-      benchmark("rxtx 1", &Enc28j60Impl::benchmarkRxtx, (void*)1, offset);
-      benchmark("rxtx 2", &Enc28j60Impl::benchmarkRxtx, (void*)2, offset);
-      benchmark("rxtx 3", &Enc28j60Impl::benchmarkRxtx, (void*)3, offset);
-      benchmark("memRead 1000", &Enc28j60Impl::benchmarkMemRead, (void*)1000, offset);
-      benchmark("memRead 100", &Enc28j60Impl::benchmarkMemRead, (void*)100, offset);
-      benchmark("memRead 10", &Enc28j60Impl::benchmarkMemRead, (void*)10, offset);
-      benchmark("memWrite 1000", &Enc28j60Impl::benchmarkMemWrite, (void*)1000, offset);
-      benchmark("memWrite 100", &Enc28j60Impl::benchmarkMemWrite, (void*)100, offset);
-      benchmark("memWrite 10", &Enc28j60Impl::benchmarkMemWrite, (void*)10, offset);
-      benchmark("phyRead", &Enc28j60Impl::benchmarkPhyRead, 0, offset);
-      benchmark("phyWrite", &Enc28j60Impl::benchmarkPhyWrite, 0, offset);
-    }
+      void benchmarkPhyRead(void* ctx)
+      {
+        phyRead(Reg::PhyAddr::PHLCON);
+      }
 
-  public:
-    virtual void test() override
-    {
-      regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
-      OS::ExpirationTimer::delay(1);
-      opSRC();
-      OS::ExpirationTimer::delay(1);
-      dumpRegs();
-      dumpState();
-      validate();
-      benchmark_all();
-    }
-  };
-}
+      void benchmarkPhyWrite(void* ctx)
+      {
+        phyWrite(Reg::PhyAddr::PHLCON, 0x1234);
+      }
 
-std::unique_ptr<Enc28j60> CreateEnc28j60(const std::shared_ptr<Enc28j60spi>& spi)
-{
-  return std::make_unique<Enc28j60Impl>(spi);
+      void benchmark_all()
+      {
+        unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
+        benchmark("rxtx 1", &DeviceImpl::benchmarkRxtx, (void*)1, offset);
+        benchmark("rxtx 2", &DeviceImpl::benchmarkRxtx, (void*)2, offset);
+        benchmark("rxtx 3", &DeviceImpl::benchmarkRxtx, (void*)3, offset);
+        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
+        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
+        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
+        benchmark("memWrite 1000", &DeviceImpl::benchmarkMemWrite, (void*)1000, offset);
+        benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
+        benchmark("memWrite 10", &DeviceImpl::benchmarkMemWrite, (void*)10, offset);
+        benchmark("phyRead", &DeviceImpl::benchmarkPhyRead, 0, offset);
+        benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
+      }
+
+    public:
+      virtual void test() override
+      {
+        regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
+        OS::ExpirationTimer::delay(1);
+        opSRC();
+        OS::ExpirationTimer::delay(1);
+        dumpRegs();
+        dumpState();
+        validate();
+        benchmark_all();
+      }
+    };
+  }
+
+  std::unique_ptr<Device> CreateDevice(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi)
+  {
+    return std::make_unique<DeviceImpl>(env, spi);
+  }
 }
