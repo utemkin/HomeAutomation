@@ -5,11 +5,11 @@
 
 namespace Enc28j60
 {
-  class LwipNetif : public Env
+  class LwipNetif : mstd::noncopyable
   {
   public:
     static void initLwip();
   };
 
-  std::unique_ptr<LwipNetif> CreateLwipNetif();
+  std::unique_ptr<LwipNetif> CreateLwipNetif(std::unique_ptr<Spi>&& spi);
 }

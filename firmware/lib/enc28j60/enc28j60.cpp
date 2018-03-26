@@ -478,15 +478,15 @@ namespace Enc28j60
     class DeviceImpl : public Device
     {
     public:
-      DeviceImpl(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi)
-        : m_env(env)
-        , m_spi(spi)
+      DeviceImpl(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi)
+        : m_env(std::move(env))
+        , m_spi(std::move(spi))
       {
       }
 
     protected:
-      const std::shared_ptr<Env> m_env;
-      const std::shared_ptr<Spi> m_spi;
+      const std::unique_ptr<Env> m_env;
+      const std::unique_ptr<Spi> m_spi;
       uint8_t m_failureFlags = 0;
       uint8_t m_bank = 0;
 
@@ -1053,9 +1053,9 @@ namespace Enc28j60
       }
     };
   }
+}
 
-  std::unique_ptr<Device> CreateDevice(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi)
-  {
-    return std::make_unique<DeviceImpl>(env, spi);
-  }
+auto Enc28j60::CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi) -> std::unique_ptr<Device>
+{
+  return std::make_unique<DeviceImpl>(std::move(env), std::move(spi));
 }

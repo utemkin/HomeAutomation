@@ -76,5 +76,5 @@ namespace Enc28j60
     virtual void test() = 0;
   };
 
-  std::unique_ptr<Device> CreateDevice(const std::shared_ptr<Env>& env, const std::shared_ptr<Spi>& spi);
+  std::unique_ptr<Device> CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi);
 }

@@ -766,9 +766,9 @@ namespace Enc28j60
       }
     };
   }
+}
 
-  std::unique_ptr<Spi> CreateSpiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert)
-  {
-    return std::make_unique<SpiImpl>(spi, csGPIO, csPin, csInvert);
-  }
+auto Enc28j60::CreateSpiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert) -> std::unique_ptr<Spi>
+{
+  return std::make_unique<SpiImpl>(spi, csGPIO, csPin, csInvert);
 }
