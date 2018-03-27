@@ -1,7 +1,12 @@
 #include <enc28j60/enc28j60lwip.h>
-#include "lwip.h"
+#include "netif/ethernet.h"
+#include "netif/etharp.h"
 #include "lwip/netifapi.h"
 #include <common/utils.h>
+
+#if NO_SYS
+#error NO_SYS=1 not supported
+#endif
 
 namespace Enc28j60
 {
@@ -15,21 +20,43 @@ namespace Enc28j60
         : m_env(std::make_unique<EnvImpl>(m_netif))
         , m_spi(std::move(spi))
       {
-        ip4_addr_t ipaddr = {};
-        ip4_addr_t netmask = {};
-        ip4_addr_t gw = {};
-        if (netifapi_netif_add(&m_netif, &ipaddr, &netmask, &gw, (void*)this, &init, &tcpip_input) != ERR_OK)
+        if (netifapi_netif_add(&m_netif, IP4_ADDR_ANY4, IP4_ADDR_ANY4, IP4_ADDR_ANY4, (void*)this, &init, &tcpip_input) != ERR_OK)
         {
           //fixme
+          return;
         }
+        netifapi_netif_set_up(&m_netif);
       }
 
-      //arbitrary thread
-      static void initLwip()
+      virtual void setDefault() override
       {
-        OS::BinarySemaphore sem;
-        tcpip_init(&initDone, (void*)&sem);
-        sem.wait();
+        netifapi_netif_set_default(&m_netif);
+      }
+
+      virtual void startDhcp() override
+      {
+        stop();
+        netifapi_dhcp_start(&m_netif);
+        m_dhcpMode = true;
+      }
+
+      virtual void start(uint32_t ipaddr, uint32_t netmask, uint32_t gw) override
+      {
+        stop();
+        const ip4_addr_t _ipaddr = {ipaddr};
+        const ip4_addr_t _netmask = {netmask};
+        const ip4_addr_t _gw = {gw};
+        netifapi_netif_set_addr(&m_netif, &_ipaddr, &_netmask, &_gw);
+      }
+
+      virtual void stop() override
+      {
+        if (m_dhcpMode)
+        {
+          netifapi_dhcp_release_and_stop(&m_netif);
+          m_dhcpMode = false;
+        } else
+          netifapi_netif_set_addr(&m_netif, IP4_ADDR_ANY4, IP4_ADDR_ANY4, IP4_ADDR_ANY4);
       }
 
     protected:
@@ -58,7 +85,10 @@ namespace Enc28j60
         //arbitrary thread
         virtual void setLinkState(bool linked) override
         {
-          //fixme
+          if (linked)
+            netifapi_netif_set_link_up(&m_netif);
+          else
+            netifapi_netif_set_link_down(&m_netif);
         }
 
       protected:
@@ -67,15 +97,16 @@ namespace Enc28j60
       std::unique_ptr<EnvImpl> m_env;
       std::unique_ptr<Spi> m_spi;
       std::unique_ptr<Device> m_device;
+      bool m_dhcpMode = false;
 
     protected:
-      //tcp thread
+      //tcp thread or core lock
       err_t init()
       {
         m_device = CreateDevice(std::move(m_env), std::move(m_spi));
         //fixme: return !ERR_OK on error
     
-        m_netif.hwaddr_len = ETHARP_HWADDR_LEN;
+        m_netif.hwaddr_len = ETH_HWADDR_LEN;
     //    m_netif.hwaddr[0] = ?;
     //    m_netif.hwaddr[1] = ?;
     //    m_netif.hwaddr[2] = ?;
@@ -91,31 +122,39 @@ namespace Enc28j60
         return ERR_OK;
       }
 
-      //tcp thread
+      //tcp thread or core lock
       static err_t init(netif *netif)
       {
         return ((LwipNetifImpl*)netif->state)->init();
       }
 
-      //tcp thread
-      static void initDone(void *arg)
-      {
-        ((OS::BinarySemaphore*)arg)->signal();
-      }
-
-      //tcp thread
+      //tcp thread or core lock
       err_t linkoutput(pbuf *p)
       {
         //fixme
         //m_device->output();
       }
 
-      //tcp thread
+      //tcp thread or core lock
       static err_t linkoutput(netif *netif, pbuf *p)
       {
         return ((LwipNetifImpl*)netif->state)->linkoutput(p);
       }
     };
+
+    //tcp thread or core lock
+    static void initDone(void *arg)
+    {
+      ((OS::BinarySemaphore*)arg)->signal();
+    }
+  }
+
+  //arbitrary thread
+  void LwipNetif::initLwip()
+  {
+    OS::BinarySemaphore sem;
+    tcpip_init(&initDone, (void*)&sem);
+    sem.wait();
   }
 }
 

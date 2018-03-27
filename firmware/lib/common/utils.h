@@ -152,6 +152,7 @@ namespace OS
     {
       osSemaphoreDef(semaphore);
       m_semaphore = osSemaphoreCreate(osSemaphore(semaphore), 1);
+      wait(0);
     }
     ~BinarySemaphore()
     {

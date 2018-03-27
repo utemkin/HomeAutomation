@@ -482,6 +482,8 @@ namespace Enc28j60
         : m_env(std::move(env))
         , m_spi(std::move(spi))
       {
+        //fixme
+        m_env->setLinkState(true);
       }
 
     protected:

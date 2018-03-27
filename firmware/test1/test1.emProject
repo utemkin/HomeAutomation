@@ -27,8 +27,8 @@
       speed="12000" />
     <configuration
       Name="Debug External"
-      asm_additional_options="-Og -g"
-      c_additional_options="-Og -g" />
+      asm_additional_options="-O0 -g"
+      c_additional_options="-O0 -g" />
     <configuration
       Name="Release External"
       asm_additional_options="-O2 -g"
@@ -54,7 +54,6 @@
       <file file_name="Src/stm32f1xx_hal_timebase_TIM.c" />
       <file file_name="Src/stm32f1xx_it.c" />
       <file file_name="Src/system_stm32f1xx.c" />
-      <file file_name="Src/lwip.c" />
       <file file_name="Src/ethernetif.c" />
     </folder>
     <folder Name="hal">

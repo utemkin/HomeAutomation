@@ -111,8 +111,6 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN StartDefaultTask */
-  MX_LWIP_Init();
-
   extern void maintask();
   maintask();
 
