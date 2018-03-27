@@ -28,11 +28,13 @@ namespace Enc28j60
         netifapi_netif_set_up(&m_netif);
       }
 
+      //arbitrary thread
       virtual void setDefault() override
       {
         netifapi_netif_set_default(&m_netif);
       }
 
+      //arbitrary thread
       virtual void startDhcp() override
       {
         stop();
@@ -40,6 +42,7 @@ namespace Enc28j60
         m_dhcpMode = true;
       }
 
+      //arbitrary thread
       virtual void start(uint32_t ipaddr, uint32_t netmask, uint32_t gw) override
       {
         stop();
@@ -49,6 +52,7 @@ namespace Enc28j60
         netifapi_netif_set_addr(&m_netif, &_ipaddr, &_netmask, &_gw);
       }
 
+      //arbitrary thread
       virtual void stop() override
       {
         if (m_dhcpMode)
@@ -69,26 +73,26 @@ namespace Enc28j60
         {
         }
 
-        //arbitrary thread
+        //tcp thread or core lock
         virtual std::unique_ptr<Pbuf> allocatePbuf(size_t size) override
         {
           //fixme
         }
 
-        //arbitrary thread
+        //tcp thread or core lock
         virtual void input(std::unique_ptr<Pbuf>&& packet) override
         {
           //fixme
           //m_netif.input();
         }
 
-        //arbitrary thread
+        //tcp thread or core lock
         virtual void setLinkState(bool linked) override
         {
           if (linked)
-            netifapi_netif_set_link_up(&m_netif);
+            netif_set_link_up(&m_netif);
           else
-            netifapi_netif_set_link_down(&m_netif);
+            netif_set_link_down(&m_netif);
         }
 
       protected:

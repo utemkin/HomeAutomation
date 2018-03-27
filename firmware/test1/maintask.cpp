@@ -15,5 +15,6 @@ extern "C" void maintask()
   netif->setDefault();
   netif->startDhcp();
 
-  for(;;);
+  for(;;)
+    OS::ExpirationTimer::delay(1000);
 }
