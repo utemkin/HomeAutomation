@@ -1042,6 +1042,11 @@ namespace Enc28j60
       }
 
     public:
+      virtual void output(std::unique_ptr<Pbuf>&& packet) override
+      {
+        //fixme
+      }
+
       virtual void test() override
       {
         regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);

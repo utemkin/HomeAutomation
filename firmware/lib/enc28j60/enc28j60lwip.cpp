@@ -65,6 +65,59 @@ namespace Enc28j60
 
     protected:
       netif m_netif = {};
+      class PbufImpl : public Pbuf
+      {
+      public:
+        PbufImpl(pbuf* pbuf)
+          : m_pbuf(pbuf)
+          , m_pbufNext(pbuf)
+        {
+        }
+
+        virtual size_t size() const override
+        {
+          return m_pbuf == NULL ? 0 : m_pbuf->tot_len;
+        }
+        
+        virtual bool next(uint8_t** data, size_t* size) override
+        {
+          return next((const uint8_t**)data, size);
+        }
+
+        virtual bool next(const uint8_t** data, size_t* size) const override
+        {
+          if (m_pbufNext == NULL)
+            return false;
+
+          *data = (uint8_t*)m_pbufNext->payload;
+          *size = m_pbufNext->len;
+          m_pbufNext = m_pbufNext->next;
+          return true;
+        }
+
+        pbuf* get() const
+        {
+          return m_pbuf;
+        }
+
+      protected:
+        pbuf* const m_pbuf;
+        mutable pbuf* m_pbufNext;
+      };
+      class PbufAllocImpl : public PbufImpl
+      {
+      public:
+        PbufAllocImpl(size_t size)
+          : PbufImpl(pbuf_alloc(PBUF_RAW, size, PBUF_POOL))
+        {
+        }
+
+        virtual ~PbufAllocImpl() override
+        {
+          if (m_pbuf != NULL)
+            pbuf_free(m_pbuf);
+        }
+      };
       class EnvImpl : public Env
       {
       public:
@@ -76,14 +129,14 @@ namespace Enc28j60
         //tcp thread or core lock
         virtual std::unique_ptr<Pbuf> allocatePbuf(size_t size) override
         {
-          //fixme
+          return std::make_unique<PbufAllocImpl>(size);
         }
 
         //tcp thread or core lock
         virtual void input(std::unique_ptr<Pbuf>&& packet) override
         {
-          //fixme
-          //m_netif.input();
+          if (m_netif.input(static_cast<PbufAllocImpl*>(packet.get())->get(), &m_netif) != ERR_OK)
+            ; //fixme: pbuf_free(p);
         }
 
         //tcp thread or core lock
@@ -135,8 +188,9 @@ namespace Enc28j60
       //tcp thread or core lock
       err_t linkoutput(pbuf *p)
       {
-        //fixme
-        //m_device->output();
+        m_device->output(std::make_unique<PbufImpl>(p));
+        //fixme: return !ERR_OK on error
+        return ERR_OK;
       }
 
       //tcp thread or core lock

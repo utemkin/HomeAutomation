@@ -36,6 +36,7 @@ namespace Enc28j60
   class Pbuf : mstd::noncopyable
   {
   public:
+    virtual ~Pbuf() = default;
     virtual size_t size() const = 0;
     virtual bool next(uint8_t** data, size_t* size) = 0;
     virtual bool next(const uint8_t** data, size_t* size) const = 0;
@@ -44,6 +45,7 @@ namespace Enc28j60
   class Env : mstd::noncopyable
   {
   public:
+    virtual ~Env() = default;
     virtual std::unique_ptr<Pbuf> allocatePbuf(size_t size) = 0;
     virtual void input(std::unique_ptr<Pbuf>&& packet) = 0;
     virtual void setLinkState(bool linked) = 0;
@@ -63,6 +65,7 @@ namespace Enc28j60
   class Spi : mstd::noncopyable
   {
   public:
+    virtual ~Spi() = default;
     virtual int reinit() = 0;
     virtual int txrx(uint8_t* txrx, size_t txrx_len) = 0;
     virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) = 0;
@@ -72,7 +75,8 @@ namespace Enc28j60
   class Device : mstd::noncopyable
   {
   public:
-    //virtual void output(std::unique_ptr<Pbuf>&& packet) = 0;
+    virtual ~Device() = default;
+    virtual void output(std::unique_ptr<Pbuf>&& packet) = 0;
     virtual void test() = 0;
   };
 

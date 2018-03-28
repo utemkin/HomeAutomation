@@ -3,6 +3,10 @@
 #include <malloc.h>
 #include <errno.h>
 
+#ifndef __NEWLIB__
+#error only NEWLIB supported
+#endif
+
 #if !configUSE_NEWLIB_REENTRANT
 #error configUSE_NEWLIB_REENTRANT==0 not supported
 #endif
