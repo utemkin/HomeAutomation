@@ -5,7 +5,7 @@
 #include <common/utils.h>
 
 #if NO_SYS
-#error NO_SYS=1 not supported
+#error NO_SYS!=0 not supported
 #endif
 
 namespace Enc28j60
