@@ -186,9 +186,17 @@ namespace OS
     {
       vTaskDelay(ticks + 1);
     }
-    bool expired(const TickType_t ticks) const    // returns true if at least ticks whole tick periods have passed
+    static void delayus(const uint32_t us)        // delay until at least us have passed
+    {
+      delay(usToTicks(us));
+    }
+    bool elapsed(const TickType_t ticks) const    // returns true if at least ticks whole tick periods have passed
     {
       return TickType_t(xTaskGetTickCount() - m_initial) > TickType_t(ticks);
+    }
+    bool elapsedus(const uint32_t us) const       // returns true if at least us have passed
+    {
+      return elapsed(usToTicks(us));
     }
 
   protected:

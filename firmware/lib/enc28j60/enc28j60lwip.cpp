@@ -161,7 +161,7 @@ namespace Enc28j60
       void periodic()
       {
         m_device->periodic();
-        sys_timeout(0, periodic, this);
+        sys_timeout(1, periodic, this);
       }
 
       //tcp thread or core lock

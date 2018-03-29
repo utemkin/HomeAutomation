@@ -1,31 +1,8 @@
 #if 0
-#include "enc28j60.h"
-#include "enc28j60spi.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include <stdio.h>
-
-#define container_of(ptr, type, member) ((type *)((char *)(1 ? (ptr) : &((type *)0)->member) - offsetof(type, member)))
-#define IS_ELAPSED(initial_tick_count, timeout_ticks) ((TickType_t)(xTaskGetTickCount() - (initial_tick_count)) > (TickType_t)(timeout_ticks))
-
 struct enc28j60_impl
 {
-  struct enc28j60 iface;
-  struct enc28j60spi* spi;
-  uint8_t failure_flags;
-  uint8_t bank;
   uint8_t lstat;
   uint16_t next_packet;
-  union
-  {
-    uint8_t buf1[1];
-    uint8_t buf2[2];
-    uint8_t buf3[3];
-    uint8_t buf_wait_phy[26];
-  };
-  int phase;
-  TickType_t initial_tick_count;
-  TickType_t timeout_ticks;
 };
 
 static void reset(struct enc28j60_impl* enc_impl)
@@ -39,77 +16,6 @@ static void reset(struct enc28j60_impl* enc_impl)
   enc_impl->next_packet = 0;
 }
 
-static unsigned benchmark(const char* name, void(*test_fn)(struct enc28j60_impl* enc_impl, void* ctx), struct enc28j60_impl* enc, void* ctx, unsigned offset)
-{
-  printf("Benchmarking %s...\n", name);
-  TickType_t start = xTaskGetTickCount();
-  while (start == xTaskGetTickCount());
-  start = xTaskGetTickCount();
-  TickType_t finish = start + 1000 / portTICK_PERIOD_MS;
-  unsigned count = 0;
-  while (xTaskGetTickCount() < finish)
-  {
-    test_fn(enc, ctx);
-    ++count;
-  }
-  finish = xTaskGetTickCount();
-  unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
-  unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
-  unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
-  unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
-  unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
-  printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
-  return cycle_ns;
-}
-
-static void benchmark_null(struct enc28j60_impl* enc_impl, void* ctx)
-{
-}
-
-static void benchmark_rxtx(struct enc28j60_impl* enc_impl, void* ctx)
-{
-  static uint8_t buf[1000];
-  enc_impl->spi->txrx(enc_impl->spi, buf, (size_t)ctx);
-}
-
-static void benchmark_mem_read(struct enc28j60_impl* enc_impl, void* ctx)
-{
-  static uint8_t buf[1000];
-  mem_read(enc_impl, buf, (size_t)ctx);
-}
-
-static void benchmark_mem_write(struct enc28j60_impl* enc_impl, void* ctx)
-{
-  static uint8_t buf[1000];
-  mem_write(enc_impl, buf, (size_t)ctx);
-}
-
-static void benchmark_phy_read(struct enc28j60_impl* enc_impl, void* ctx)
-{
-  phy_read(enc_impl, PHLCON);
-}
-
-static void benchmark_phy_write(struct enc28j60_impl* enc_impl, void* ctx)
-{
-  phy_write(enc_impl, PHLCON, 0x1234);
-}
-
-static void benchmark_all(struct enc28j60_impl* enc_impl)
-{
-  unsigned offset = benchmark("null", &benchmark_null, 0, 0, 0);
-  benchmark("rxtx 1", &benchmark_rxtx, enc_impl, (void*)1, offset);
-  benchmark("rxtx 2", &benchmark_rxtx, enc_impl, (void*)2, offset);
-  benchmark("rxtx 3", &benchmark_rxtx, enc_impl, (void*)3, offset);
-  benchmark("mem_read 1000", &benchmark_mem_read, enc_impl, (void*)1000, offset);
-  benchmark("mem_read 100", &benchmark_mem_read, enc_impl, (void*)100, offset);
-  benchmark("mem_read 10", &benchmark_mem_read, enc_impl, (void*)10, offset);
-  benchmark("mem_write 1000", &benchmark_mem_write, enc_impl, (void*)1000, offset);
-  benchmark("mem_write 100", &benchmark_mem_write, enc_impl, (void*)100, offset);
-  benchmark("mem_write 10", &benchmark_mem_write, enc_impl, (void*)10, offset);
-  benchmark("phy_read", &benchmark_phy_read, enc_impl, 0, offset);
-  benchmark("phy_write", &benchmark_phy_write, enc_impl, 0, offset);
-}
-  
 // assumes there's no tx currently
 static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uint16_t len)
 {
@@ -122,23 +28,6 @@ static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uin
   reg_set(enc_impl, ECON1, ECON1_TXRTS);
   dump_state(enc_impl);
   dump_state(enc_impl);
-}
-
-static void init(struct enc28j60_impl* enc_impl)
-{
-  reg_write(enc_impl, MACON1, MACON1_TXPAUS | MACON1_RXPAUS | MACON1_MARXEN);
-  reg_write(enc_impl, MACON3, MACON3_PADCFG0 | MACON3_TXCRCEN | MACON3_FULDPX);
-  reg_write(enc_impl, MABBIPG, 0x15);
-  reg_write(enc_impl, MAIPG16, 0x12);
-  reg_write16(enc_impl, MAMXFL16, 1518);
-  phy_write(enc_impl, PHCON1, PHCON1_PDPXMD);
-  phy_write(enc_impl, PHLCON, 0x3c16);         //LEDA = link status and receive activity, LEDB = transmit activity
-  phy_write(enc_impl, PHIE, PHIE_PLNKIE | PHIE_PGEIE);
-  //fixme: setup MAC address
-  reg_write16(enc_impl, ERXST16, 0);
-  reg_write16(enc_impl, ERXND16, 0x19ff);
-  reg_write16(enc_impl, ERXRDPT16, 0x19ff);
-  reg_set(enc_impl, ECON1, ECON1_RXEN);
 }
 
 static void check_link(struct enc28j60_impl* enc_impl, uint8_t eir)
@@ -241,44 +130,6 @@ void enc28j60_test(struct enc28j60spi* spi)
     printf("%02x ", byte);
   }
   printf("\n");
-}
-
-void enc28j60_poll(
-    struct enc28j60* enc)
-{
-  struct enc28j60_impl* enc_impl = container_of(enc, struct enc28j60_impl, iface);
-  for (;;)
-  {
-    switch (enc_impl->phase)
-    {
-    case 0:
-      reg_clr(enc_impl, ECON2, ECON2_PWRSV);
-      enc_impl->initial_tick_count = xTaskGetTickCount();
-      enc_impl->timeout_ticks = 1;
-      ++enc_impl->phase;
-      return;
-    case 1:
-      if (!IS_ELAPSED(enc_impl->initial_tick_count, enc_impl->timeout_ticks))
-      {
-        return;
-      }
-      ++enc_impl->phase;
-      //no break
-    case 2:
-      op_SRC(enc_impl);
-      enc_impl->initial_tick_count = xTaskGetTickCount();
-      enc_impl->timeout_ticks = 1;
-      ++enc_impl->phase;
-      return;
-    case 3:
-      if (!IS_ELAPSED(enc_impl->initial_tick_count, enc_impl->timeout_ticks))
-      {
-        return;
-      }
-      ++enc_impl->phase;
-      //no break
-    }
-  }
 }
 #endif
 
@@ -491,6 +342,8 @@ namespace Enc28j60
       const std::unique_ptr<Spi> m_spi;
       uint8_t m_failureFlags = 0;
       uint8_t m_bank = 0;
+      int m_phase = 0;
+      OS::ExpirationTimer m_timer;
 
     protected:
       static constexpr uint8_t c_RCR = 0b00000000;
@@ -1049,6 +902,56 @@ namespace Enc28j60
 
       virtual void periodic() override
       {
+        for (;;)
+        {
+          switch (m_phase)
+          {
+          case 0:
+            regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
+            m_timer = OS::ExpirationTimer();
+            ++m_phase;
+            return;
+          case 1:
+            if (!m_timer.elapsedus(300))
+            {
+              return;
+            }
+            ++m_phase;
+            //no break
+          case 2:
+            opSRC();
+            m_timer = OS::ExpirationTimer();
+            ++m_phase;
+            return;
+          case 3:
+            if (!m_timer.elapsedus(1000))
+            {
+              return;
+            }
+            m_bank = 0;
+            ++m_phase;
+            //no break
+          case 4:
+            regWrite(Reg::Addr::MACON1, Reg::c_MACON1_TXPAUS | Reg::c_MACON1_RXPAUS | Reg::c_MACON1_MARXEN);
+            regWrite(Reg::Addr::MACON3, Reg::c_MACON3_PADCFG0 | Reg::c_MACON3_TXCRCEN | Reg::c_MACON3_FULDPX);
+            regWrite(Reg::Addr::MABBIPG, 0x15);
+            regWrite(Reg::Addr::MAIPG16, 0x12);
+            regWrite16(Reg::Addr::MAMXFL16, 1518);
+            phyWrite(Reg::PhyAddr::PHCON1, Reg::c_PHCON1_PDPXMD);
+            phyWrite(Reg::PhyAddr::PHLCON, 0x3c16);         //LEDA = link status and receive activity, LEDB = transmit activity
+            phyWrite(Reg::PhyAddr::PHIE, Reg::c_PHIE_PLNKIE | Reg::c_PHIE_PGEIE);
+            //fixme: setup MAC address
+            regWrite16(Reg::Addr::ERXST16, 0);
+            regWrite16(Reg::Addr::ERXND16, 0x19ff);
+            regWrite16(Reg::Addr::ERXRDPT16, 0x19ff);
+            regSet(Reg::Addr::ECON1, Reg::c_ECON1_RXEN);
+            ++m_phase;
+            //no break
+          case 5:
+            //fixme
+            return;
+          }
+        }
       }
 
       virtual void test() override
