@@ -1047,6 +1047,10 @@ namespace Enc28j60
         //fixme
       }
 
+      virtual void periodic() override
+      {
+      }
+
       virtual void test() override
       {
         regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);

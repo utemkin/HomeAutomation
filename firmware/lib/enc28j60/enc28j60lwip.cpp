@@ -158,6 +158,19 @@ namespace Enc28j60
 
     protected:
       //tcp thread or core lock
+      void periodic()
+      {
+        m_device->periodic();
+        sys_timeout(0, periodic, this);
+      }
+
+      //tcp thread or core lock
+      static void periodic(void* arg)
+      {
+        return ((LwipNetifImpl*)arg)->periodic();
+      }
+
+      //tcp thread or core lock
       err_t init()
       {
         m_device = CreateDevice(std::move(m_env), std::move(m_spi));
@@ -176,6 +189,7 @@ namespace Enc28j60
         m_netif.name[1] = 'n';
         m_netif.output = etharp_output;
         m_netif.linkoutput = linkoutput;
+        periodic();
         return ERR_OK;
       }
 

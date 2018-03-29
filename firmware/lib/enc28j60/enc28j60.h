@@ -77,6 +77,7 @@ namespace Enc28j60
   public:
     virtual ~Device() = default;
     virtual void output(std::unique_ptr<Pbuf>&& packet) = 0;
+    virtual void periodic() = 0;
     virtual void test() = 0;
   };
 
