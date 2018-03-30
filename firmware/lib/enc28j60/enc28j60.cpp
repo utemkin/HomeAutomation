@@ -1,21 +1,4 @@
 #if 0
-struct enc28j60_impl
-{
-  uint8_t lstat;
-  uint16_t next_packet;
-};
-
-static void reset(struct enc28j60_impl* enc_impl)
-{
-  reg_clr(enc_impl, ECON2, ECON2_PWRSV);
-  vTaskDelay((1 + portTICK_PERIOD_MS - 1) / portTICK_PERIOD_MS + 1);
-  op_SRC(enc_impl);
-  vTaskDelay((1 + portTICK_PERIOD_MS - 1) / portTICK_PERIOD_MS + 1);
-  enc_impl->bank = 0;
-  enc_impl->lstat = 0;
-  enc_impl->next_packet = 0;
-}
-
 // assumes there's no tx currently
 static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uint16_t len)
 {
@@ -28,78 +11,6 @@ static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uin
   reg_set(enc_impl, ECON1, ECON1_TXRTS);
   dump_state(enc_impl);
   dump_state(enc_impl);
-}
-
-static void check_link(struct enc28j60_impl* enc_impl, uint8_t eir)
-{
-  if (!(eir & EIR_LINKIF))
-  {
-    return;
-  }
-  phy_read(enc_impl, PHIR);
-  if (phy_read(enc_impl, PHSTAT2) & PHSTAT2_LSTAT)
-  {
-    if (enc_impl->lstat)
-    {
-      //fixme
-      printf("link pulsed down then up\n");
-      enc_impl->lstat = 0;
-      enc_impl->lstat = 1;
-    }
-    else
-    {
-      //fixme
-      printf("link up\n");
-      enc_impl->lstat = 1;
-    }
-  }
-  else
-  {
-    if (enc_impl->lstat)
-    {
-      //fixme
-      printf("link down\n");
-      enc_impl->lstat = 0;
-    }
-    else
-    {
-      //fixme
-      printf("link pulsed up then down\n");
-    }
-  }
-}
-
-static void check_rx(struct enc28j60_impl* enc_impl, uint8_t eir)
-{
-  if (eir & EIR_RXERIF)
-  {
-    //fixme
-    printf("buffer overflow\n");
-  }
-  while (reg_read(enc_impl, EPKTCNT))
-  {
-    reg_set(enc_impl, ECON2, ECON2_PKTDEC);
-    reg_write16(enc_impl, ERDPT16, enc_impl->next_packet);
-    uint8_t rsv[6];
-    mem_read(enc_impl, rsv, sizeof(rsv));
-    uint16_t next_packet = rsv[0] | (rsv[1] << 8);
-    uint16_t len = rsv[2] | (rsv[3] << 8);
-    printf("packet received %u\n", len);
-    reg_write16(enc_impl, ERXRDPT16, next_packet ? next_packet - 1 : 0x19ff);
-    enc_impl->next_packet = next_packet;
-  }
-}
-
-static void check_if(struct enc28j60_impl* enc_impl)
-{
-  uint8_t eir = reg_read(enc_impl, EIR);
-  uint8_t eir_clearable = eir & (EIR_TXIF | EIR_TXERIF | EIR_RXERIF);
-  if (eir_clearable)
-  {
-    reg_clr(enc_impl, EIR, eir_clearable);
-  }
-  check_link(enc_impl, eir);
-  check_rx(enc_impl, eir);
 }
 
 void enc28j60_test(struct enc28j60spi* spi)
@@ -333,17 +244,17 @@ namespace Enc28j60
         : m_env(std::move(env))
         , m_spi(std::move(spi))
       {
-        //fixme
-        m_env->setLinkState(true);
       }
 
     protected:
       const std::unique_ptr<Env> m_env;
       const std::unique_ptr<Spi> m_spi;
       uint8_t m_failureFlags = 0;
-      uint8_t m_bank = 0;
+      uint8_t m_bank;
+      uint16_t m_nextPacket;
       int m_phase = 0;
       OS::ExpirationTimer m_timer;
+      bool m_reportedUplink = false;
 
     protected:
       static constexpr uint8_t c_RCR = 0b00000000;
@@ -894,6 +805,96 @@ namespace Enc28j60
         benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
       }
 
+      void checkRx(uint8_t eir)
+      {
+        while (regRead(Reg::Addr::EPKTCNT))
+        {
+          regSet(Reg::Addr::ECON2, Reg::c_ECON2_PKTDEC);
+          regWrite16(Reg::Addr::ERDPT16, m_nextPacket);
+          uint8_t rsv[6];
+          memRead(rsv, sizeof(rsv));
+          uint16_t nextPacket = rsv[0] | (rsv[1] << 8);
+          uint16_t len = rsv[2] | (rsv[3] << 8);
+          //fixme
+          printf("packet received %u\n", len);
+          if (true)   //fixme: check rsv; log on error
+          {
+            auto pbuf = m_env->allocatePbuf(len);
+            if (pbuf->size() != len)
+            {
+              //log error
+            } else {
+              uint8_t* data;
+              size_t size;
+              while(pbuf->next(data, size))
+                memRead(data, size);
+              m_env->input(std::move(pbuf));
+            }
+          }
+          regWrite16(Reg::Addr::ERXRDPT16, nextPacket ? nextPacket - 1 : 0x19ff);
+          m_nextPacket = nextPacket;
+        }
+        if (eir & Reg::c_EIR_RXERIF)
+        {
+          //fixme
+          printf("buffer overflow\n");
+        }
+      }
+
+      void checkLink(uint8_t eir)
+      {
+        if (!(eir & Reg::c_EIR_LINKIF))
+          return;
+
+        phyRead(Reg::PhyAddr::PHIR);
+        if (phyRead(Reg::PhyAddr::PHSTAT2) & Reg::c_PHSTAT2_LSTAT)
+        {
+          if (m_reportedUplink)
+          {
+            //fixme
+            printf("link pulsed down then up\n");
+            m_reportedUplink = false;
+            m_env->setLinkState(false);
+            m_reportedUplink = true;
+            m_env->setLinkState(true);
+          }
+          else
+          {
+            //fixme
+            printf("link up\n");
+            m_reportedUplink = true;
+            m_env->setLinkState(true);
+          }
+        }
+        else
+        {
+          if (m_reportedUplink)
+          {
+            //fixme
+            printf("link down\n");
+            m_reportedUplink = false;
+            m_env->setLinkState(false);
+          }
+          else
+          {
+            //fixme
+            printf("link pulsed up then down\n");
+          }
+        }
+      }
+
+      void check()
+      {
+        uint8_t eir = regRead(Reg::Addr::EIR);
+        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | Reg::c_EIR_RXERIF);
+        if (eirClear)
+        {
+          regClr(Reg::Addr::EIR, eirClear);
+        }
+        checkRx(eir);
+        checkLink(eir);
+      }
+
     public:
       virtual void output(std::unique_ptr<Pbuf>&& packet) override
       {
@@ -907,6 +908,11 @@ namespace Enc28j60
           switch (m_phase)
           {
           case 0:
+            if (m_reportedUplink)
+            {
+              m_reportedUplink = false;
+              m_env->setLinkState(false);
+            }
             regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
             m_timer = OS::ExpirationTimer();
             ++m_phase;
@@ -929,6 +935,7 @@ namespace Enc28j60
               return;
             }
             m_bank = 0;
+            m_nextPacket = 0;
             ++m_phase;
             //no break
           case 4:
@@ -948,7 +955,15 @@ namespace Enc28j60
             ++m_phase;
             //no break
           case 5:
-            //fixme
+            check();
+            if (m_failureFlags)
+            {
+              //fixme: log and/or update failure counter
+              m_spi->reinit();  //fixme: check result
+              m_failureFlags = 0;
+              m_phase = 0;
+              continue;
+            }
             return;
           }
         }

@@ -79,18 +79,18 @@ namespace Enc28j60
           return m_pbuf == NULL ? 0 : m_pbuf->tot_len;
         }
         
-        virtual bool next(uint8_t** data, size_t* size) override
+        virtual bool next(uint8_t*& data, size_t& size) override
         {
-          return next((const uint8_t**)data, size);
+          return next((const uint8_t*&)data, size);
         }
 
-        virtual bool next(const uint8_t** data, size_t* size) const override
+        virtual bool next(const uint8_t*& data, size_t& size) const override
         {
           if (m_pbufNext == NULL)
             return false;
 
-          *data = (uint8_t*)m_pbufNext->payload;
-          *size = m_pbufNext->len;
+          data = (const uint8_t*)m_pbufNext->payload;
+          size = m_pbufNext->len;
           m_pbufNext = m_pbufNext->next;
           return true;
         }

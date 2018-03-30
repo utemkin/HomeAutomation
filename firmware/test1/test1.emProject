@@ -28,18 +28,19 @@
       speed="12000" />
     <configuration
       Name="Debug External"
-      asm_additional_options="-O0 -g"
-      c_additional_options="-O0 -g" />
+      asm_additional_options="-O0 -g3"
+      c_additional_options="-O0 -g3" />
     <configuration
       Name="Release External"
-      asm_additional_options="-O2 -g"
-      c_additional_options="-O2 -g" />
+      asm_additional_options="-O2 -g3"
+      c_additional_options="-O2 -g3" />
     <configuration
       Name="External GNU"
       build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/bin"
       external_link_command="&quot;$(ToolChainDir)/arm-none-eabi-g++&quot; $(LinkOptions) -T &quot;$(RelLinkerScriptPath)&quot; $(Objects) -o &quot;$(RelTargetPath)&quot; -Xlinker -Map=&quot;$(RelMapPath)&quot;"
       link_linker_script_file="$(ProjectDir)/test1.ld"
       link_use_linker_script_file="Yes"
+      linker_additional_options="-g3"
       project_type="Externally Built Executable" />
     <configuration Name="Simulated" debug_target_connection="Simulator" />
     <folder Name="common">

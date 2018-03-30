@@ -38,8 +38,8 @@ namespace Enc28j60
   public:
     virtual ~Pbuf() = default;
     virtual size_t size() const = 0;
-    virtual bool next(uint8_t** data, size_t* size) = 0;
-    virtual bool next(const uint8_t** data, size_t* size) const = 0;
+    virtual bool next(uint8_t*& data, size_t& size) = 0;
+    virtual bool next(const uint8_t*& data, size_t& size) const = 0;
   };
 
   class Env : mstd::noncopyable
