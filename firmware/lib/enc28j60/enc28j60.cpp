@@ -1,49 +1,3 @@
-#if 0
-// assumes there's no tx currently
-static void start_packet_tx(struct enc28j60_impl* enc_impl, uint16_t offset, uint16_t len)
-{
-  dump_state(enc_impl);
-  reg_set(enc_impl, ECON1, ECON1_TXRST);
-  reg_clr(enc_impl, ECON1, ECON1_TXRST);
-  reg_clr(enc_impl, EIR, EIR_TXIF | EIR_TXERIF);
-  reg_write16(enc_impl, ETXST16, offset);
-  reg_write16(enc_impl, ETXND16, offset + len - 1);
-  reg_set(enc_impl, ECON1, ECON1_TXRTS);
-  dump_state(enc_impl);
-  dump_state(enc_impl);
-}
-
-void enc28j60_test(struct enc28j60spi* spi)
-{
-  struct enc28j60_impl enc;
-  enc.spi = spi;
-  enc.failure_flags = 0;
-  enc.phase = 0;
-  reset(&enc);
-  validate(&enc);
-  dump_regs(&enc);
-  benchmark_all(&enc);
-  return;
-  init(&enc);
-  for (;;) check_if(&enc);
-  reg_write16(&enc, EWRPT16, 0);
-  const uint8_t zero = 0;
-  for (int i = 0; i < 100; ++i)
-  {
-    mem_write(&enc, &zero, 1);
-  }
-  start_packet_tx(&enc, 0, 15);
-  reg_write16(&enc, ERDPT16, 15);
-  for (int i = 15; i < 15 + 7; ++i)
-  {
-    uint8_t byte;
-    mem_read(&enc, &byte, 1);
-    printf("%02x ", byte);
-  }
-  printf("\n");
-}
-#endif
-
 #include <enc28j60/enc28j60.h>
 #include <type_traits>
 
@@ -255,6 +209,8 @@ namespace Enc28j60
       int m_phase = 0;
       OS::ExpirationTimer m_timer;
       bool m_reportedUplink = false;
+      bool m_txEnabled = false;
+      bool m_txInProgress;
 
     protected:
       static constexpr uint8_t c_RCR = 0b00000000;
@@ -805,6 +761,13 @@ namespace Enc28j60
         benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
       }
 
+      void checkTx(uint8_t eir)
+      {
+        if (eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF))
+          //fixme: check tsv, log error if failed
+          m_txInProgress = false;
+      }
+
       void checkRx(uint8_t eir)
       {
         while (regRead(Reg::Addr::EPKTCNT))
@@ -819,16 +782,16 @@ namespace Enc28j60
           printf("packet received %u\n", len);
           if (true)   //fixme: check rsv; log on error
           {
-            auto pbuf = m_env->allocatePbuf(len);
-            if (pbuf->size() != len)
+            auto packet = m_env->allocatePbuf(len);
+            if (packet->size() != len)
             {
               //log error
             } else {
               uint8_t* data;
               size_t size;
-              while(pbuf->next(data, size))
+              while(packet->next(data, size))
                 memRead(data, size);
-              m_env->input(std::move(pbuf));
+              m_env->input(std::move(packet));
             }
           }
           regWrite16(Reg::Addr::ERXRDPT16, nextPacket ? nextPacket - 1 : 0x19ff);
@@ -883,22 +846,50 @@ namespace Enc28j60
         }
       }
 
-      void check()
+      void check(bool txOnly = false)
       {
         uint8_t eir = regRead(Reg::Addr::EIR);
-        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | Reg::c_EIR_RXERIF);
+        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | (txOnly ? 0 : Reg::c_EIR_RXERIF));
         if (eirClear)
         {
           regClr(Reg::Addr::EIR, eirClear);
         }
-        checkRx(eir);
-        checkLink(eir);
+        checkTx(eir);
+        if (!txOnly)
+        {
+          checkRx(eir);
+          checkLink(eir);
+        }
       }
 
     public:
-      virtual void output(std::unique_ptr<Pbuf>&& packet) override
+      virtual bool output(std::unique_ptr<Pbuf>&& packet) override
       {
-        //fixme
+        if (!m_txEnabled || m_failureFlags)
+          return true;      //report error
+
+        if (m_txInProgress)
+          check(true);
+
+        if (m_txInProgress)
+          return false;
+
+        m_txInProgress = true;
+        const uint16_t offset = 0x1a00;
+        regWrite16(Reg::Addr::EWRPT16, offset);
+        const uint8_t control = 0;
+        memWrite(&control, sizeof(control));
+        const uint8_t* data;
+        size_t size;
+        while(packet->next(data, size))
+          memWrite(data, size);
+
+        regSet(Reg::Addr::ECON1, Reg::c_ECON1_TXRST);
+        regClr(Reg::Addr::ECON1, Reg::c_ECON1_TXRST);
+        regWrite16(Reg::Addr::ETXST16, offset);
+        regWrite16(Reg::Addr::ETXND16, offset + packet->size() - 1);
+        regSet(Reg::Addr::ECON1, Reg::c_ECON1_TXRTS);
+        return true;
       }
 
       virtual void periodic() override
@@ -908,6 +899,7 @@ namespace Enc28j60
           switch (m_phase)
           {
           case 0:
+            m_txInProgress = false;
             if (m_reportedUplink)
             {
               m_reportedUplink = false;
@@ -952,6 +944,8 @@ namespace Enc28j60
             regWrite16(Reg::Addr::ERXND16, 0x19ff);
             regWrite16(Reg::Addr::ERXRDPT16, 0x19ff);
             regSet(Reg::Addr::ECON1, Reg::c_ECON1_RXEN);
+            m_txEnabled = true;
+            m_txInProgress = false;
             ++m_phase;
             //no break
           case 5:
@@ -961,6 +955,7 @@ namespace Enc28j60
               //fixme: log and/or update failure counter
               m_spi->reinit();  //fixme: check result
               m_failureFlags = 0;
+              m_txEnabled = false;
               m_phase = 0;
               continue;
             }

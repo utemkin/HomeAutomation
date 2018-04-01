@@ -171,6 +171,19 @@ namespace OS
     osSemaphoreId m_semaphore;
   };
 
+  class Thread : mstd::noncopyable
+  {
+  public:
+    static void yield()
+    {
+      portYIELD();
+    }
+    static void delay(const TickType_t ticks)
+    {
+      vTaskDelay(ticks);
+    }
+  };
+
   class ExpirationTimer
   {
   public:

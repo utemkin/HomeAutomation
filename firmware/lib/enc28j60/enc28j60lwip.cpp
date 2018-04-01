@@ -100,8 +100,16 @@ namespace Enc28j60
           return m_pbuf;
         }
 
+        pbuf* release()
+        {
+          auto pbuf = m_pbuf;
+          m_pbuf = NULL;
+          m_pbufNext = NULL;
+          return pbuf;
+        }
+
       protected:
-        pbuf* const m_pbuf;
+        pbuf* m_pbuf;
         mutable pbuf* m_pbufNext;
       };
       class PbufAllocImpl : public PbufImpl
@@ -135,8 +143,11 @@ namespace Enc28j60
         //tcp thread or core lock
         virtual void input(std::unique_ptr<Pbuf>&& packet) override
         {
-          if (m_netif.input(static_cast<PbufAllocImpl*>(packet.get())->get(), &m_netif) != ERR_OK)
-            ; //fixme: pbuf_free(p);
+          auto pbuf = static_cast<PbufAllocImpl*>(packet.get());
+          if (m_netif.input(pbuf->get(), &m_netif) != ERR_OK)
+            ;   //fixme: log error
+          else
+            pbuf->release();
         }
 
         //tcp thread or core lock
@@ -202,7 +213,8 @@ namespace Enc28j60
       //tcp thread or core lock
       err_t linkoutput(pbuf *p)
       {
-        m_device->output(std::make_unique<PbufImpl>(p));
+        while (!m_device->output(std::make_unique<PbufImpl>(p)))
+          OS::Thread::yield();
         //fixme: return !ERR_OK on error
         return ERR_OK;
       }
