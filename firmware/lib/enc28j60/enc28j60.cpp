@@ -613,29 +613,14 @@ namespace Enc28j60
       #undef DUMP16
       }
 
-      static uint32_t updateCrc(const uint32_t crc, const uint8_t byte)
-      {
-        uint32_t result = crc;
-        result = result ^ byte;
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        result = ((result & 1) ? 0xedB88320 : 0) ^ (result >> 1);
-        return result;
-      }
-
       int test1()
       {
-        uint32_t crc = 0xffffffff;
+        Tools::CRC32 crc;
         for (uint8_t i = 0; i <= 0x17; ++i)
         {
-          crc = updateCrc(crc, opRCRE(i));
+          crc.update(opRCRE(i));
         }
-        if (~crc != 0xeebd948d)
+        if (crc.get() != 0xeebd948d)
         {
           return 1;
         }
@@ -656,17 +641,17 @@ namespace Enc28j60
           Reg::Addr::EDMAND16,
           Reg::Addr::EDMADST16,
         };
-        uint32_t crc = 0xffffffff;
+        Tools::CRC32 crc;
         for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
         {
-          crc = updateCrc(crc, i);
-          regWrite16(addrs[i], crc & 0x1fff);
+          crc.update(i);
+          regWrite16(addrs[i], crc.get() & 0x1fff);
         }
-        crc = 0xffffffff;
+        crc = Tools::CRC32();
         for (size_t i = 0; i < std::extent<decltype(addrs)>::value; ++i)
         {
-          crc = updateCrc(crc, i);
-          if (regRead16(addrs[i]) != (crc & 0x1fff))
+          crc.update(i);
+          if (regRead16(addrs[i]) != (crc.get() & 0x1fff))
           {
             return 1;
           }
@@ -899,7 +884,6 @@ namespace Enc28j60
           switch (m_phase)
           {
           case 0:
-            m_txInProgress = false;
             if (m_reportedUplink)
             {
               m_reportedUplink = false;

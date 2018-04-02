@@ -216,3 +216,23 @@ namespace OS
     TickType_t m_initial = xTaskGetTickCount();
   };
 }
+
+namespace Tools
+{
+  class CRC32
+  {
+  public:
+    void update(uint8_t data);
+    void update(const uint8_t* data, size_t size)
+    {
+      for(;size !=0; ++data, --size)
+        update(*data);
+    }
+    uint32_t get() const
+    {
+      return ~m_crc;
+    }
+  protected:
+    uint32_t m_crc = -1;
+  };
+}
