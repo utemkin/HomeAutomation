@@ -222,6 +222,13 @@ namespace Enc28j60
       static constexpr uint8_t c_SRC = 0b11111111;
 
     protected:
+      static constexpr uint16_t c_MaxFrameLength  = 1522;
+      static constexpr uint16_t c_RxBufferStart   = 0x0000;
+      static constexpr uint16_t c_RxBufferEnd     = 0x19ff;
+      static constexpr uint16_t c_TxBufferStart   = 0x1a00;
+      static constexpr uint16_t c_TxBufferEnd     = 0x1fff;
+
+    protected:
       uint8_t opRCRE(const uint8_t num)
       {
         if (m_failureFlags)
@@ -779,7 +786,7 @@ namespace Enc28j60
               m_env->input(std::move(packet));
             }
           }
-          regWrite16(Reg::Addr::ERXRDPT16, nextPacket ? nextPacket - 1 : 0x19ff);
+          regWrite16(Reg::Addr::ERXRDPT16, nextPacket ? nextPacket - 1 : c_RxBufferEnd);
           m_nextPacket = nextPacket;
         }
         if (eir & Reg::c_EIR_RXERIF)
@@ -919,14 +926,14 @@ namespace Enc28j60
             regWrite(Reg::Addr::MACON3, Reg::c_MACON3_PADCFG0 | Reg::c_MACON3_TXCRCEN | Reg::c_MACON3_FULDPX);
             regWrite(Reg::Addr::MABBIPG, 0x15);
             regWrite(Reg::Addr::MAIPG16, 0x12);
-            regWrite16(Reg::Addr::MAMXFL16, 1518);
+            regWrite16(Reg::Addr::MAMXFL16, c_MaxFrameLength);
             phyWrite(Reg::PhyAddr::PHCON1, Reg::c_PHCON1_PDPXMD);
             phyWrite(Reg::PhyAddr::PHLCON, 0x3c16);         //LEDA = link status and receive activity, LEDB = transmit activity
             phyWrite(Reg::PhyAddr::PHIE, Reg::c_PHIE_PLNKIE | Reg::c_PHIE_PGEIE);
             //fixme: setup MAC address
             regWrite16(Reg::Addr::ERXST16, 0);
-            regWrite16(Reg::Addr::ERXND16, 0x19ff);
-            regWrite16(Reg::Addr::ERXRDPT16, 0x19ff);
+            regWrite16(Reg::Addr::ERXND16, c_RxBufferEnd);
+            regWrite16(Reg::Addr::ERXRDPT16, c_RxBufferEnd);
             regSet(Reg::Addr::ECON1, Reg::c_ECON1_RXEN);
             m_txEnabled = true;
             m_txInProgress = false;
