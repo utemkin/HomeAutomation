@@ -1,6 +1,93 @@
 #include <enc28j60/enc28j60.h>
 #include <type_traits>
 
+/*
+Driver limitations:
+1. Only supports ENC28J60 silicon revision B7
+2. Only supports full duplex
+
+Used specifications:
+1. Datasheet DS39662E Revision E (November 2012)
+2. Errata DS80349C Rev C Document (07/2010)
+
+Errata issues:
+
+Issue 1. Module: MAC Interface
+irrelevant - does not affect B7
+
+Issue 2. Module: Reset
+relevant - see comment 1
+
+Issue 3. Module: Core (Operating Specifications)
+irrelevant - does not affect B7
+
+Issue 4. Module: Oscillator (CLKOUT Pin)
+irrelevant - CLKOUT feature not used
+
+Issue 5. Module: Memory (Ethernet Buffer)
+relevant - see comment 2
+
+Issue 6. Module: Interrupts
+relevant - see comment 3
+
+Issue 7. Module: PHY
+relevant - check hardware
+
+Issue 8. Module: PHY
+relevant - check hardware
+
+Issue 9. Module: PHY
+irrelevant - loopback feature not used
+
+Issue 10. Module: PHY
+irrelevant - loopback feature not used
+
+Issue 11. Module: PHY LEDs
+relevant - see comment 4
+
+Issue 12. Module: Transmit Logic
+relevant - see comment 5
+
+Issue 13. Module: PHY
+irrelevant - Half-Duplex feature not used
+
+Issue 14. Module: Memory (Ethernet Buffer)
+relevant - see comment 6
+
+Issue 15. Module: Transmit Logic
+irrelevant - Half-Duplex feature not used
+
+Issue 16. Module: PHY LEDs
+relevant - check hardware; force PHCON1.PDPXMD state
+
+Issue 17. Module: DMA
+irrelevant - DMA feature not used
+
+Issue 18. Module: Receive Filter
+irrelevant - Pattern Match feature not used
+
+Issue 19. Module: SPI Interface
+relevant - see comment 1
+
+Comment 1.
+Special reset procedure should be used (consider using separate pin for hardware reset)
+
+Comment 2.
+Locate RX buffer at zero offset
+
+Comment 3.
+Don't rely on EIR.PKTIF value. Use EPKTCNT to detect if there are packets received
+
+Comment 4.
+Don't use that specific LED configuration
+
+Comment 5.
+Special packet send procedure should be used
+
+Comment 6.
+Special procedure should be used to set/update ERXRDPT
+*/
+
 namespace Enc28j60
 {
   namespace
@@ -227,6 +314,7 @@ namespace Enc28j60
       static constexpr uint16_t c_RxBufferEnd     = 0x19ff;
       static constexpr uint16_t c_TxBufferStart   = 0x1a00;
       static constexpr uint16_t c_TxBufferEnd     = 0x1fff;
+      static_assert(c_RxBufferStart == 0);                    //See comment 2
 
     protected:
       uint8_t opRCRE(const uint8_t num)
@@ -260,7 +348,7 @@ namespace Enc28j60
         return buf[2];
       }
 
-      void opRBM(uint8_t* data, const size_t data_len)
+      void opRBM(uint8_t* const data, const size_t data_len)
       {
         if (m_failureFlags)
           return;
@@ -289,7 +377,7 @@ namespace Enc28j60
         }
       }
 
-      void opWBM(const uint8_t* data, const size_t data_len)
+      void opWBM(const uint8_t* const data, const size_t data_len)
       {
         if (m_failureFlags)
           return;
@@ -399,8 +487,11 @@ namespace Enc28j60
         opWCR(Reg::num(addr), val);
       }
 
-      void regWrite16(const Reg::Addr addr, const uint16_t val)
+      void regWrite16(const Reg::Addr addr, uint16_t val)
       {
+        if (addr == Reg::Addr::ERXRDPT16)
+          val = int(val) - 1 >= c_RxBufferStart ? val - 1 : c_RxBufferEnd;  //See comment 6
+
         setBank(addr);
         opWCR(Reg::num(addr), val & 0xff);
         opWCR(Reg::num(addr) + 1, val >> 8);
@@ -418,12 +509,12 @@ namespace Enc28j60
         opBFC(Reg::num(addr), val);
       }
 
-      void memRead(uint8_t* data, const size_t data_len)
+      void memRead(uint8_t* const data, const size_t data_len)
       {
         opRBM(data, data_len);
       }
 
-      void memWrite(const uint8_t* data, const size_t data_len)
+      void memWrite(const uint8_t* const data, const size_t data_len)
       {
         opWBM(data, data_len);
       }
@@ -762,7 +853,7 @@ namespace Enc28j60
 
       void checkRx(uint8_t eir)
       {
-        while (regRead(Reg::Addr::EPKTCNT))
+        while (regRead(Reg::Addr::EPKTCNT))               //See comment 3
         {
           regSet(Reg::Addr::ECON2, Reg::c_ECON2_PKTDEC);
           regWrite16(Reg::Addr::ERDPT16, m_nextPacket);
@@ -786,7 +877,7 @@ namespace Enc28j60
               m_env->input(std::move(packet));
             }
           }
-          regWrite16(Reg::Addr::ERXRDPT16, nextPacket ? nextPacket - 1 : c_RxBufferEnd);
+          regWrite16(Reg::Addr::ERXRDPT16, nextPacket);
           m_nextPacket = nextPacket;
         }
         if (eir & Reg::c_EIR_RXERIF)
@@ -841,7 +932,7 @@ namespace Enc28j60
       void check(bool txOnly = false)
       {
         uint8_t eir = regRead(Reg::Addr::EIR);
-        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | (txOnly ? 0 : Reg::c_EIR_RXERIF));
+        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | (txOnly ? 0 : (Reg::c_EIR_PKTIF | Reg::c_EIR_RXERIF)));
         if (eirClear)
         {
           regClr(Reg::Addr::EIR, eirClear);
@@ -867,7 +958,7 @@ namespace Enc28j60
           return false;
 
         m_txInProgress = true;
-        const uint16_t offset = 0x1a00;
+        const uint16_t offset = c_TxBufferStart;
         regWrite16(Reg::Addr::EWRPT16, offset);
         const uint8_t control = 0;
         memWrite(&control, sizeof(control));
@@ -876,7 +967,7 @@ namespace Enc28j60
         while(packet->next(data, size))
           memWrite(data, size);
 
-        regSet(Reg::Addr::ECON1, Reg::c_ECON1_TXRST);
+        regSet(Reg::Addr::ECON1, Reg::c_ECON1_TXRST);                 //See comment 5
         regClr(Reg::Addr::ECON1, Reg::c_ECON1_TXRST);
         regWrite16(Reg::Addr::ETXST16, offset);
         regWrite16(Reg::Addr::ETXND16, offset + packet->size() - 1);
@@ -890,7 +981,7 @@ namespace Enc28j60
         {
           switch (m_phase)
           {
-          case 0:
+          case 0:                             //See comment 1
             if (m_reportedUplink)
             {
               m_reportedUplink = false;
@@ -928,12 +1019,12 @@ namespace Enc28j60
             regWrite(Reg::Addr::MAIPG16, 0x12);
             regWrite16(Reg::Addr::MAMXFL16, c_MaxFrameLength);
             phyWrite(Reg::PhyAddr::PHCON1, Reg::c_PHCON1_PDPXMD);
-            phyWrite(Reg::PhyAddr::PHLCON, 0x3c16);         //LEDA = link status and receive activity, LEDB = transmit activity
+            phyWrite(Reg::PhyAddr::PHLCON, 0x3c16);         //See comment 4: LEDA = link status and receive activity, LEDB = transmit activity
             phyWrite(Reg::PhyAddr::PHIE, Reg::c_PHIE_PLNKIE | Reg::c_PHIE_PGEIE);
             //fixme: setup MAC address
-            regWrite16(Reg::Addr::ERXST16, 0);
+            regWrite16(Reg::Addr::ERXST16, c_RxBufferStart);
             regWrite16(Reg::Addr::ERXND16, c_RxBufferEnd);
-            regWrite16(Reg::Addr::ERXRDPT16, c_RxBufferEnd);
+            regWrite16(Reg::Addr::ERXRDPT16, c_RxBufferStart);
             regSet(Reg::Addr::ECON1, Reg::c_ECON1_RXEN);
             m_txEnabled = true;
             m_txInProgress = false;
