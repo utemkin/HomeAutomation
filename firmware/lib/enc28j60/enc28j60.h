@@ -33,6 +33,11 @@ extern int enc28j60_packet_read_finish(
 
 namespace Enc28j60
 {
+  struct MacAddress
+  {
+    int8_t addr[6];
+  };
+
   class Pbuf : mstd::noncopyable
   {
   public:
@@ -81,5 +86,5 @@ namespace Enc28j60
     virtual void test() = 0;
   };
 
-  std::unique_ptr<Device> CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi);
+  std::unique_ptr<Device> CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi, const MacAddress& mac);
 }

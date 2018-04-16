@@ -184,16 +184,24 @@ namespace Enc28j60
       //tcp thread or core lock
       err_t init()
       {
-        m_device = CreateDevice(std::move(m_env), std::move(m_spi));
+        MacAddress mac;
+        const uint32_t unique = RT::getUnique();
+        mac.addr[0] = 2;
+        mac.addr[1] = 'O';
+        mac.addr[2] = 'C';
+        mac.addr[3] = uint8_t(unique >> 16);
+        mac.addr[4] = uint8_t(unique >> 8);
+        mac.addr[5] = uint8_t(unique);
+        m_device = CreateDevice(std::move(m_env), std::move(m_spi), mac);
         //fixme: return !ERR_OK on error
     
         m_netif.hwaddr_len = ETH_HWADDR_LEN;
-    //    m_netif.hwaddr[0] = ?;
-    //    m_netif.hwaddr[1] = ?;
-    //    m_netif.hwaddr[2] = ?;
-    //    m_netif.hwaddr[3] = ?;
-    //    m_netif.hwaddr[4] = ?;
-    //    m_netif.hwaddr[5] = ?;
+        m_netif.hwaddr[0] = mac.addr[0];
+        m_netif.hwaddr[1] = mac.addr[1];
+        m_netif.hwaddr[2] = mac.addr[2];
+        m_netif.hwaddr[3] = mac.addr[3];
+        m_netif.hwaddr[4] = mac.addr[4];
+        m_netif.hwaddr[5] = mac.addr[5];
         m_netif.mtu = 1500;
         m_netif.flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
         m_netif.name[0] = 'e';

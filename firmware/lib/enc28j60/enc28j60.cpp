@@ -281,15 +281,17 @@ namespace Enc28j60
     class DeviceImpl : public Device
     {
     public:
-      DeviceImpl(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi)
+      DeviceImpl(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi, const MacAddress& mac)
         : m_env(std::move(env))
         , m_spi(std::move(spi))
+        , m_mac(mac)
       {
       }
 
     protected:
       const std::unique_ptr<Env> m_env;
       const std::unique_ptr<Spi> m_spi;
+      const MacAddress m_mac;
       uint8_t m_failureFlags = 0;
       uint8_t m_bank;
       uint16_t m_nextPacket;
@@ -1021,7 +1023,12 @@ namespace Enc28j60
             phyWrite(Reg::PhyAddr::PHCON1, Reg::c_PHCON1_PDPXMD);
             phyWrite(Reg::PhyAddr::PHLCON, 0x3c16);         //See comment 4: LEDA = link status and receive activity, LEDB = transmit activity
             phyWrite(Reg::PhyAddr::PHIE, Reg::c_PHIE_PLNKIE | Reg::c_PHIE_PGEIE);
-            //fixme: setup MAC address
+            regWrite(Reg::Addr::MAADR1, m_mac.addr[0]);
+            regWrite(Reg::Addr::MAADR2, m_mac.addr[1]);
+            regWrite(Reg::Addr::MAADR3, m_mac.addr[2]);
+            regWrite(Reg::Addr::MAADR4, m_mac.addr[3]);
+            regWrite(Reg::Addr::MAADR5, m_mac.addr[4]);
+            regWrite(Reg::Addr::MAADR6, m_mac.addr[5]);
             regWrite16(Reg::Addr::ERXST16, c_RxBufferStart);
             regWrite16(Reg::Addr::ERXND16, c_RxBufferEnd);
             regWrite16(Reg::Addr::ERXRDPT16, c_RxBufferStart);
@@ -1061,7 +1068,7 @@ namespace Enc28j60
   }
 }
 
-auto Enc28j60::CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi) -> std::unique_ptr<Device>
+auto Enc28j60::CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi, const MacAddress& mac) -> std::unique_ptr<Device>
 {
-  return std::make_unique<DeviceImpl>(std::move(env), std::move(spi));
+  return std::make_unique<DeviceImpl>(std::move(env), std::move(spi), mac);
 }
