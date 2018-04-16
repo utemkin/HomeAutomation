@@ -27,6 +27,7 @@ namespace mstd
 namespace RT
 {
   void stall(const unsigned cycles);
+  uint32_t getUnique();
 }
 
 namespace OS
@@ -231,6 +232,12 @@ namespace Tools
     uint32_t get() const
     {
       return ~m_crc;
+    }
+    static uint32_t calculate(const uint8_t* data, size_t size)
+    {
+      CRC32 crc;
+      crc.update(data, size);
+      return crc.get();
     }
   protected:
     uint32_t m_crc = -1;

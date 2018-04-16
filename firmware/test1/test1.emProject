@@ -47,6 +47,7 @@
       <file file_name="../lib/common/handlers.cpp" />
       <file file_name="../lib/common/utils.cpp" />
       <file file_name="../lib/common/freertos_syscalls.cpp" />
+      <file file_name="../lib/common/utils_stm32.cpp" />
     </folder>
     <folder Name="cubemx">
       <file file_name="Src/freertos.c" />
