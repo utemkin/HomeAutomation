@@ -499,6 +499,7 @@ Benchmarking phy_write...
 #endif
 
 #include <enc28j60/enc28j60spistm32.h>
+#include <common/handlers.h>
 #include <limits>
 
 namespace Enc28j60
@@ -513,22 +514,48 @@ namespace Enc28j60
         , m_csBsrr(&csGPIO->BSRR)
         , m_csSelect(csInvert ? csPin << 16 : csPin)
         , m_csDeselect(csInvert ? csPin : csPin << 16)
+        , m_handlerDmaTx(this)
+        , m_handlerDmaRx(this)
       {
   #if defined(STM32F1)
         if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_CLK_ENABLE();
           __HAL_RCC_DMA1_CLK_ENABLE();
-          m_dmatx = DMA1_Channel3;
-          m_dmarx = DMA1_Channel2;
+
+          m_dma = DMA1;
+
+          m_dmaTx = DMA1_Channel3;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (3 - 1);
+          m_handlerDmaTx.install(DMA1_Channel3_IRQn);
+          HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+
+          m_dmaRx = DMA1_Channel2;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1);
+          m_handlerDmaRx.install(DMA1_Channel2_IRQn);
+          HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
         }
   #ifdef SPI2
         else if (m_spi == SPI2)
         {
           __HAL_RCC_SPI2_CLK_ENABLE();
           __HAL_RCC_DMA1_CLK_ENABLE();
-          m_dmatx = DMA1_Channel5;
-          m_dmarx = DMA1_Channel4;
+
+          m_dma = DMA1;
+
+          m_dmaTx = DMA1_Channel5;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (5 - 1);
+          m_handlerDmaTx.install(DMA1_Channel5_IRQn);
+          HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+
+          m_dmaRx = DMA1_Channel4;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (4 - 1);
+          m_handlerDmaRx.install(DMA1_Channel4_IRQn);
+          HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
         }
   #endif
   #ifdef SPI3
@@ -536,8 +563,20 @@ namespace Enc28j60
         {
           __HAL_RCC_SPI3_CLK_ENABLE();
           __HAL_RCC_DMA2_CLK_ENABLE();
-          m_dmatx = DMA2_Channel2;
-          m_dmarx = DMA2_Channel1;
+
+          m_dma = DMA2;
+
+          m_dmaTx = DMA2_Channel2;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1);
+          m_handlerDmaTx.install(DMA2_Channel2_IRQn);
+          HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
+
+          m_dmaRx = DMA2_Channel1;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (1 - 1);
+          m_handlerDmaRx.install(DMA2_Channel1_IRQn);
+          HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 5, 0);
+          HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
         }
   #endif
   #else
@@ -589,15 +628,13 @@ namespace Enc28j60
 
         uint32_t br;
         for (br = 0; br < 8; pclk >>= 1, ++br)
-          if (pclk <= (20000000 << 1))
+          if (pclk <= (c_maxSpiRate << 1))
             break;
 
-        if (pclk > (20000000 << 1))
+        if (pclk > (c_maxSpiRate << 1))
           return 1;   //fixme
 
-        m_dmatx->CPAR = m_dmarx->CPAR = uint32_t(&m_spi->DR);
-  //      m_dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC; // | DMA_CCR_EN;
-  //      m_dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR; // | DMA_CCR_EN;
+        m_dmaTx->CPAR = m_dmaRx->CPAR = uint32_t(&m_spi->DR);
 
         m_spi->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
         m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
@@ -612,13 +649,13 @@ namespace Enc28j60
         __DMB();
         RT::stall(20);
 
-        DMA_Channel_TypeDef* const dmarx = m_dmarx;
+        DMA_Channel_TypeDef* const dmarx = m_dmaRx;
         dmarx->CMAR = uint32_t(txrx);
         dmarx->CNDTR = txrx_len;
         dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txrx;
-        DMA_Channel_TypeDef* const dmatx = m_dmatx;
+        DMA_Channel_TypeDef* const dmatx = m_dmaTx;
         dmatx->CMAR = uint32_t(txrx+1);
         dmatx->CNDTR = txrx_len-1;
         dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
@@ -632,13 +669,13 @@ namespace Enc28j60
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
   /*
-        DMA_Channel_TypeDef* const hdmarx = m_dmarx;
+        DMA_Channel_TypeDef* const hdmarx = m_dmaRx;
         hdmarx->CMAR = uint32_t(txrx);
         hdmarx->CNDTR = txrx_len;
         hdmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txrx;
-        DMA_Channel_TypeDef* const hdmatx = m_dmatx;
+        DMA_Channel_TypeDef* const hdmatx = m_dmaTx;
         hdmatx->CMAR = uint32_t(txrx+1);
         hdmatx->CNDTR = txrx_len-1;
         hdmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
@@ -655,14 +692,14 @@ namespace Enc28j60
                  ... cycle = 2417 ns = 174 CLKs
   */
   /*
-        DMA_Channel_TypeDef* const hdmarx = m_dmarx;
+        DMA_Channel_TypeDef* const hdmarx = m_dmaRx;
         hdmarx->CMAR = uint32_t(txrx);
         hdmarx->CNDTR = txrx_len;
         uint32_t rx_ccr = hdmarx->CCR;
         hdmarx->CCR = rx_ccr | DMA_CCR_EN;
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txrx;
-        DMA_Channel_TypeDef* const hdmatx = m_dmatx;
+        DMA_Channel_TypeDef* const hdmatx = m_dmaTx;
         hdmatx->CMAR = uint32_t(txrx+1);
         hdmatx->CNDTR = txrx_len-1;
         uint32_t tx_ccr = hdmatx->CCR;
@@ -691,7 +728,7 @@ namespace Enc28j60
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *tx;
-        DMA_Channel_TypeDef* const dmatx = m_dmatx;
+        DMA_Channel_TypeDef* const dmatx = m_dmaTx;
         dmatx->CMAR = uint32_t(tx+1);
         dmatx->CNDTR = tx_len-1;
         dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
@@ -699,8 +736,17 @@ namespace Enc28j60
         dmatx->CCR = 0;
         dmatx->CMAR = uint32_t(tx2);
         dmatx->CNDTR = tx2_len;
-        dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmatx->CNDTR != 0);
+        if (tx2_len > 100)  //fixme
+        {
+          dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+          m_handlerDmaTx.wait();
+        }
+        else
+        {
+          dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+          while (dmatx->CNDTR != 0);
+        }
+
         dmatx->CCR = 0;
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
@@ -720,24 +766,40 @@ namespace Enc28j60
 
         SPI_TypeDef* spi = m_spi;
         spi->DR = *tx;
-        DMA_Channel_TypeDef* dmatx = m_dmatx;
+        DMA_Channel_TypeDef* dmatx = m_dmaTx;
         dmatx->CMAR = uint32_t(tx+1);
         dmatx->CNDTR = tx_len-1;
         dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
         while (dmatx->CNDTR != 0);
         dmatx->CCR = 0;
-        DMA_Channel_TypeDef* dmarx = m_dmarx;
+        DMA_Channel_TypeDef* dmarx = m_dmaRx;
         dmarx->CMAR = uint32_t(rx);
         dmarx->CNDTR = rx_len;
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
-        dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+        if (rx_len > 100) //fixme
+        {
+          dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+        }
+        else
+        {
+          dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+        }
+        
         spi->DR = 0;
         dmatx->CMAR = uint32_t(rx);
         dmatx->CNDTR = rx_len-1;
         dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmarx->CNDTR != 0);
+        if (rx_len > 100) //fixme
+        {
+          m_handlerDmaRx.wait();
+        }
+        else
+        {
+          while (dmarx->CNDTR != 0);
+        }
+        
         dmarx->CCR = 0;
         dmatx->CCR = 0;
         while ((spi->SR & SPI_SR_BSY) != 0);
@@ -748,21 +810,53 @@ namespace Enc28j60
         return 0;
       }
 
+      bool handleDmaTx(IRQn_Type)
+      {
+        uint32_t clear = m_dma->ISR & m_dmaTxFlags;
+        if (clear)
+        {
+          m_dma->IFCR = clear;
+          m_handlerDmaTx.signal();
+          return true;
+        }
+
+        return false;
+      }      
+
+      bool handleDmaRx(IRQn_Type)
+      {
+        uint32_t clear = m_dma->ISR & m_dmaRxFlags;
+        if (clear)
+        {
+          m_dma->IFCR = clear;
+          m_handlerDmaRx.signal();
+          return true;
+        }
+
+        return false;
+      }      
+
     protected:
+      constexpr static uint32_t c_maxSpiRate = 20000000;
       SPI_TypeDef* const m_spi;
       __IO uint32_t* const m_csBsrr;
       const uint32_t m_csSelect;
       const uint32_t m_csDeselect;
-      DMA_Channel_TypeDef* m_dmatx;
-      DMA_Channel_TypeDef* m_dmarx;
+      DMA_TypeDef* m_dma;
+      DMA_Channel_TypeDef* m_dmaTx;
+      uint32_t m_dmaTxFlags;
+      DMA_Channel_TypeDef* m_dmaRx;
+      uint32_t m_dmaRxFlags;
+      Irq::DelegatedHandler<Irq::SignalingHandler, SpiImpl, &SpiImpl::handleDmaTx> m_handlerDmaTx;
+      Irq::DelegatedHandler<Irq::SignalingHandler, SpiImpl, &SpiImpl::handleDmaRx> m_handlerDmaRx;
 
     protected:
       void deinit()
       {
         *m_csBsrr = m_csDeselect;
         m_spi->CR1 = 0;
-        m_dmarx->CCR = 0;
-        m_dmatx->CCR = 0;
+        m_dmaRx->CCR = 0;
+        m_dmaTx->CCR = 0;
       }
     };
   }
