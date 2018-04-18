@@ -4,11 +4,29 @@
 #include <enc28j60/enc28j60lwip.h>
 #include "main.h"
 
+class SamplingThread : OS::Thread
+{
+public:
+  virtual void func() override
+  {
+    TaskHandle_t idleTask = xTaskGetIdleTaskHandle();
+    for (;;)
+    {
+      TaskStatus_t status;
+      vTaskGetInfo(idleTask, &status, pdFALSE, eRunning);
+      delay(100);
+    }
+  }
+};
+
 extern "C" void maintask()
 {
   uint32_t uid[3];
   HAL_GetUID(uid);
   printf("Device %08lx%08lx%08lx is running at %lu heap size=%u\n", uid[0], uid[1], uid[2], HAL_RCC_GetHCLKFreq(), xPortGetFreeHeapSize());
+
+  SamplingThread ss;
+
 
   Enc28j60::LwipNetif::initLwip();
   auto netif = Enc28j60::CreateLwipNetif(Enc28j60::CreateSpiStm32(SPI1, SPI1_CS_GPIO_Port, SPI1_CS_Pin, true));
@@ -16,5 +34,5 @@ extern "C" void maintask()
   netif->startDhcp();
 
   for(;;)
-    OS::ExpirationTimer::delay(1000);
+    OS::Thread::delay(1000);
 }

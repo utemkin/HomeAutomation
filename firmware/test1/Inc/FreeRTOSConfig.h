@@ -84,6 +84,7 @@
 
 /* USER CODE BEGIN Includes */   	      
 /* Section where include file can be added */
+#include <common/stm32.h>
 /* USER CODE END Includes */ 
 
 /* Ensure stdint is only used by the compiler, and not the assembler. */
@@ -168,6 +169,11 @@ standard names. */
 /* USER CODE BEGIN Defines */   	      
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
 #define configUSE_NEWLIB_REENTRANT 1
+#define configGENERATE_RUN_TIME_STATS 1
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
+#define portGET_RUN_TIME_COUNTER_VALUE() (DWT->CYCCNT)
+#define INCLUDE_xTaskGetIdleTaskHandle 1
+#define configUSE_TRACE_FACILITY 1
 /* USER CODE END Defines */ 
 
 #endif /* FREERTOS_CONFIG_H */

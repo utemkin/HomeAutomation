@@ -175,14 +175,30 @@ namespace OS
   class Thread : mstd::noncopyable
   {
   public:
+    Thread()
+    {
+      osThreadDef(thread, &func, osPriorityNormal, 1, 256);
+      m_thread = osThreadCreate(osThread(thread), this);
+    }
+    ~Thread()
+    {
+      osThreadTerminate(m_thread);
+    }
+    virtual void func() = 0;
+    static void func(const void* arg)
+    {
+    }
     static void yield()
     {
-      portYIELD();
+      osThreadYield();
     }
     static void delay(const TickType_t ticks)
     {
       vTaskDelay(ticks);
     }
+
+  protected:
+    osThreadId m_thread;
   };
 
   class ExpirationTimer
