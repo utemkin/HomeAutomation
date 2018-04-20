@@ -830,7 +830,7 @@ namespace Enc28j60
         phyWrite(Reg::PhyAddr::PHLCON, 0x1234);
       }
 
-      void benchmark_all()
+      void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
         benchmark("rxtx 1", &DeviceImpl::benchmarkRxtx, (void*)1, offset);
@@ -1061,8 +1061,8 @@ namespace Enc28j60
         OS::ExpirationTimer::delay(1);
         dumpRegs();
         dumpState();
-        validate();
-        benchmark_all();
+//        validate();
+        benchmarkAll();
       }
     };
   }

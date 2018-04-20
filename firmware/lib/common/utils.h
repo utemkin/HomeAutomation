@@ -184,10 +184,6 @@ namespace OS
     {
       osThreadTerminate(m_thread);
     }
-    virtual void func() = 0;
-    static void func(const void* arg)
-    {
-    }
     static void yield()
     {
       osThreadYield();
@@ -198,7 +194,16 @@ namespace OS
     }
 
   protected:
+    virtual void func() = 0;
+
+  protected:
     osThreadId m_thread;
+
+  protected:
+    static void func(const void* arg)
+    {
+      ((Thread*)arg)->func();
+    }
   };
 
   class ExpirationTimer

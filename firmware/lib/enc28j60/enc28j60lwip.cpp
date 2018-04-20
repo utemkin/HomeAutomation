@@ -194,6 +194,8 @@ namespace Enc28j60
         mac.addr[5] = uint8_t(unique);
         m_device = CreateDevice(std::move(m_env), std::move(m_spi), mac);
         //fixme: return !ERR_OK on error
+
+        m_device->test();
     
         m_netif.hwaddr_len = ETH_HWADDR_LEN;
         m_netif.hwaddr[0] = mac.addr[0];

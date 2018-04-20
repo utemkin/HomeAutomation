@@ -526,13 +526,13 @@ namespace Enc28j60
           m_dma = DMA1;
 
           m_dmaTx = DMA1_Channel3;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (3 - 1) * 4;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (3 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel3_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
           m_dmaRx = DMA1_Channel2;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1) * 4;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (2 - 1) * 4;
           m_handlerDmaRx.install(DMA1_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
@@ -546,13 +546,13 @@ namespace Enc28j60
           m_dma = DMA1;
 
           m_dmaTx = DMA1_Channel5;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (5 - 1) * 4;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel5_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
           m_dmaRx = DMA1_Channel4;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (4 - 1) * 4;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (4 - 1) * 4;
           m_handlerDmaRx.install(DMA1_Channel4_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
@@ -567,13 +567,13 @@ namespace Enc28j60
           m_dma = DMA2;
 
           m_dmaTx = DMA2_Channel2;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1) * 4;
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (2 - 1) * 4;
           m_handlerDmaTx.install(DMA2_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
 
           m_dmaRx = DMA2_Channel1;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (1 - 1) * 4;
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (1 - 1) * 4;
           m_handlerDmaRx.install(DMA2_Channel1_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
@@ -736,8 +736,9 @@ namespace Enc28j60
         dmatx->CCR = 0;
         dmatx->CMAR = uint32_t(tx2);
         dmatx->CNDTR = tx2_len;
-        if (tx2_len > 100)  //fixme
+        if (tx2_len > c_maxBusyLoop)
         {
+          m_dma->IFCR = m_dmaTxFlags;
           dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
           m_handlerDmaTx.wait();
         }
@@ -778,8 +779,9 @@ namespace Enc28j60
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
-        if (rx_len > 100) //fixme
+        if (rx_len > c_maxBusyLoop)
         {
+          m_dma->IFCR = m_dmaRxFlags;
           dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         }
         else
@@ -791,7 +793,7 @@ namespace Enc28j60
         dmatx->CMAR = uint32_t(rx);
         dmatx->CNDTR = rx_len-1;
         dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        if (rx_len > 100) //fixme
+        if (rx_len > c_maxBusyLoop)
         {
           m_handlerDmaRx.wait();
         }
@@ -838,6 +840,7 @@ namespace Enc28j60
 
     protected:
       constexpr static uint32_t c_maxSpiRate = 20000000;
+      constexpr static uint32_t c_maxBusyLoop = 50;
       SPI_TypeDef* const m_spi;
       __IO uint32_t* const m_csBsrr;
       const uint32_t m_csSelect;
