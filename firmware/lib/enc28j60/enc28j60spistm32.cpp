@@ -526,13 +526,13 @@ namespace Enc28j60
           m_dma = DMA1;
 
           m_dmaTx = DMA1_Channel3;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (3 - 1);
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (3 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel3_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
           m_dmaRx = DMA1_Channel2;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1);
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1) * 4;
           m_handlerDmaRx.install(DMA1_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
@@ -546,13 +546,13 @@ namespace Enc28j60
           m_dma = DMA1;
 
           m_dmaTx = DMA1_Channel5;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (5 - 1);
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (5 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel5_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
           m_dmaRx = DMA1_Channel4;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (4 - 1);
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (4 - 1) * 4;
           m_handlerDmaRx.install(DMA1_Channel4_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
@@ -567,13 +567,13 @@ namespace Enc28j60
           m_dma = DMA2;
 
           m_dmaTx = DMA2_Channel2;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1);
+          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (2 - 1) * 4;
           m_handlerDmaTx.install(DMA2_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
 
           m_dmaRx = DMA2_Channel1;
-          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (1 - 1);
+          m_dmaRxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1 | DMA_ISR_GIF1) << (1 - 1) * 4;
           m_handlerDmaRx.install(DMA2_Channel1_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
