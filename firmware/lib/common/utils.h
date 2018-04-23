@@ -203,6 +203,7 @@ namespace OS
     static void func(const void* arg)
     {
       ((Thread*)arg)->func();
+      Error_Handler();          //fixme
     }
   };
 
@@ -262,5 +263,36 @@ namespace Tools
     }
   protected:
     uint32_t m_crc = -1;
+  };
+
+  class IdleMeasure
+  {
+  public:
+    IdleMeasure()
+    {
+      sample(m_previous);
+    }
+    void update();
+    void get(int& percent, int& hundreds);
+
+  protected:
+    const TaskHandle_t m_idleTask = xTaskGetIdleTaskHandle();
+    struct Sample
+    {
+      uint32_t value;
+      uint32_t total;
+    };
+    Sample m_previous;
+    uint64_t m_value = 0;
+    uint64_t m_total = 0;
+
+  protected:
+    void sample(Sample& s)
+    {
+      TaskStatus_t status;
+      vTaskGetInfo(m_idleTask, &status, pdFALSE, eRunning);
+      s.value = status.ulRunTimeCounter;
+      s.total = portGET_RUN_TIME_COUNTER_VALUE();
+    }
   };
 }

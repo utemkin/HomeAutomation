@@ -783,18 +783,22 @@ namespace Enc28j60
         start = xTaskGetTickCount();
         TickType_t finish = start + 1000 / portTICK_PERIOD_MS;
         unsigned count = 0;
+        Tools::IdleMeasure im;
         while (xTaskGetTickCount() < finish)
         {
           (this->*test_fn)(ctx);
           ++count;
         }
+        int percent;
+        int hundreds;
+        im.get(percent, hundreds);
         finish = xTaskGetTickCount();
         unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
         unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
         unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
         unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
         unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
-        printf("               ... cycle = %u ns = %u CLKs\n", cycle_ns, cycle_clk);
+        printf("               ... cycle = %u ns = %u CLKs CPU IDLE=%02u.%02u%%\n", cycle_ns, cycle_clk, percent, hundreds);
         return cycle_ns;
       }
 
@@ -839,9 +843,13 @@ namespace Enc28j60
         benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
         benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
         benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
+        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);
+        benchmark("memRead 50", &DeviceImpl::benchmarkMemRead, (void*)50, offset);
         benchmark("memWrite 1000", &DeviceImpl::benchmarkMemWrite, (void*)1000, offset);
         benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
         benchmark("memWrite 10", &DeviceImpl::benchmarkMemWrite, (void*)10, offset);
+        benchmark("memWrite 51", &DeviceImpl::benchmarkMemWrite, (void*)51, offset);
+        benchmark("memWrite 50", &DeviceImpl::benchmarkMemWrite, (void*)50, offset);
         benchmark("phyRead", &DeviceImpl::benchmarkPhyRead, 0, offset);
         benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
       }
