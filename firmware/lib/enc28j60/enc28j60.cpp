@@ -836,6 +836,10 @@ namespace Enc28j60
         benchmark("rxtx 1", &DeviceImpl::benchmarkRxtx, (void*)1, offset);
         benchmark("rxtx 2", &DeviceImpl::benchmarkRxtx, (void*)2, offset);
         benchmark("rxtx 3", &DeviceImpl::benchmarkRxtx, (void*)3, offset);
+        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
+        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);
+        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
+        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
         benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
         benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
         benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
