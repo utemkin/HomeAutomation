@@ -72,9 +72,9 @@ namespace Enc28j60
   public:
     virtual ~Spi() = default;
     virtual int reinit() = 0;
-    virtual int txrx(uint8_t* txrx, size_t txrx_len) = 0;
-    virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) = 0;
-    virtual int txThenRx(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len) = 0;
+    virtual int txrx(uint8_t* txrx, size_t txrxLen) = 0;
+    virtual int txThenTx(uint8_t txByte, const uint8_t* tx, size_t txLen) = 0;
+    virtual int txThenRx(uint8_t txByte, uint8_t* rx, size_t rxLen) = 0;
   };
 
   class Device : mstd::noncopyable

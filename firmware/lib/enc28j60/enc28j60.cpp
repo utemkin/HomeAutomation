@@ -355,9 +355,7 @@ namespace Enc28j60
         if (m_failureFlags)
           return;
 
-        uint8_t buf[1];
-        buf[0] = c_RBM;
-        if (m_spi->txThenRx(buf, sizeof(buf), data, data_len) != 0)
+        if (m_spi->txThenRx(c_RBM, data, data_len) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -384,9 +382,7 @@ namespace Enc28j60
         if (m_failureFlags)
           return;
 
-        uint8_t buf[1];
-        buf[0] = c_WBM;
-        if (m_spi->txThenTx(buf, sizeof(buf), data, data_len) != 0)
+        if (m_spi->txThenTx(c_WBM, data, data_len) != 0)
         {
           m_failureFlags |= 1;
           return;

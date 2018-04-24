@@ -590,6 +590,18 @@ namespace Enc28j60
         //fixme
         reinit();
       }
+
+      void validateState()
+      {
+        if ((m_dmaTx->CCR & DMA_CCR_EN) != 0)
+          Error_Handler();
+
+        if ((m_dmaRx->CCR & DMA_CCR_EN) != 0)
+          Error_Handler();
+
+        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
+          Error_Handler();
+      }
   
       // should be called either at the end of constructor or after deinit()
       virtual int reinit() override
@@ -639,35 +651,41 @@ namespace Enc28j60
         m_spi->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
         m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
 
+        validateState();
+
         return 0;
       }
-  
-      virtual int txrx(uint8_t* txrx, size_t txrx_len) override
+
+      virtual int txrx(uint8_t* txrx, size_t txrxLen) override
       {
+        validateState();
+
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
 
-        DMA_Channel_TypeDef* const dmarx = m_dmaRx;
-        dmarx->CMAR = uint32_t(txrx);
-        dmarx->CNDTR = txrx_len;
-        dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txrx;
-        DMA_Channel_TypeDef* const dmatx = m_dmaTx;
-        dmatx->CMAR = uint32_t(txrx+1);
-        dmatx->CNDTR = txrx_len-1;
-        dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmarx->CNDTR != 0);
-        dmarx->CCR = 0;
-        dmatx->CCR = 0;
+        DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
+        dmaRx->CMAR = uint32_t(txrx);
+        dmaRx->CNDTR = txrxLen;
+        dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
+        dmaTx->CMAR = uint32_t(txrx+1);
+        dmaTx->CNDTR = txrxLen-1;
+        dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+        while (dmaRx->CNDTR != 0);
+        dmaRx->CCR = 0;
+        dmaTx->CCR = 0;
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
+
+        validateState();
   /*
         DMA_Channel_TypeDef* const hdmarx = m_dmaRx;
         hdmarx->CMAR = uint32_t(txrx);
@@ -720,35 +738,31 @@ namespace Enc28j60
         return 0;
       }
 
-      virtual int txThenTx(const uint8_t* tx, size_t tx_len, const uint8_t* tx2, size_t tx2_len) override
+      virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
+        validateState();
+
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         RT::stall(20);
 
         SPI_TypeDef* const spi = m_spi;
-        spi->DR = *tx;
-        DMA_Channel_TypeDef* const dmatx = m_dmaTx;
-        dmatx->CMAR = uint32_t(tx+1);
-        dmatx->CNDTR = tx_len-1;
-        dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmatx->CNDTR != 0);
-        dmatx->CCR = 0;
-        dmatx->CMAR = uint32_t(tx2);
-        dmatx->CNDTR = tx2_len;
-        if (tx2_len > c_maxBusyLoop)
+        spi->DR = txByte;
+        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
+        dmaTx->CMAR = uint32_t(tx);
+        dmaTx->CNDTR = txLen;
+        if (txLen > c_maxBusyLoop)
         {
           m_dma->IFCR = m_dmaTxFlags;
-          dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
           m_handlerDmaTx.wait();
         }
         else
         {
-          dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-          while (dmatx->CNDTR != 0);
+          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+          while (dmaTx->CNDTR != 0);
         }
-
-        dmatx->CCR = 0;
+        dmaTx->CCR = 0;
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -756,59 +770,59 @@ namespace Enc28j60
         //fixme: delay according to spec
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
+
+        validateState();
+
         return 0;
       }
   
-      virtual int txThenRx(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len) override
+      virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
+        validateState();
+
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         RT::stall(20);
 
-        SPI_TypeDef* spi = m_spi;
-        spi->DR = *tx;
-        DMA_Channel_TypeDef* dmatx = m_dmaTx;
-        dmatx->CMAR = uint32_t(tx+1);
-        dmatx->CNDTR = tx_len-1;
-        dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmatx->CNDTR != 0);
-        dmatx->CCR = 0;
-        DMA_Channel_TypeDef* dmarx = m_dmaRx;
-        dmarx->CMAR = uint32_t(rx);
-        dmarx->CNDTR = rx_len;
-        while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
+        SPI_TypeDef* const spi = m_spi;
+        spi->DR = txByte;
+        DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
+        dmaRx->CMAR = uint32_t(rx);
+        dmaRx->CNDTR = rxLen;
+        while ((spi->SR & (SPI_SR_RXNE)) == 0);
         spi->DR;
-        spi->SR;
-        if (rx_len > c_maxBusyLoop)
+        if (rxLen > c_maxBusyLoop)
         {
           m_dma->IFCR = m_dmaRxFlags;
-          dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         }
         else
         {
-          dmarx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
         }
-        
         spi->DR = 0;
-        dmatx->CMAR = uint32_t(rx);
-        dmatx->CNDTR = rx_len-1;
-        dmatx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        if (rx_len > c_maxBusyLoop)
+        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
+        dmaTx->CMAR = uint32_t(rx);
+        dmaTx->CNDTR = rxLen-1;
+        dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+        if (rxLen > c_maxBusyLoop)
         {
           m_handlerDmaRx.wait();
         }
         else
         {
-          while (dmarx->CNDTR != 0);
+          while (dmaRx->CNDTR != 0);
         }
-        
-        dmarx->CCR = 0;
-        dmatx->CCR = 0;
+        dmaRx->CCR = 0;
+        dmaTx->CCR = 0;
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         //fixme: delay according to spec
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
+
+        validateState();
+
         return 0;
       }
 
@@ -818,7 +832,7 @@ namespace Enc28j60
         if (clear)
         {
           m_dma->IFCR = clear;
-          m_handlerDmaTx.signal();
+          m_handlerDmaTx.signal();    //distinguish success and error
           return true;
         }
 
@@ -831,7 +845,7 @@ namespace Enc28j60
         if (clear)
         {
           m_dma->IFCR = clear;
-          m_handlerDmaRx.signal();
+          m_handlerDmaRx.signal();    //distinguish success and error
           return true;
         }
 
