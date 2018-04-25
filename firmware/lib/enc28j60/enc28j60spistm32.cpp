@@ -789,28 +789,23 @@ namespace Enc28j60
         DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
         dmaRx->CMAR = uint32_t(rx);
         dmaRx->CNDTR = rxLen;
+        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
+        dmaTx->CMAR = uint32_t(rx);
+        dmaTx->CNDTR = rxLen-1;
         while ((spi->SR & (SPI_SR_RXNE)) == 0);
         spi->DR;
+        spi->DR = 0;
         if (rxLen > c_maxBusyLoop)
         {
           m_dma->IFCR = m_dmaRxFlags;
           dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-        }
-        else
-        {
-          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-        }
-        spi->DR = 0;
-        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
-        dmaTx->CMAR = uint32_t(rx);
-        dmaTx->CNDTR = rxLen-1;
-        dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        if (rxLen > c_maxBusyLoop)
-        {
+          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_EN;
           m_handlerDmaRx.wait();
         }
         else
         {
+          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_EN;
           while (dmaRx->CNDTR != 0);
         }
         dmaRx->CCR = 0;
