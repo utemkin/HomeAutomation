@@ -656,7 +656,7 @@ namespace Enc28j60
         return 0;
       }
 
-      virtual int txrx(uint8_t* txrx, size_t txrxLen) override
+      virtual int txRx(uint8_t* txrx, size_t txrxLen) override
       {
         validateState();
 

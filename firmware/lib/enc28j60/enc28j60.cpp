@@ -326,7 +326,7 @@ namespace Enc28j60
 
         uint8_t buf[2];
         buf[0] = c_RCR | num;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return 0;
@@ -342,7 +342,7 @@ namespace Enc28j60
 
         uint8_t buf[3];
         buf[0] = c_RCR | num;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return 0;
@@ -370,7 +370,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_WCR | num;
         buf[1] = val;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -397,7 +397,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFS | num;
         buf[1] = val;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -412,7 +412,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFC | num;
         buf[1] = val;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -426,7 +426,7 @@ namespace Enc28j60
 
         uint8_t buf[1];
         buf[0] = c_SRC;
-        if (m_spi->txrx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf)) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -771,7 +771,7 @@ namespace Enc28j60
         printf("test3 returned %i\n", test3());
       }
 
-      unsigned benchmark(const char* name, void(DeviceImpl::*test_fn)(void* ctx), void* ctx, unsigned offset)
+      unsigned benchmark(const char* name, void(DeviceImpl::* const test_fn)(void* ctx), void* ctx, unsigned offset)
       {
         printf("Benchmarking %s...\n", name);
         TickType_t start = xTaskGetTickCount();
@@ -802,10 +802,22 @@ namespace Enc28j60
       {
       }
 
-      void benchmarkRxtx(void* ctx)
+      void benchmarkTxRx(void* ctx)
       {
         static uint8_t buf[1000];
-        m_spi->txrx(buf, (size_t)ctx);
+        m_spi->txRx(buf, (size_t)ctx);
+      }
+
+      void benchmarkTxThenTx(void* ctx)
+      {
+        static uint8_t buf[1000];
+        m_spi->txThenTx(0, buf, (size_t)ctx);
+      }
+
+      void benchmarkTxThenRx(void* ctx)
+      {
+        static uint8_t buf[1000];
+        m_spi->txThenRx(0, buf, (size_t)ctx);
       }
 
       void benchmarkMemRead(void* ctx)
@@ -833,25 +845,29 @@ namespace Enc28j60
       void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
-        benchmark("rxtx 1", &DeviceImpl::benchmarkRxtx, (void*)1, offset);
-        benchmark("rxtx 2", &DeviceImpl::benchmarkRxtx, (void*)2, offset);
-        benchmark("rxtx 3", &DeviceImpl::benchmarkRxtx, (void*)3, offset);
-        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
-        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);
-        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
-        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
-        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
-        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
-        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
-        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);
-        benchmark("memRead 50", &DeviceImpl::benchmarkMemRead, (void*)50, offset);
-        benchmark("memWrite 1000", &DeviceImpl::benchmarkMemWrite, (void*)1000, offset);
-        benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
-        benchmark("memWrite 10", &DeviceImpl::benchmarkMemWrite, (void*)10, offset);
-        benchmark("memWrite 51", &DeviceImpl::benchmarkMemWrite, (void*)51, offset);
-        benchmark("memWrite 50", &DeviceImpl::benchmarkMemWrite, (void*)50, offset);
-        benchmark("phyRead", &DeviceImpl::benchmarkPhyRead, 0, offset);
-        benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
+        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
+        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
+        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
+        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
+        benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
+        benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
+        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
+//        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
+//        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);
+//        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
+//        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
+//        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
+//        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
+//        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
+//        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);
+//        benchmark("memRead 50", &DeviceImpl::benchmarkMemRead, (void*)50, offset);
+//        benchmark("memWrite 1000", &DeviceImpl::benchmarkMemWrite, (void*)1000, offset);
+//        benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
+//        benchmark("memWrite 10", &DeviceImpl::benchmarkMemWrite, (void*)10, offset);
+//        benchmark("memWrite 51", &DeviceImpl::benchmarkMemWrite, (void*)51, offset);
+//        benchmark("memWrite 50", &DeviceImpl::benchmarkMemWrite, (void*)50, offset);
+//        benchmark("phyRead", &DeviceImpl::benchmarkPhyRead, 0, offset);
+//        benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
       }
 
       void checkTx(uint8_t eir)

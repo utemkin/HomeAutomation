@@ -1,7 +1,7 @@
 #MicroXplorer Configuration settings - do not modify
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,configENABLE_BACKWARD_COMPATIBILITY,configUSE_PORT_OPTIMISED_TASK_SELECTION,FootprintOK,configUSE_COUNTING_SEMAPHORES
-FREERTOS.Tasks01=defaultTask,0,256,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.Tasks01=defaultTask,0,512,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
 FREERTOS.configENABLE_BACKWARD_COMPATIBILITY=0
 FREERTOS.configUSE_COUNTING_SEMAPHORES=0
 FREERTOS.configUSE_PORT_OPTIMISED_TASK_SELECTION=1
@@ -152,6 +152,7 @@ ProjectManager.BackupPrevious=true
 ProjectManager.CompilerOptimize=3
 ProjectManager.ComputerToolchain=false
 ProjectManager.CoupleFile=true
+ProjectManager.CustomerFirmwarePackage=
 ProjectManager.DefaultFWLocation=true
 ProjectManager.DeletePrevious=true
 ProjectManager.DeviceId=STM32F103VETx
