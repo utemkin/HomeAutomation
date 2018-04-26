@@ -209,12 +209,11 @@ namespace Enc28j60
         return 0;
       }
 
-      virtual int txRx(uint8_t* txrx, size_t txrxLen) override
+      virtual int txRx(uint8_t* txrx, size_t txrxLen, bool delay) override
       {
         *m_csBsrr = m_csSelect;
-        //fixme: delay according to spec
         __DMB();
-        RT::stall(20);
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
 
         validateState();
 
@@ -236,19 +235,22 @@ namespace Enc28j60
 
         validateState();
 
-        //fixme: delay according to spec
+        //fixme: according to spec there should be at least Tcsh = (210ns for MAC|MII regusters or 10ns for others) delay between falling edge of last SCK and rising edge of CS
+        if (delay)
+          RT::stall(20);
+
         __DMB();
-        RT::stall(20);
         *m_csBsrr = m_csDeselect;
+        //fixme: according to spec CS should be held high at least Tcsd = 50ns
+
         return 0;
       }
 
       virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
         *m_csBsrr = m_csSelect;
-        //fixme: delay according to spec
         __DMB();
-        RT::stall(20);
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
 
         validateState();
 
@@ -275,19 +277,20 @@ namespace Enc28j60
 
         validateState();
 
-        //fixme: delay according to spec
+        //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
+
         __DMB();
-        RT::stall(20);
         *m_csBsrr = m_csDeselect;
+        //fixme: according to spec CS should be held high at least Tcsd = 50ns
+
         return 0;
       }
   
       virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
         *m_csBsrr = m_csSelect;
-        //fixme: delay according to spec
         __DMB();
-        RT::stall(20);
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
 
         validateState();
 
@@ -322,10 +325,12 @@ namespace Enc28j60
 
         validateState();
 
-        //fixme: delay according to spec
+        //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
+
         __DMB();
-        RT::stall(20);
         *m_csBsrr = m_csDeselect;
+        //fixme: according to spec CS should be held high at least Tcsd = 50ns
+
         return 0;
       }
 

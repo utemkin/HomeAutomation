@@ -319,14 +319,14 @@ namespace Enc28j60
       static_assert(c_RxBufferStart == 0);                    //See comment 2
 
     protected:
-      uint8_t opRCRE(const uint8_t num)
+      __always_inline uint8_t opRCRE(const uint8_t num)
       {
         if (m_failureFlags)
           return 0;
 
         uint8_t buf[2];
         buf[0] = c_RCR | num;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
         {
           m_failureFlags |= 1;
           return 0;
@@ -335,14 +335,14 @@ namespace Enc28j60
         return buf[1];
       }
 
-      uint8_t opRCRM(const uint8_t num)
+      __always_inline uint8_t opRCRM(const uint8_t num)
       {
         if (m_failureFlags)
           return 0;
 
         uint8_t buf[3];
         buf[0] = c_RCR | num;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
         {
           m_failureFlags |= 1;
           return 0;
@@ -350,7 +350,7 @@ namespace Enc28j60
         return buf[2];
       }
 
-      void opRBM(uint8_t* const data, const size_t data_len)
+      __always_inline void opRBM(uint8_t* const data, const size_t data_len)
       {
         if (m_failureFlags)
           return;
@@ -362,7 +362,7 @@ namespace Enc28j60
         }
       }
 
-      void opWCR(const uint8_t num, const uint8_t val)
+      __always_inline void opWCR(const uint8_t num, const uint8_t val, bool delay)
       {
         if (m_failureFlags)
           return;
@@ -370,14 +370,14 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_WCR | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
         {
           m_failureFlags |= 1;
           return;
         }
       }
 
-      void opWBM(const uint8_t* const data, const size_t data_len)
+      __always_inline void opWBM(const uint8_t* const data, const size_t data_len)
       {
         if (m_failureFlags)
           return;
@@ -389,7 +389,7 @@ namespace Enc28j60
         }
       }
 
-      void opBFS(const uint8_t num, const uint8_t val)
+      __always_inline void opBFS(const uint8_t num, const uint8_t val, bool delay)
       {
         if (m_failureFlags)
           return;
@@ -397,14 +397,14 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFS | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
         {
           m_failureFlags |= 1;
           return;
         }
       }
 
-      void opBFC(const uint8_t num, const uint8_t val)
+      __always_inline void opBFC(const uint8_t num, const uint8_t val, bool delay)
       {
         if (m_failureFlags)
           return;
@@ -412,21 +412,21 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFC | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
         {
           m_failureFlags |= 1;
           return;
         }
       }
 
-      void opSRC()
+      __always_inline void opSRC()
       {
         if (m_failureFlags)
           return;
 
         uint8_t buf[1];
         buf[0] = c_SRC;
-        if (m_spi->txRx(buf, sizeof(buf)) != 0)
+        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
         {
           m_failureFlags |= 1;
           return;
@@ -434,7 +434,7 @@ namespace Enc28j60
       }
 
     protected:
-      void setBank(const Reg::Addr addr)
+      __noinline void setBank(const Reg::Addr addr)
       {
         if (Reg::anyBank(addr))
         {
@@ -452,16 +452,16 @@ namespace Enc28j60
         m_bank = bank;
         if (clr)
         {
-          opBFC(Reg::num(Reg::Addr::ECON1), clr);
+          opBFC(Reg::num(Reg::Addr::ECON1), clr, false);
         }
 
         if (set)
         {
-          opBFS(Reg::num(Reg::Addr::ECON1), set);
+          opBFS(Reg::num(Reg::Addr::ECON1), set, false);
         }
       }
 
-      uint8_t regRead(const Reg::Addr addr)
+      __noinline uint8_t regRead(const Reg::Addr addr)
       {
         setBank(addr);
         if (Reg::eth(addr))
@@ -470,7 +470,7 @@ namespace Enc28j60
           return opRCRM(Reg::num(addr));
       }
 
-      uint16_t regRead16(const Reg::Addr addr)
+      __noinline uint16_t regRead16(const Reg::Addr addr)
       {
         setBank(addr);
         if (Reg::eth(addr))
@@ -479,45 +479,45 @@ namespace Enc28j60
           return opRCRM(Reg::num(addr)) | (opRCRM(Reg::num(addr) + 1) << 8);
       }
 
-      void regWrite(const Reg::Addr addr, const uint8_t val)
+      __noinline void regWrite(const Reg::Addr addr, const uint8_t val)
       {
         setBank(addr);
-        opWCR(Reg::num(addr), val);
+        opWCR(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      void regWrite16(const Reg::Addr addr, uint16_t val)
+      __noinline void regWrite16(const Reg::Addr addr, uint16_t val)
       {
         if (addr == Reg::Addr::ERXRDPT16)
           val = int(val) - 1 >= c_RxBufferStart ? val - 1 : c_RxBufferEnd;  //See comment 6
 
         setBank(addr);
-        opWCR(Reg::num(addr), val & 0xff);
-        opWCR(Reg::num(addr) + 1, val >> 8);
+        opWCR(Reg::num(addr), val & 0xff, !Reg::eth(addr));
+        opWCR(Reg::num(addr) + 1, val >> 8, !Reg::eth(addr));
       }
 
-      void regSet(const Reg::Addr addr, const uint8_t val)
+      __noinline void regSet(const Reg::Addr addr, const uint8_t val)
       {
         setBank(addr);
-        opBFS(Reg::num(addr), val);
+        opBFS(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      void regClr(const Reg::Addr addr, const uint8_t val)
+      __noinline void regClr(const Reg::Addr addr, const uint8_t val)
       {
         setBank(addr);
-        opBFC(Reg::num(addr), val);
+        opBFC(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      void memRead(uint8_t* const data, const size_t data_len)
+      __noinline void memRead(uint8_t* const data, const size_t data_len)
       {
         opRBM(data, data_len);
       }
 
-      void memWrite(const uint8_t* const data, const size_t data_len)
+      __noinline void memWrite(const uint8_t* const data, const size_t data_len)
       {
         opWBM(data, data_len);
       }
 
-      uint16_t phyRead(const Reg::PhyAddr addr)
+      __noinline uint16_t phyRead(const Reg::PhyAddr addr)
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
@@ -529,7 +529,7 @@ namespace Enc28j60
         return regRead16(Reg::Addr::MIRD16);
       }
 
-      void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
+      __noinline void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite16(Reg::Addr::MIWR16, val);
@@ -539,7 +539,7 @@ namespace Enc28j60
         memRead(buf, sizeof(buf));
       }
 
-      void reset()
+      __noinline void reset()
       {
         opSRC();
       }
@@ -805,7 +805,7 @@ namespace Enc28j60
       void benchmarkTxRx(void* ctx)
       {
         static uint8_t buf[1000];
-        m_spi->txRx(buf, (size_t)ctx);
+        m_spi->txRx(buf, (size_t)ctx, false);
       }
 
       void benchmarkTxThenTx(void* ctx)
@@ -820,6 +820,26 @@ namespace Enc28j60
         m_spi->txThenRx(0, buf, (size_t)ctx);
       }
 
+      void benchmarkERegRead(void* /*ctx*/)
+      {
+        regRead(Reg::Addr::EHT0);
+      }
+      
+      void benchmarkMRegRead(void* /*ctx*/)
+      {
+        regRead(Reg::Addr::MAADR1);
+      }
+      
+      void benchmarkERegWrite(void* /*ctx*/)
+      {
+        regWrite(Reg::Addr::EHT0, 0);
+      }
+      
+      void benchmarkMRegWrite(void* /*ctx*/)
+      {
+        regWrite(Reg::Addr::MAADR1, 0);
+      }
+      
       void benchmarkMemRead(void* ctx)
       {
         static uint8_t buf[1000];
@@ -845,24 +865,28 @@ namespace Enc28j60
       void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
-        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
-        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
-        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
-        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
-        benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
-        benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
-        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
+//        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
+//        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
+//        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
+//        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
+//        benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
+//        benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
+//        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
 //        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
 //        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);
 //        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
 //        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
 //        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
-        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
+        benchmark("regReadE", &DeviceImpl::benchmarkERegRead, 0, offset);
+        benchmark("regReadM", &DeviceImpl::benchmarkMRegRead, 0, offset);
+        benchmark("regWriteE", &DeviceImpl::benchmarkERegWrite, 0, offset);
+        benchmark("regWriteM", &DeviceImpl::benchmarkMRegWrite, 0, offset);
+//        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
 //        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
 //        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);
 //        benchmark("memRead 50", &DeviceImpl::benchmarkMemRead, (void*)50, offset);
 //        benchmark("memWrite 1000", &DeviceImpl::benchmarkMemWrite, (void*)1000, offset);
-        benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
+//        benchmark("memWrite 100", &DeviceImpl::benchmarkMemWrite, (void*)100, offset);
 //        benchmark("memWrite 10", &DeviceImpl::benchmarkMemWrite, (void*)10, offset);
 //        benchmark("memWrite 51", &DeviceImpl::benchmarkMemWrite, (void*)51, offset);
 //        benchmark("memWrite 50", &DeviceImpl::benchmarkMemWrite, (void*)50, offset);
