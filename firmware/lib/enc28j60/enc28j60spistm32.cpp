@@ -146,14 +146,14 @@ namespace Enc28j60
 
       void validateState()
       {
-        if ((m_dmaTx->CCR & DMA_CCR_EN) != 0)
-          Error_Handler();
-
-        if ((m_dmaRx->CCR & DMA_CCR_EN) != 0)
-          Error_Handler();
-
-        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
-          Error_Handler();
+//        if ((m_dmaTx->CCR & DMA_CCR_EN) != 0)
+//          Error_Handler();
+//
+//        if ((m_dmaRx->CCR & DMA_CCR_EN) != 0)
+//          Error_Handler();
+//
+//        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
+//          Error_Handler();
       }
   
       // should be called either at the end of constructor or after deinit()
@@ -211,12 +211,12 @@ namespace Enc28j60
 
       virtual int txRx(uint8_t* txrx, size_t txrxLen) override
       {
-        validateState();
-
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
+
+        validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txrx;
@@ -228,29 +228,29 @@ namespace Enc28j60
         dmaTx->CMAR = uint32_t(txrx+1);
         dmaTx->CNDTR = txrxLen-1;
         dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
+        while (dmaTx->CNDTR != 0);
+        dmaTx->CCR = 0;
         while (dmaRx->CNDTR != 0);
         dmaRx->CCR = 0;
-        dmaTx->CCR = 0;
         while ((spi->SR & SPI_SR_BSY) != 0);
+
+        validateState();
 
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
-
-        validateState();
-
         return 0;
       }
 
       virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
-        validateState();
-
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
+
+        validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = txByte;
@@ -273,24 +273,23 @@ namespace Enc28j60
         spi->DR;
         spi->SR;
 
+        validateState();
+
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
-
-        validateState();
-
         return 0;
       }
   
       virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
-        validateState();
-
         *m_csBsrr = m_csSelect;
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
+
+        validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = txByte;
@@ -321,13 +320,12 @@ namespace Enc28j60
         dmaRx->CCR = 0;
         while ((spi->SR & SPI_SR_BSY) != 0);
 
+        validateState();
+
         //fixme: delay according to spec
         __DMB();
         RT::stall(20);
         *m_csBsrr = m_csDeselect;
-
-        validateState();
-
         return 0;
       }
 
