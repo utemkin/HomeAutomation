@@ -98,7 +98,7 @@ namespace Enc28j60
       static constexpr uint8_t c_ETH_MASK   = 0b00100000;
       static constexpr uint8_t c_NUM_MASK   = 0b00011111;
 
-      constexpr uint8_t makeAddr(const uint8_t bank, const uint8_t num, const bool eth)
+      constexpr uint8_t makeAddr(uint8_t const bank, uint8_t const num, bool const eth)
       {
         return (bank << c_BANK_SHIFT) | num | (eth ? c_ETH_MASK : 0);
       }
@@ -174,19 +174,19 @@ namespace Enc28j60
         EPAUS16   = makeAddr(3, 0x18, true),
       };
 
-      constexpr uint8_t bank(const Addr addr)
+      constexpr uint8_t bank(Addr const addr)
       {
         return uint8_t(addr) >> c_BANK_SHIFT;
       }
-      constexpr uint8_t num(const Addr addr)
+      constexpr uint8_t num(Addr const addr)
       {
         return uint8_t(addr) & c_NUM_MASK;
       }
-      constexpr bool eth(const Addr addr)
+      constexpr bool eth(Addr const addr)
       {
         return !!(uint8_t(addr) & c_ETH_MASK);
       }
-      constexpr bool anyBank(const Addr addr)
+      constexpr bool anyBank(Addr const addr)
       {
         return addr >= Addr::EIE;
       }
@@ -257,7 +257,7 @@ namespace Enc28j60
         PHLCON  = 0x14,
       };
 
-      constexpr uint8_t num(const PhyAddr addr)
+      constexpr uint8_t num(PhyAddr const addr)
       {
         return uint8_t(addr);
       }
@@ -319,7 +319,7 @@ namespace Enc28j60
       static_assert(c_RxBufferStart == 0);                    //See comment 2
 
     protected:
-      __always_inline uint8_t opRCRE(const uint8_t num)
+      __always_inline uint8_t opRCRE(uint8_t const num)
       {
         if (m_failureFlags)
           return 0;
@@ -335,7 +335,7 @@ namespace Enc28j60
         return buf[1];
       }
 
-      __always_inline uint8_t opRCRM(const uint8_t num)
+      __always_inline uint8_t opRCRM(uint8_t const num)
       {
         if (m_failureFlags)
           return 0;
@@ -347,22 +347,23 @@ namespace Enc28j60
           m_failureFlags |= 1;
           return 0;
         }
+
         return buf[2];
       }
 
-      __always_inline void opRBM(uint8_t* const data, const size_t data_len)
+      __always_inline void opRBM(uint8_t* const data, size_t const dataLen)
       {
         if (m_failureFlags)
           return;
 
-        if (m_spi->txThenRx(c_RBM, data, data_len) != 0)
+        if (m_spi->txThenRx(c_RBM, data, dataLen) != 0)
         {
           m_failureFlags |= 1;
           return;
         }
       }
 
-      __always_inline void opWCR(const uint8_t num, const uint8_t val, bool delay)
+      __always_inline void opWCR(uint8_t const num, uint8_t const val, bool const delay)
       {
         if (m_failureFlags)
           return;
@@ -377,19 +378,19 @@ namespace Enc28j60
         }
       }
 
-      __always_inline void opWBM(const uint8_t* const data, const size_t data_len)
+      __always_inline void opWBM(const uint8_t* const data, size_t const dataLen)
       {
         if (m_failureFlags)
           return;
 
-        if (m_spi->txThenTx(c_WBM, data, data_len) != 0)
+        if (m_spi->txThenTx(c_WBM, data, dataLen) != 0)
         {
           m_failureFlags |= 1;
           return;
         }
       }
 
-      __always_inline void opBFS(const uint8_t num, const uint8_t val, bool delay)
+      __always_inline void opBFS(uint8_t const num, uint8_t const val, bool const delay)
       {
         if (m_failureFlags)
           return;
@@ -404,7 +405,7 @@ namespace Enc28j60
         }
       }
 
-      __always_inline void opBFC(const uint8_t num, const uint8_t val, bool delay)
+      __always_inline void opBFC(uint8_t const num, uint8_t const val, bool const delay)
       {
         if (m_failureFlags)
           return;
@@ -434,90 +435,88 @@ namespace Enc28j60
       }
 
     protected:
-      __noinline void setBank(const Reg::Addr addr)
+      __noinline void setBank(uint8_t const bank)
       {
-        if (Reg::anyBank(addr))
-        {
-          return;
-        }
-
-        uint8_t bank = Reg::bank(addr);
-        if (m_bank == bank)
-        {
-          return;
-        }
-
-        uint8_t clr = m_bank & ~bank;
-        uint8_t set = ~m_bank & bank;
+        uint8_t const clr = m_bank & ~bank;
+        uint8_t const set = ~m_bank & bank;
         m_bank = bank;
+
         if (clr)
-        {
           opBFC(Reg::num(Reg::Addr::ECON1), clr, false);
-        }
 
         if (set)
-        {
           opBFS(Reg::num(Reg::Addr::ECON1), set, false);
-        }
       }
 
-      __noinline uint8_t regRead(const Reg::Addr addr)
+      __always_inline void checkBank(Reg::Addr const addr)
       {
-        setBank(addr);
+        if (Reg::anyBank(addr))
+          return;
+
+        uint8_t const bank = Reg::bank(addr);
+        if (m_bank == bank)
+          return;
+
+        setBank(bank);
+      }
+
+      __noinline uint8_t regRead(Reg::Addr const addr)
+      {
+        checkBank(addr);
         if (Reg::eth(addr))
           return opRCRE(Reg::num(addr));
         else
           return opRCRM(Reg::num(addr));
       }
 
-      __noinline uint16_t regRead16(const Reg::Addr addr)
+      __noinline uint16_t regRead16(Reg::Addr const addr)
       {
-        setBank(addr);
+        checkBank(addr);
         if (Reg::eth(addr))
           return opRCRE(Reg::num(addr)) | (opRCRE(Reg::num(addr) + 1) << 8);
         else
           return opRCRM(Reg::num(addr)) | (opRCRM(Reg::num(addr) + 1) << 8);
       }
 
-      __noinline void regWrite(const Reg::Addr addr, const uint8_t val)
+      __noinline void regWrite(Reg::Addr const addr, uint8_t const val)
       {
-        setBank(addr);
+        checkBank(addr);
         opWCR(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      __noinline void regWrite16(const Reg::Addr addr, uint16_t val)
+      __noinline void regWrite16(Reg::Addr const addr, uint16_t val)
       {
         if (addr == Reg::Addr::ERXRDPT16)
           val = int(val) - 1 >= c_RxBufferStart ? val - 1 : c_RxBufferEnd;  //See comment 6
 
-        setBank(addr);
+        checkBank(addr);
         opWCR(Reg::num(addr), val & 0xff, !Reg::eth(addr));
         opWCR(Reg::num(addr) + 1, val >> 8, !Reg::eth(addr));
       }
 
-      __noinline void regSet(const Reg::Addr addr, const uint8_t val)
+      __noinline void regSet(Reg::Addr const addr, uint8_t const val)
       {
-        setBank(addr);
+        checkBank(addr);
         opBFS(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      __noinline void regClr(const Reg::Addr addr, const uint8_t val)
+      __noinline void regClr(Reg::Addr const addr, uint8_t const val)
       {
-        setBank(addr);
+        checkBank(addr);
         opBFC(Reg::num(addr), val, !Reg::eth(addr));
       }
 
-      __noinline void memRead(uint8_t* const data, const size_t data_len)
+      __noinline void memRead(uint8_t* const data, size_t const dataLen)
       {
-        opRBM(data, data_len);
+        opRBM(data, dataLen);
       }
 
-      __noinline void memWrite(const uint8_t* const data, const size_t data_len)
+      __noinline void memWrite(const uint8_t* const data, size_t const dataLen)
       {
-        opWBM(data, data_len);
+        opWBM(data, dataLen);
       }
 
-      __noinline uint16_t phyRead(const Reg::PhyAddr addr)
+      __noinline uint16_t phyRead(Reg::PhyAddr const addr)
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
@@ -529,7 +528,7 @@ namespace Enc28j60
         return regRead16(Reg::Addr::MIRD16);
       }
 
-      __noinline void phyWrite(const Reg::PhyAddr addr, const uint16_t val)
+      __noinline void phyWrite(Reg::PhyAddr const addr, uint16_t const val)
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite16(Reg::Addr::MIWR16, val);
@@ -771,8 +770,9 @@ namespace Enc28j60
         printf("test3 returned %i\n", test3());
       }
 
-      unsigned benchmark(const char* name, void(DeviceImpl::* const test_fn)(void* ctx), void* ctx, unsigned offset)
+      __noinline unsigned benchmark(const char* const name, void(DeviceImpl::* const testFn)(uint8_t* buf, void* ctx), void* const ctx, unsigned const offset)
       {
+        static uint8_t buf[1000];
         printf("Benchmarking %s...\n", name);
         TickType_t start = xTaskGetTickCount();
         while (start == xTaskGetTickCount());
@@ -782,87 +782,102 @@ namespace Enc28j60
         Tools::IdleMeasure im;
         while (xTaskGetTickCount() < finish)
         {
-          (this->*test_fn)(ctx);
+          (this->*testFn)(buf, ctx);
           ++count;
         }
         int percent;
         int hundreds;
         im.get(percent, hundreds);
         finish = xTaskGetTickCount();
-        unsigned duration_ns = (finish - start) * portTICK_PERIOD_MS * 1000000;
-        unsigned cycle_ns = (duration_ns + count / 2) / count - offset;
-        unsigned duration_clk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
-        unsigned offset_clk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
-        unsigned cycle_clk = (duration_clk + count / 2) / count - offset_clk;
-        printf("               ... cycle = %u ns = %u CLKs CPU IDLE=%02u.%02u%%\n", cycle_ns, cycle_clk, percent, hundreds);
-        return cycle_ns;
+        unsigned durationNs = (finish - start) * portTICK_PERIOD_MS * 1000000;
+        unsigned cycleNs = (durationNs + count / 2) / count - offset;
+        unsigned durationClk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
+        unsigned offsetClk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
+        unsigned cycleClk = (durationClk + count / 2) / count - offsetClk;
+        printf("               ... cycle = %u ns = %u CLKs CPU IDLE=%02u.%02u%%\n", cycleNs, cycleClk, percent, hundreds);
+        return cycleNs;
       }
 
-      void benchmarkNull(void* /*ctx*/)
+      __noinline void benchmarkNull(uint8_t* /*buf*/, void* /*ctx*/)
       {
       }
 
-      void benchmarkTxRx(void* ctx)
+      __noinline void benchmarkTxRx(uint8_t* buf, void* ctx)
       {
-        static uint8_t buf[1000];
         m_spi->txRx(buf, (size_t)ctx, false);
       }
 
-      void benchmarkTxThenTx(void* ctx)
+      __noinline void benchmarkTxThenTx(uint8_t* buf, void* ctx)
       {
-        static uint8_t buf[1000];
         m_spi->txThenTx(0, buf, (size_t)ctx);
       }
 
-      void benchmarkTxThenRx(void* ctx)
+      __noinline void benchmarkTxThenRx(uint8_t* buf, void* ctx)
       {
-        static uint8_t buf[1000];
         m_spi->txThenRx(0, buf, (size_t)ctx);
       }
 
-      void benchmarkERegRead(void* /*ctx*/)
+      __noinline void benchmarkERegRead(uint8_t* /*buf*/, void* /*ctx*/)
       {
         regRead(Reg::Addr::EHT0);
       }
       
-      void benchmarkMRegRead(void* /*ctx*/)
+      __noinline void benchmarkMRegRead(uint8_t* /*buf*/, void* /*ctx*/)
       {
         regRead(Reg::Addr::MAADR1);
       }
       
-      void benchmarkERegWrite(void* /*ctx*/)
+      __noinline void benchmarkERegWrite(uint8_t* /*buf*/, void* /*ctx*/)
       {
         regWrite(Reg::Addr::EHT0, 0);
       }
       
-      void benchmarkMRegWrite(void* /*ctx*/)
+      __noinline void benchmarkMRegWrite(uint8_t* /*buf*/, void* /*ctx*/)
       {
         regWrite(Reg::Addr::MAADR1, 0);
       }
       
-      void benchmarkMemRead(void* ctx)
+      __noinline void benchmarkERegRead16(uint8_t* /*buf*/, void* /*ctx*/)
       {
-        static uint8_t buf[1000];
+        regRead16(Reg::Addr::EPMCS16);
+      }
+      
+      __noinline void benchmarkMRegRead16(uint8_t* /*buf*/, void* /*ctx*/)
+      {
+        regRead16(Reg::Addr::MAMXFL16);
+      }
+      
+      __noinline void benchmarkERegWrite16(uint8_t* /*buf*/, void* /*ctx*/)
+      {
+        regWrite16(Reg::Addr::EPMCS16, 0);
+      }
+      
+      __noinline void benchmarkMRegWrite16(uint8_t* /*buf*/, void* /*ctx*/)
+      {
+        regWrite16(Reg::Addr::MAMXFL16, 0);
+      }
+      
+      __noinline void benchmarkMemRead(uint8_t* buf, void* ctx)
+      {
         memRead(buf, (size_t)ctx);
       }
 
-      void benchmarkMemWrite(void* ctx)
+      __noinline void benchmarkMemWrite(uint8_t* buf, void* ctx)
       {
-        static uint8_t buf[1000];
         memWrite(buf, (size_t)ctx);
       }
 
-      void benchmarkPhyRead(void* ctx)
+      __noinline void benchmarkPhyRead(uint8_t* /*buf*/, void* /*ctx*/)
       {
         phyRead(Reg::PhyAddr::PHLCON);
       }
 
-      void benchmarkPhyWrite(void* ctx)
+      __noinline void benchmarkPhyWrite(uint8_t* /*buf*/, void* /*ctx*/)
       {
         phyWrite(Reg::PhyAddr::PHLCON, 0x1234);
       }
 
-      void benchmarkAll()
+      __noinline void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
 //        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
@@ -877,10 +892,14 @@ namespace Enc28j60
 //        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
 //        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
 //        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
-        benchmark("regReadE", &DeviceImpl::benchmarkERegRead, 0, offset);
-        benchmark("regReadM", &DeviceImpl::benchmarkMRegRead, 0, offset);
-        benchmark("regWriteE", &DeviceImpl::benchmarkERegWrite, 0, offset);
-        benchmark("regWriteM", &DeviceImpl::benchmarkMRegWrite, 0, offset);
+        benchmark("eRegRead", &DeviceImpl::benchmarkERegRead, 0, offset);
+        benchmark("mRegRead", &DeviceImpl::benchmarkMRegRead, 0, offset);
+        benchmark("eRegWrite", &DeviceImpl::benchmarkERegWrite, 0, offset);
+        benchmark("mRegWrite", &DeviceImpl::benchmarkMRegWrite, 0, offset);
+        benchmark("eRegRead16", &DeviceImpl::benchmarkERegRead16, 0, offset);
+        benchmark("mRegRead16", &DeviceImpl::benchmarkMRegRead16, 0, offset);
+        benchmark("eRegWrite16", &DeviceImpl::benchmarkERegWrite16, 0, offset);
+        benchmark("mRegWrite16", &DeviceImpl::benchmarkMRegWrite16, 0, offset);
 //        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
 //        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
 //        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);
@@ -894,14 +913,14 @@ namespace Enc28j60
 //        benchmark("phyWrite", &DeviceImpl::benchmarkPhyWrite, 0, offset);
       }
 
-      void checkTx(uint8_t eir)
+      void checkTx(uint8_t const eir)
       {
         if (eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF))
           //fixme: check tsv, log error if failed
           m_txInProgress = false;
       }
 
-      void checkRx(uint8_t eir)
+      void checkRx(uint8_t const eir)
       {
         while (regRead(Reg::Addr::EPKTCNT))               //See comment 3
         {
@@ -937,7 +956,7 @@ namespace Enc28j60
         }
       }
 
-      void checkLink(uint8_t eir)
+      void checkLink(uint8_t const eir)
       {
         if (!(eir & Reg::c_EIR_LINKIF))
           return;
@@ -979,14 +998,15 @@ namespace Enc28j60
         }
       }
 
-      void check(bool txOnly = false)
+      void check(bool const txOnly = false)
       {
-        uint8_t eir = regRead(Reg::Addr::EIR);
-        uint8_t eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | (txOnly ? 0 : (Reg::c_EIR_PKTIF | Reg::c_EIR_RXERIF)));
+        uint8_t const eir = regRead(Reg::Addr::EIR);
+        uint8_t const eirClear = eir & (Reg::c_EIR_TXIF | Reg::c_EIR_TXERIF | (txOnly ? 0 : (Reg::c_EIR_PKTIF | Reg::c_EIR_RXERIF)));
         if (eirClear)
         {
           regClr(Reg::Addr::EIR, eirClear);
         }
+
         checkTx(eir);
         if (!txOnly)
         {
@@ -1008,9 +1028,9 @@ namespace Enc28j60
           return false;
 
         m_txInProgress = true;
-        const uint16_t offset = c_TxBufferStart;
+        uint16_t const offset = c_TxBufferStart;
         regWrite16(Reg::Addr::EWRPT16, offset);
-        const uint8_t control = 0;
+        uint8_t const control = 0;
         memWrite(&control, sizeof(control));
         const uint8_t* data;
         size_t size;
