@@ -3,14 +3,6 @@
 
 #define TIMEOUT_TICKS (10)
 
-static void deinit(struct enc28j60spi_impl* spi_impl)
-{
-  *spi_impl->cs_bsrr = spi_impl->cs_bsrr_deselect;
-  spi_impl->hspi->CR1 = spi_impl->initial_cr1 & ~SPI_CR1_SPE;
-  spi_impl->hdmarx->CCR &= ~DMA_CCR_EN;
-  spi_impl->hdmatx->CCR &= ~DMA_CCR_EN;
-}
-
 static int reinit(struct enc28j60spi* spi)
 {
   struct enc28j60spi_impl* spi_impl = container_of(spi, struct enc28j60spi_impl, iface);
@@ -75,11 +67,12 @@ namespace Enc28j60
     class SpiImpl : public Spi
     {
     public:
-      SpiImpl(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert)
+      SpiImpl(SPI_TypeDef* const spi, GPIO_TypeDef* const csGPIO, uint16_t const csPin, bool const csInvert)
         : m_spi(spi)
         , m_csBsrr(&csGPIO->BSRR)
         , m_csSelect(csInvert ? csPin << 16 : csPin)
         , m_csDeselect(csInvert ? csPin : csPin << 16)
+        , m_delayHclk((210ul * (HAL_RCC_GetHCLKFreq() / 1000ul) + 999999ul) / 1000000ul)
         , m_handlerDmaTx(this)
       {
   #if defined(STM32F1)
@@ -209,23 +202,23 @@ namespace Enc28j60
         return 0;
       }
 
-      virtual int txRx(uint8_t* txrx, size_t txrxLen, bool delay) override
+      virtual int txRx(uint8_t* const txRx, size_t const txRxLen, bool const delay) override
       {
         *m_csBsrr = m_csSelect;
         __DMB();
-        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
         SPI_TypeDef* const spi = m_spi;
-        spi->DR = *txrx;
+        spi->DR = *txRx;
         DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
-        dmaRx->CMAR = uint32_t(txrx);
-        dmaRx->CNDTR = txrxLen;
+        dmaRx->CMAR = uint32_t(txRx);
+        dmaRx->CNDTR = txRxLen;
         dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
         DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
-        dmaTx->CMAR = uint32_t(txrx+1);
-        dmaTx->CNDTR = txrxLen-1;
+        dmaTx->CMAR = uint32_t(txRx+1);
+        dmaTx->CNDTR = txRxLen-1;
         dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
         while (dmaTx->CNDTR != 0);
         dmaTx->CCR = 0;
@@ -237,7 +230,7 @@ namespace Enc28j60
 
         //fixme: according to spec there should be at least Tcsh = (210ns for MAC|MII regusters or 10ns for others) delay between falling edge of last SCK and rising edge of CS
         if (delay)
-          RT::stall(20);
+          RT::stall(m_delayHclk);
 
         __DMB();
         *m_csBsrr = m_csDeselect;
@@ -250,7 +243,7 @@ namespace Enc28j60
       {
         *m_csBsrr = m_csSelect;
         __DMB();
-        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
@@ -290,7 +283,7 @@ namespace Enc28j60
       {
         *m_csBsrr = m_csSelect;
         __DMB();
-        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge CS and rising edge of first SCK
+        //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
@@ -336,7 +329,7 @@ namespace Enc28j60
 
       bool handleDmaTx(IRQn_Type)
       {
-        uint32_t clear = m_dma->ISR & m_dmaTxFlags;
+        uint32_t const clear = m_dma->ISR & m_dmaTxFlags;
         if (clear)
         {
           m_dma->IFCR = clear;
@@ -352,8 +345,9 @@ namespace Enc28j60
       constexpr static uint32_t c_maxBusyLoop = 50;
       SPI_TypeDef* const m_spi;
       __IO uint32_t* const m_csBsrr;
-      const uint32_t m_csSelect;
-      const uint32_t m_csDeselect;
+      uint32_t const m_csSelect;
+      uint32_t const m_csDeselect;
+      uint32_t const m_delayHclk;
       DMA_TypeDef* m_dma;
       DMA_Channel_TypeDef* m_dmaTx;
       uint32_t m_dmaTxFlags;
@@ -372,7 +366,7 @@ namespace Enc28j60
   }
 }
 
-auto Enc28j60::CreateSpiStm32(SPI_TypeDef* spi, GPIO_TypeDef* csGPIO, uint16_t csPin, bool csInvert) -> std::unique_ptr<Spi>
+auto Enc28j60::CreateSpiStm32(SPI_TypeDef* const spi, GPIO_TypeDef* const csGPIO, uint16_t const csPin, bool const csInvert) -> std::unique_ptr<Spi>
 {
   return std::make_unique<SpiImpl>(spi, csGPIO, csPin, csInvert);
 }

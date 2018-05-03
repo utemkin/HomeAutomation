@@ -319,6 +319,17 @@ namespace Enc28j60
       static_assert(c_RxBufferStart == 0);                    //See comment 2
 
     protected:
+      __noinline void handleError(int const /*code*/)
+      {
+          m_failureFlags |= 1;
+      }
+
+      __always_inline void handle(int const code)
+      {
+        if (code)
+          handleError(code);
+      }
+
       __always_inline uint8_t opRCRE(uint8_t const num)
       {
         if (m_failureFlags)
@@ -326,12 +337,7 @@ namespace Enc28j60
 
         uint8_t buf[2];
         buf[0] = c_RCR | num;
-        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
-        {
-          m_failureFlags |= 1;
-          return 0;
-        }
- 
+        handle(m_spi->txRx(buf, sizeof(buf), false));
         return buf[1];
       }
 
@@ -342,12 +348,7 @@ namespace Enc28j60
 
         uint8_t buf[3];
         buf[0] = c_RCR | num;
-        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
-        {
-          m_failureFlags |= 1;
-          return 0;
-        }
-
+        handle(m_spi->txRx(buf, sizeof(buf), false));
         return buf[2];
       }
 
@@ -356,11 +357,7 @@ namespace Enc28j60
         if (m_failureFlags)
           return;
 
-        if (m_spi->txThenRx(c_RBM, data, dataLen) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txThenRx(c_RBM, data, dataLen));
       }
 
       __always_inline void opWCR(uint8_t const num, uint8_t const val, bool const delay)
@@ -371,11 +368,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_WCR | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txRx(buf, sizeof(buf), delay));
       }
 
       __always_inline void opWBM(const uint8_t* const data, size_t const dataLen)
@@ -383,11 +376,7 @@ namespace Enc28j60
         if (m_failureFlags)
           return;
 
-        if (m_spi->txThenTx(c_WBM, data, dataLen) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txThenTx(c_WBM, data, dataLen));
       }
 
       __always_inline void opBFS(uint8_t const num, uint8_t const val, bool const delay)
@@ -398,11 +387,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFS | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txRx(buf, sizeof(buf), delay));
       }
 
       __always_inline void opBFC(uint8_t const num, uint8_t const val, bool const delay)
@@ -413,11 +398,7 @@ namespace Enc28j60
         uint8_t buf[2];
         buf[0] = c_BFC | num;
         buf[1] = val;
-        if (m_spi->txRx(buf, sizeof(buf), delay) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txRx(buf, sizeof(buf), delay));
       }
 
       __always_inline void opSRC()
@@ -427,11 +408,7 @@ namespace Enc28j60
 
         uint8_t buf[1];
         buf[0] = c_SRC;
-        if (m_spi->txRx(buf, sizeof(buf), false) != 0)
-        {
-          m_failureFlags |= 1;
-          return;
-        }
+        handle(m_spi->txRx(buf, sizeof(buf), false));
       }
 
     protected:
@@ -520,7 +497,7 @@ namespace Enc28j60
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite(Reg::Addr::MICMD, Reg::c_MICMD_MIIRD);
-        uint8_t buf[26];            // Need to delay at least 10240ns here.
+        uint8_t buf[26 - 1];        // Need to delay at least 10240ns here.
                                     // Minimum bit period for enc28j60 is 50ns.
                                     // 10240/50 = 204.8 bits = 25.6 bytes
         memRead(buf, sizeof(buf));
@@ -532,7 +509,7 @@ namespace Enc28j60
       {
         regWrite(Reg::Addr::MIREGADR, Reg::num(addr));
         regWrite16(Reg::Addr::MIWR16, val);
-        uint8_t buf[26];            // Need to delay at least 10240ns here.
+        uint8_t buf[26 - 1];        // Need to delay at least 10240ns here.
                                     // Minimum bit period for enc28j60 is 50ns.
                                     // 10240/50 = 204.8 bits = 25.6 bytes
         memRead(buf, sizeof(buf));
