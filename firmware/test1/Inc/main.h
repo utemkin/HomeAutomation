@@ -59,12 +59,12 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define SPI1_CS_Pin GPIO_PIN_4
-#define SPI1_CS_GPIO_Port GPIOA
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
 #define SDIO_DETECT_Pin GPIO_PIN_8
 #define SDIO_DETECT_GPIO_Port GPIOA
+#define SPI1_CS_Pin GPIO_PIN_7
+#define SPI1_CS_GPIO_Port GPIOD
 #define LED_Pin GPIO_PIN_9
 #define LED_GPIO_Port GPIOB
 #define ONEWIRE_OUT_Pin GPIO_PIN_0

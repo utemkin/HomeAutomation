@@ -1108,6 +1108,7 @@ namespace Enc28j60
         dumpState();
 //        validate();
         benchmarkAll();
+        for (;;);
       }
     };
   }
