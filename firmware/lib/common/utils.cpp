@@ -29,7 +29,7 @@ namespace Tools
     }
   }
 
-  void IdleMeasure::get(int& percent, int& hundreds)
+  void IdleMeasure::get(int& percent, int& hundreds)  //fixme: this measurement method doesn't account for time spent in interrupts
   {
     update();
     {

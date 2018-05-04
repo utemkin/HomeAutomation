@@ -66,6 +66,8 @@
         * Output
         * EVENT_OUT
         * EXTI
+     PA4   ------> COMP_DAC1_group
+     PA5   ------> COMP_DAC2_group
      PC8   ------> SDIO_D0
      PC9   ------> SDIO_D1
      PC10   ------> SDIO_D2
@@ -82,8 +84,8 @@ void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
@@ -95,6 +97,11 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ONEWIRE_OUT_GPIO_Port, ONEWIRE_OUT_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : PA4 PA5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
