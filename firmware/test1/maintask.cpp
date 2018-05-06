@@ -40,6 +40,12 @@ void testAdc()
   adc->CR1 = ADC_CR1_SCAN;
   adc->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
   RT::stall(72); //fixme: wait Tstab=1uS
+
+  adc->CR2 = ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+  while (adc->CR2 & ADC_CR2_RSTCAL);
+  adc->CR2 = ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
+  while (adc->CR2 & ADC_CR2_CAL);
+
   adc->SQR1 = ((6 - 1) << ADC_SQR1_L_Pos);
   adc->SQR3 = (ADC_CHANNEL_13 << ADC_SQR3_SQ6_Pos) | 
               (ADC_CHANNEL_12 << ADC_SQR3_SQ5_Pos) | 
