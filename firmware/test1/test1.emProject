@@ -156,6 +156,9 @@
       <file file_name="Middlewares/Third_Party/LwIP/src/netif/ethernet.c" />
       <file file_name="Middlewares/Third_Party/LwIP/src/apps/mqtt/mqtt.c" />
     </folder>
+    <folder Name="analog">
+      <file file_name="../lib/analog/adcstm32.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"

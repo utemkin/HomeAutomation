@@ -8,6 +8,7 @@ namespace Enc28j60
   class LwipNetif : mstd::noncopyable
   {
   public:
+    virtual ~LwipNetif() = default;
     static void initLwip();
     virtual void setDefault() = 0;
     virtual void startDhcp() = 0;

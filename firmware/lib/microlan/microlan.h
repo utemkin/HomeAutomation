@@ -80,6 +80,7 @@ namespace MicroLan
   class Bus : mstd::noncopyable
   {
   public:
+    virtual ~Bus() = default;
     virtual Capabilities capabilities() const = 0;
     virtual bool isSupported(const Options& options) const;
 

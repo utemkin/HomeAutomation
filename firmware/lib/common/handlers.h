@@ -19,7 +19,7 @@ namespace Irq
     void install(IRQn_Type IRQn);
 
   protected:
-    ~Handler()
+    virtual ~Handler()
     {
       Error_Handler();
     }

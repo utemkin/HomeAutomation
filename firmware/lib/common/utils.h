@@ -180,7 +180,7 @@ namespace OS
       osThreadDef(thread, &func, osPriorityNormal, 1, 256);
       m_thread = osThreadCreate(osThread(thread), this);
     }
-    ~Thread()
+    virtual ~Thread()
     {
       osThreadTerminate(m_thread);
     }
