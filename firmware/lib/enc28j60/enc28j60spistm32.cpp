@@ -79,32 +79,28 @@ namespace Enc28j60
         if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_CLK_ENABLE();
+          
           __HAL_RCC_DMA1_CLK_ENABLE();
-
           m_dma = DMA1;
-
           m_dmaTx = DMA1_Channel3;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (3 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel3_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-
           m_dmaRx = DMA1_Channel2;
         }
   #ifdef SPI2
         else if (m_spi == SPI2)
         {
           __HAL_RCC_SPI2_CLK_ENABLE();
+
           __HAL_RCC_DMA1_CLK_ENABLE();
-
           m_dma = DMA1;
-
           m_dmaTx = DMA1_Channel5;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
           m_handlerDmaTx.install(DMA1_Channel5_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
           m_dmaRx = DMA1_Channel4;
         }
   #endif
@@ -112,16 +108,14 @@ namespace Enc28j60
         else if (m_spi == SPI3)
         {
           __HAL_RCC_SPI3_CLK_ENABLE();
+
           __HAL_RCC_DMA2_CLK_ENABLE();
-
           m_dma = DMA2;
-
           m_dmaTx = DMA2_Channel2;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (2 - 1) * 4;
           m_handlerDmaTx.install(DMA2_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
-
           m_dmaRx = DMA2_Channel1;
         }
   #endif
