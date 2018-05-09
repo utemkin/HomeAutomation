@@ -22,11 +22,11 @@ namespace Analog
         __HAL_RCC_ADC1_RELEASE_RESET();
         m_adc1 = ADC1;
         m_adc1->CR1 = (6 << ADC_CR1_DUALMOD_Pos) | ADC_CR1_SCAN;
-        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
         RT::stall(72);                              //fixme: wait Tstab=1uS
-        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc1->CR2 & ADC_CR2_RSTCAL);
-        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
         while (m_adc1->CR2 & ADC_CR2_CAL);
         m_adc1->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
         static_assert(c_data1Size == 7);
@@ -43,11 +43,11 @@ namespace Analog
         __HAL_RCC_ADC2_RELEASE_RESET();
         m_adc2 = ADC2;
         m_adc2->CR1 = ADC_CR1_SCAN;
-        m_adc2->CR2 = ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_ADON;
         RT::stall(72);                              //fixme: wait Tstab=1uS
-        m_adc2->CR2 = ADC_CR2_RSTCAL | ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc2->CR2 & ADC_CR2_RSTCAL);
-        m_adc2->CR2 = ADC_CR2_CAL | ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_CAL | ADC_CR2_ADON;
         while (m_adc2->CR2 & ADC_CR2_CAL);
         m_adc2->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
         static_assert(c_data1Size == 7);
@@ -64,11 +64,11 @@ namespace Analog
         __HAL_RCC_ADC3_RELEASE_RESET();
         m_adc3 = ADC3;
         m_adc3->CR1 = ADC_CR1_SCAN;
-        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
         RT::stall(72);                              //fixme: wait Tstab=1uS
-        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+        m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc3->CR2 & ADC_CR2_RSTCAL);
-        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
+        m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
         while (m_adc3->CR2 & ADC_CR2_CAL);
         m_adc3->SQR1 = ((c_data2Size - 1) << ADC_SQR1_L_Pos);
         static_assert(c_data2Size == 6);
@@ -108,14 +108,13 @@ namespace Analog
   #if defined(STM32F1)
         m_dma1Rx->CNDTR = c_data1Size;
         m_dma1Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-        m_adc2->CR2 = ADC_CR2_ADON;
-        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
         OS::Thread::delay(1000);                    //fixme
         m_dma1Rx->CCR = 0;
 
         m_dma2Rx->CNDTR = c_data2Size;
         m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_EN;
-        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
         OS::Thread::delay(1000);                    //fixme
         m_dma2Rx->CCR = 0;
   #endif
