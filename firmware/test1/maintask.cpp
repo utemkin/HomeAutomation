@@ -36,13 +36,15 @@ extern "C" void maintask()
 
 //  HAL_ADC_Start_DMA(&hadc3, (uint32_t*)(s_buf + 7 + 7), 6);
 
-  auto adc = Analog::CreateAdcStm32(0, 0, false);
-  adc->startConversion();
+  Tools::IdleMeasure2::calibrate();
+
+//  auto adc = Analog::CreateAdcStm32(0, 0, false);
+//  adc->startConversion();
 
   for(;;)
   {
-    Tools::IdleMeasure im;
-    OS::Thread::delay(1000);
+    Tools::IdleMeasure2 im;
+    OS::Thread::delay(100);
     int percent;
     int hundreds;
     im.get(percent, hundreds);
