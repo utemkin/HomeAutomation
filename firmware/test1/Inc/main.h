@@ -63,6 +63,8 @@
 #define BOOT1_GPIO_Port GPIOB
 #define SDIO_DETECT_Pin GPIO_PIN_8
 #define SDIO_DETECT_GPIO_Port GPIOA
+#define SWITCH_ADC_Pin GPIO_PIN_15
+#define SWITCH_ADC_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_7
 #define SPI1_CS_GPIO_Port GPIOD
 #define LED_Pin GPIO_PIN_9

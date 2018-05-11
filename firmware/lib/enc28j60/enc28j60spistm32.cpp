@@ -75,7 +75,7 @@ namespace Enc28j60
         , m_delayHclk((210ul * (HAL_RCC_GetHCLKFreq() / 1000ul) + 999999ul) / 1000000ul)
         , m_handlerDmaTx(this)
       {
-  #if defined(STM32F1)
+#if defined(STM32F1)
         if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_CLK_ENABLE();
@@ -89,7 +89,7 @@ namespace Enc28j60
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
           m_dmaRx = DMA1_Channel2;
         }
-  #ifdef SPI2
+#  ifdef SPI2
         else if (m_spi == SPI2)
         {
           __HAL_RCC_SPI2_CLK_ENABLE();
@@ -103,8 +103,8 @@ namespace Enc28j60
           HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
           m_dmaRx = DMA1_Channel4;
         }
-  #endif
-  #ifdef SPI3
+#  endif
+#  ifdef SPI3
         else if (m_spi == SPI3)
         {
           __HAL_RCC_SPI3_CLK_ENABLE();
@@ -118,10 +118,10 @@ namespace Enc28j60
           HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
           m_dmaRx = DMA2_Channel1;
         }
-  #endif
-  #else
-  #error Unsupported architecture
-  #endif
+#  endif
+#else
+#  error Unsupported architecture
+#endif
         else
         {
           //fixme
@@ -151,32 +151,32 @@ namespace Enc28j60
         *m_csBsrr = m_csDeselect;
 
         uint32_t pclk = std::numeric_limits<decltype(pclk)>::max();
-  #if defined(STM32F1)
+#if defined(STM32F1)
         if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_FORCE_RESET();
           __HAL_RCC_SPI1_RELEASE_RESET();
           pclk = HAL_RCC_GetPCLK2Freq();
         }
-  #ifdef SPI2
+#  ifdef SPI2
         else if (m_spi == SPI2)
         {
           __HAL_RCC_SPI2_FORCE_RESET();
           __HAL_RCC_SPI2_RELEASE_RESET();
           pclk = HAL_RCC_GetPCLK1Freq();
         }
-  #endif
-  #ifdef SPI3
+#  endif
+#  ifdef SPI3
         else if (m_spi == SPI3)
         {
           __HAL_RCC_SPI3_FORCE_RESET();
           __HAL_RCC_SPI3_RELEASE_RESET();
           pclk = HAL_RCC_GetPCLK1Freq();
         }
-  #endif
-  #else
-  #error Unsupported architecture
-  #endif
+#  endif
+#else
+#  error Unsupported architecture
+#endif
 
         uint32_t br;
         for (br = 0; br < 8; pclk >>= 1, ++br)
@@ -321,6 +321,7 @@ namespace Enc28j60
         return 0;
       }
 
+    protected:
       bool handleDmaTx(IRQn_Type)
       {
         uint32_t const clear = m_dma->ISR & m_dmaTxFlags;

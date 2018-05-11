@@ -295,4 +295,29 @@ namespace Tools
       s.total = portGET_RUN_TIME_COUNTER_VALUE();
     }
   };
+
+  class IdleMeasure2
+  {
+  public:
+    static void calibrate();
+    IdleMeasure2()
+    {
+      sample(m_previous);
+    }
+    void update();
+    void get(int& percent, int& hundreds);
+
+  protected:
+    struct Sample
+    {
+      uint32_t value;
+      uint32_t total;
+    };
+    Sample m_previous;
+    uint64_t m_value = 0;
+    uint64_t m_total = 0;
+
+  protected:
+    static void sample(Sample& s);
+  };
 }
