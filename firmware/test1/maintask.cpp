@@ -38,14 +38,14 @@ extern "C" void maintask()
 
   Tools::IdleMeasure2::calibrate();
 
-  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
-
-  for(int i = 0; i < 10; ++i)
-  {
-    uint32_t clk = DWT->CYCCNT;
-    adc->convert();
-    printf("%lu\n", DWT->CYCCNT - clk);
-  }
+//  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
+//
+//  for(int i = 0; i < 10; ++i)
+//  {
+//    uint32_t clk = DWT->CYCCNT;
+//    adc->convert();
+//    printf("%lu\n", DWT->CYCCNT - clk);
+//  }
 
   for(;;)
   {
