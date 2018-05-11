@@ -60,7 +60,6 @@
       <file file_name="Src/system_stm32f1xx.c" />
       <file file_name="Src/ethernetif.c" />
       <file file_name="Src/adc.c" />
-      <file file_name="Src/dma.c" />
     </folder>
     <folder Name="hal">
       <file file_name="Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c" />

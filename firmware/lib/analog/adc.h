@@ -10,6 +10,6 @@ namespace Analog
   {
   public:
     virtual ~Adc() = default;
-    virtual void startConversion() = 0;
+    virtual void convert() = 0;
   };
 }

@@ -57,7 +57,7 @@ extern "C"
   void* pvPortMalloc(size_t xSize) PRIVILEGED_FUNCTION
   {
     void* ret = malloc(xSize);
-    #if( configUSE_MALLOC_FAILED_HOOK == 1 )
+#if configUSE_MALLOC_FAILED_HOOK == 1
     {
       if(ret == NULL)
       {
@@ -65,7 +65,7 @@ extern "C"
         vApplicationMallocFailedHook();
       }
     }
-    #endif
+#endif
     return ret;
   }
 

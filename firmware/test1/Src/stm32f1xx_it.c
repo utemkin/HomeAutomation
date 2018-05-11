@@ -41,8 +41,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_adc1;
-extern DMA_HandleTypeDef hdma_adc3;
 
 extern TIM_HandleTypeDef htim6;
 
@@ -72,20 +70,6 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-* @brief This function handles DMA1 channel1 global interrupt.
-*/
-void DMA1_Channel1_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc1);
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 1 */
-}
-
-/**
 * @brief This function handles TIM6 global interrupt.
 */
 void TIM6_IRQHandler(void)
@@ -97,20 +81,6 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 1 */
 
   /* USER CODE END TIM6_IRQn 1 */
-}
-
-/**
-* @brief This function handles DMA2 channel4 and channel5 global interrupts.
-*/
-void DMA2_Channel4_5_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Channel4_5_IRQn 0 */
-
-  /* USER CODE END DMA2_Channel4_5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc3);
-  /* USER CODE BEGIN DMA2_Channel4_5_IRQn 1 */
-
-  /* USER CODE END DMA2_Channel4_5_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
