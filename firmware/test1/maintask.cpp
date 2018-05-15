@@ -36,7 +36,9 @@ extern "C" void maintask()
 
 //  HAL_ADC_Start_DMA(&hadc3, (uint32_t*)(s_buf + 7 + 7), 6);
 
-  Tools::IdleMeasure2::calibrate();
+
+//  for(int i = 0; i < 100; ++i)
+    Tools::IdleMeasure::calibrate();
 
 //  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
 //
@@ -49,11 +51,10 @@ extern "C" void maintask()
 
   for(;;)
   {
-    Tools::IdleMeasure2 im;
+    Tools::IdleMeasure im;
+    RT::stall(720000/100*5000);
     OS::Thread::delay(1000);
-    int percent;
-    int hundreds;
-    im.get(percent, hundreds);
-    printf("CPU IDLE=%02u.%02u%%\n", percent, hundreds);
+    unsigned tenths;
+    printf("CPU IDLE=%02u.%01u%% %02u%%\n", im.get(&tenths), tenths, im.get());
   }
 }
