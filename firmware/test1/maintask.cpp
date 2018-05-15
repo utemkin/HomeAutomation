@@ -37,23 +37,26 @@ extern "C" void maintask()
 //  HAL_ADC_Start_DMA(&hadc3, (uint32_t*)(s_buf + 7 + 7), 6);
 
 
-//  for(int i = 0; i < 100; ++i)
-    Tools::IdleMeasure::calibrate();
+  Tools::IdleMeasure::calibrate();
 
-//  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
-//
-//  for(int i = 0; i < 10; ++i)
-//  {
-//    uint32_t clk = DWT->CYCCNT;
-//    adc->convert();
-//    printf("%lu\n", DWT->CYCCNT - clk);
-//  }
+  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
+//  auto adc = Analog::CreateAdcStm32(0, 0, false);
+
+  uint32_t clk = DWT->CYCCNT;
+  adc->convert();
+  printf("%lu\n", DWT->CYCCNT - clk);
 
   for(;;)
   {
     Tools::IdleMeasure im;
-    RT::stall(720000/100*5000);
+
     OS::Thread::delay(1000);
+
+//    for(int i = 0; i < 10000; ++i)
+//    {
+//      adc->convert();
+//    }
+
     unsigned tenths;
     printf("CPU IDLE=%02u.%01u%% %02u%%\n", im.get(&tenths), tenths, im.get());
   }

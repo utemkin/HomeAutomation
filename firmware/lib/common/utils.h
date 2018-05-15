@@ -4,8 +4,6 @@
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
 #define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
-#define ATTR_NOINLINE __attribute__((noinline))
-#define ATTR_FORCEINLINE __attribute__((always_inline))
 
 namespace mstd
 {
