@@ -21,7 +21,10 @@
 
 #endif
 
-static std::atomic<Irq::Handler*> volatile handlers[NUM_HANDLERS + 16];
+namespace
+{
+  std::atomic<Irq::Handler*> handlers[NUM_HANDLERS + 16];
+}
 
 void Irq::Handler::install(IRQn_Type IRQn)
 {
@@ -34,7 +37,7 @@ void Irq::Handler::install(IRQn_Type IRQn)
   while (!handlers[IRQn].compare_exchange_weak(m_next, this, std::memory_order_release, std::memory_order_relaxed));
 }
 
-inline void ATTR_FORCEINLINE ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
+void __always_inline ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
 {
   unsigned IRQn = __get_IPSR();
   Irq::Handler* next = handlers[IRQn].load(std::memory_order_acquire);
@@ -73,7 +76,7 @@ extern "C" void Reset_Handler()
   main();
 }
 
-extern "C" void ATTR_NOINLINE ATTR_SUPER_OPTIMIZE Default_Handler()
+extern "C" void __noinline ATTR_SUPER_OPTIMIZE Default_Handler()
 {
   Irq::Vectors::handle();
 }

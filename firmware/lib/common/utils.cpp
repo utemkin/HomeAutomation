@@ -3,8 +3,12 @@
 namespace
 {
   volatile uint32_t s_value = 0;
-  uint32_t s_calValue = 0;
-  uint32_t s_calTotal = 0;
+  unsigned s_cal = 0;
+
+  constexpr unsigned calibrate(uint64_t const value, uint64_t const total)
+  {
+    return ((value << 16) + (total >> 1)) / total;
+  }
 
   extern "C" ATTR_SUPER_OPTIMIZE void vApplicationIdleHook()
   {
@@ -42,66 +46,38 @@ namespace Tools
     }
   }
 
-  void IdleMeasure::get(int& percent, int& hundreds)  //fixme: this measurement method doesn't account for time spent in interrupts
+  unsigned IdleMeasure::get(unsigned* tenths)
   {
     update();
     {
       OS::CriticalSection cs;
-      uint32_t p = m_value * 10000 / m_total;
-      percent = p / 100;
-      hundreds = p % 100;
+      unsigned const p = (::calibrate(m_value, m_total) * 1000u + (s_cal >> 1)) / s_cal;
+      if (tenths)
+      {
+        *tenths = p % 10u;
+        return  p / 10u;
+      }
+
+      return (p + 5u) / 10u;
     }
   }
 
-  void IdleMeasure2::update()
-  {
-    Sample next;
-    sample(next);
-    {
-      OS::CriticalSection cs;
-      m_value += next.value - m_previous.value;
-      m_total += next.total - m_previous.total;
-      m_previous = next;
-    }
-  }
-
-  void IdleMeasure2::get(int& percent, int& hundreds)
-  {
-    update();
-    {
-      OS::CriticalSection cs;
-      uint32_t p = ((m_value * 10000 + m_total /2 ) / m_total * s_calTotal + s_calValue / 2) / s_calValue;
-//      if (p > 10000)
-//        p = 10000;
-      percent = p / 100;
-      hundreds = p % 100;
-    }
-  }
-
-  void IdleMeasure2::calibrate()
+  void IdleMeasure::calibrate()
   {
     Sample s1, s2, s3;
-    OS::Thread::delay(2);
+    OS::Thread::delay(1);
     sample(s1);
-    OS::Thread::delay(2);
+    OS::Thread::delay(1);
     sample(s2);
-    OS::Thread::delay(12);
+    OS::Thread::delay(10);
     sample(s3);
-    s_calValue = (s3.value - s2.value * 2 + s1.value) * 6;
-    s_calTotal = (s3.total - s2.total) * 5;
 
-//    Sample s1, s2;
-//    OS::Thread::delay(2);
-//    sample(s1);
-//    OS::Thread::delay(100);
-//    sample(s2);
-//    s_calValue = s2.value - s1.value;
-//    s_calTotal = s2.total - s1.total;
-
-    printf("%lu %lu\n", s_calValue, s_calTotal);
+    unsigned const value = (s3.value - (s2.value << 1) + s1.value) * 10u;
+    unsigned const total = (s3.total - s2.total) * 9u;
+    s_cal = ::calibrate(value, total);
   }
 
-  void IdleMeasure2::sample(Sample& s)
+  void IdleMeasure::sample(Sample& s)
   {
     OS::InterruptDisabler id;
     s.value = s_value;

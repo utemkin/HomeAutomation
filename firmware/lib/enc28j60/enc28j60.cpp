@@ -762,16 +762,15 @@ namespace Enc28j60
           (this->*testFn)(buf, ctx);
           ++count;
         }
-        int percent;
-        int hundreds;
-        im.get(percent, hundreds);
+        unsigned tenths;
+        unsigned percent = im.get(&tenths);
         finish = xTaskGetTickCount();
         unsigned durationNs = (finish - start) * portTICK_PERIOD_MS * 1000000;
         unsigned cycleNs = (durationNs + count / 2) / count - offset;
         unsigned durationClk = (finish - start) * portTICK_PERIOD_MS * ((SystemCoreClock + 500) / 1000);
         unsigned offsetClk = (offset * ((SystemCoreClock + 500) / 1000) + 500000) / 1000000;
         unsigned cycleClk = (durationClk + count / 2) / count - offsetClk;
-        printf("               ... cycle = %u ns = %u CLKs CPU IDLE=%02u.%02u%%\n", cycleNs, cycleClk, percent, hundreds);
+        printf("               ... cycle = %u ns = %u CLKs CPU IDLE=%02u.%01u%%\n", cycleNs, cycleClk, percent, tenths);
         return cycleNs;
       }
 

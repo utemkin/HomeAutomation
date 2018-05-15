@@ -4,8 +4,6 @@
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
 #define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
-#define ATTR_NOINLINE __attribute__((noinline))
-#define ATTR_FORCEINLINE __attribute__((always_inline))
 
 namespace mstd
 {
@@ -268,44 +266,13 @@ namespace Tools
   class IdleMeasure
   {
   public:
+    static void calibrate();
     IdleMeasure()
     {
       sample(m_previous);
     }
     void update();
-    void get(int& percent, int& hundreds);
-
-  protected:
-    const TaskHandle_t m_idleTask = xTaskGetIdleTaskHandle();
-    struct Sample
-    {
-      uint32_t value;
-      uint32_t total;
-    };
-    Sample m_previous;
-    uint64_t m_value = 0;
-    uint64_t m_total = 0;
-
-  protected:
-    void sample(Sample& s)
-    {
-      TaskStatus_t status;
-      vTaskGetInfo(m_idleTask, &status, pdFALSE, eRunning);
-      s.value = status.ulRunTimeCounter;
-      s.total = portGET_RUN_TIME_COUNTER_VALUE();
-    }
-  };
-
-  class IdleMeasure2
-  {
-  public:
-    static void calibrate();
-    IdleMeasure2()
-    {
-      sample(m_previous);
-    }
-    void update();
-    void get(int& percent, int& hundreds);
+    unsigned get(unsigned* tenths = nullptr);
 
   protected:
     struct Sample
