@@ -44,18 +44,20 @@ extern "C" void maintask()
 
   uint32_t clk = DWT->CYCCNT;
   adc->convert();
+//  OS::Thread::yield();
+//  portYIELD();
   printf("%lu\n", DWT->CYCCNT - clk);
 
   for(;;)
   {
     Tools::IdleMeasure im;
 
-    OS::Thread::delay(1000);
+//    OS::Thread::delay(1000);
 
-//    for(int i = 0; i < 10000; ++i)
-//    {
-//      adc->convert();
-//    }
+    for(int i = 0; i < 10000; ++i)
+    {
+      adc->convert();
+    }
 
     unsigned tenths;
     printf("CPU IDLE=%02u.%01u%% %02u%%\n", im.get(&tenths), tenths, im.get());
