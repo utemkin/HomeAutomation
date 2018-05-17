@@ -72,8 +72,8 @@ namespace Tools
     OS::Thread::delay(10);
     sample(s3);
 
-    unsigned const value = (s3.value - (s2.value << 1) + s1.value) * 10u;
-    unsigned const total = (s3.total - s2.total) * 9u;
+    unsigned const value = s3.value - (s2.value << 1) + s1.value;
+    unsigned const total = s3.total - (s2.total << 1) + s1.total;
     s_cal = ::calibrate(value, total);
   }
 
@@ -81,6 +81,6 @@ namespace Tools
   {
     OS::InterruptDisabler id;
     s.value = s_value;
-    s.total = portGET_RUN_TIME_COUNTER_VALUE();
+    s.total = DWT->CYCCNT;
   }
 }
