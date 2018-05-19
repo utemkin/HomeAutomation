@@ -1,5 +1,7 @@
 #include <common/utils.h>
 
+extern "C" uint32_t tm[10];
+
 namespace
 {
   volatile uint32_t s_value = 0;
@@ -12,6 +14,9 @@ namespace
 
   extern "C" ATTR_SUPER_OPTIMIZE void vApplicationIdleHook()
   {
+
+    tm[1] = DWT->CYCCNT;
+
     for (;;)
       ++s_value;
   }
