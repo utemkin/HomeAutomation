@@ -1,5 +1,7 @@
 #include <common/utils.h>
 
+extern "C" uint32_t tm[10];
+
 namespace
 {
   volatile uint32_t s_value = 0;
@@ -12,6 +14,9 @@ namespace
 
   extern "C" ATTR_SUPER_OPTIMIZE void vApplicationIdleHook()
   {
+
+    tm[1] = DWT->CYCCNT;
+
     for (;;)
       ++s_value;
   }
@@ -72,8 +77,8 @@ namespace Tools
     OS::Thread::delay(10);
     sample(s3);
 
-    unsigned const value = (s3.value - (s2.value << 1) + s1.value) * 10u;
-    unsigned const total = (s3.total - s2.total) * 9u;
+    unsigned const value = s3.value - (s2.value << 1) + s1.value;
+    unsigned const total = s3.total - (s2.total << 1) + s1.total;
     s_cal = ::calibrate(value, total);
   }
 
@@ -81,6 +86,6 @@ namespace Tools
   {
     OS::InterruptDisabler id;
     s.value = s_value;
-    s.total = portGET_RUN_TIME_COUNTER_VALUE();
+    s.total = DWT->CYCCNT;
   }
 }

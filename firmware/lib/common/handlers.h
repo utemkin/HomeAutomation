@@ -28,11 +28,50 @@ namespace Irq
   protected:
     Handler* m_next = nullptr;
 
-    friend class Vectors;
+  friend class Vectors;
   };
 
-  class SignalingHandler : public Handler, public OS::BinarySemaphore
+  class SemaphoreHandler : public Handler, public OS::BinarySemaphore
   {
+  };
+
+  class SignalingHandler : public Handler
+  {
+  public:
+    void signal()
+    {
+      if (m_threadId == NULL)
+        Error_Handler();
+
+      osSignalSet(m_threadId, 1);
+    }
+
+  protected:
+    osThreadId m_threadId = NULL;
+
+  friend class SignalingWaiter;
+  };
+
+  class SignalingWaiter : mstd::noncopyable
+  {
+  public:
+    SignalingWaiter(SignalingHandler& handler)
+      : m_handler(handler)
+    {
+      m_handler.m_threadId = osThreadGetId();
+    }
+    ~SignalingWaiter()
+    {
+      m_handler.m_threadId = NULL;
+    }
+
+    bool wait(uint32_t timeout = osWaitForever)    //returns false if timeout, true otherwise
+    {
+      return !(osSignalWait(1, timeout).status == osEventTimeout);
+    }
+
+  protected:
+    SignalingHandler& m_handler;
   };
 
   template<class P, class T, bool(T::*func)(IRQn_Type)>

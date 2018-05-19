@@ -347,7 +347,7 @@ namespace Enc28j60
       DMA_Channel_TypeDef* m_dmaTx;
       uint32_t m_dmaTxFlags;
       DMA_Channel_TypeDef* m_dmaRx;
-      Irq::DelegatedHandler<Irq::SignalingHandler, SpiImpl, &SpiImpl::handleDmaTx> m_handlerDmaTx;
+      Irq::DelegatedHandler<Irq::SemaphoreHandler, SpiImpl, &SpiImpl::handleDmaTx> m_handlerDmaTx;
 
     protected:
       void deinit()

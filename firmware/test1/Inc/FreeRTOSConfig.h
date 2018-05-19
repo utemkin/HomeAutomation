@@ -154,7 +154,9 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */
 /* USER CODE BEGIN 1 */   
+#ifdef DEBUG
 #define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );} 
+#endif
 /* USER CODE END 1 */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
@@ -169,11 +171,6 @@ standard names. */
 /* USER CODE BEGIN Defines */   	      
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
 #define configUSE_NEWLIB_REENTRANT 1
-#define configGENERATE_RUN_TIME_STATS 1
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
-#define portGET_RUN_TIME_COUNTER_VALUE() (DWT->CYCCNT)
-#define INCLUDE_xTaskGetIdleTaskHandle 1
-#define configUSE_TRACE_FACILITY 1
 /* USER CODE END Defines */ 
 
 #endif /* FREERTOS_CONFIG_H */
