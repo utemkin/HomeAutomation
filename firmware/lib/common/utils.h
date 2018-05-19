@@ -112,7 +112,7 @@ namespace OS
   protected:
     osMutexId m_mutex;
 
-    friend class Lock<Mutex>;
+  friend class Lock<Mutex>;
   };
 
   class RecursiveMutex : mstd::noncopyable
@@ -141,7 +141,7 @@ namespace OS
   protected:
     osMutexId m_mutex;
 
-    friend class Lock<Mutex>;
+  friend class Lock<RecursiveMutex>;
   };
 
   class BinarySemaphore : mstd::noncopyable

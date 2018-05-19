@@ -39,8 +39,8 @@ extern "C" void maintask()
 
   Tools::IdleMeasure::calibrate();
 
-  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
-//  auto adc = Analog::CreateAdcStm32(0, 0, false);
+//  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
+  auto adc = Analog::CreateAdcStm32(0, 0, false);
 
   uint32_t clk = DWT->CYCCNT;
   adc->convert();
@@ -60,6 +60,6 @@ extern "C" void maintask()
     }
 
     unsigned tenths;
-    printf("CPU IDLE=%02u.%01u%% %02u%%\n", im.get(&tenths), tenths, im.get());
+    printf("CPU IDLE=%02u.%01u%%\n", im.get(&tenths), tenths);
   }
 }

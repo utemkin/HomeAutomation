@@ -137,7 +137,7 @@ namespace MicroLan
     static constexpr unsigned c_J =   410000;
     static constexpr unsigned c_odJ =  40000;
 
-    friend class Mac;
+  friend class Mac;
   };
 
   class Mac : mstd::noncopyable
@@ -324,7 +324,7 @@ namespace MicroLan
     {
     }
 
-    friend class Device;
+  friend class Device;
   };
 
   namespace DS18B20
