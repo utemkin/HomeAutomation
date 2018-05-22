@@ -1,31 +1,15 @@
-/*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
 /*
- * Setup for the LeafLabs Maple Mini.
+ * Setup for the VCC-GND STM32F103VET Mini.
  */
 
 /*
  * Board identifier.
  */
-#define BOARD_MAPLEMINI_STM32_F103
-#define BOARD_NAME              "LeafLabs Maple Mini"
+#define BOARD_VCCGND_MINI_STM32_F103
+#define BOARD_NAME              "VCC-GND STM32F103VET Mini"
 
 /*
  * Board frequencies.
@@ -36,67 +20,20 @@
 /*
  * MCU type, supported types are defined in ./os/hal/platforms/hal_lld.h.
  */
-#define STM32F103xB
+#define STM32F103xE
 
 /*
  * IO pins assignments
  *
  * numbering is sorted by onboard/connectors, as from the schematics in
- * https://github.com/leaflabs/maplemini
+ * http://wiki.stm32duino.com/images/8/89/Vcc-gnd.com-STM32F103VET_mini-schematic.pdf
  */
 
 /* on-board */
 
-#define GPIOB_LED               1
-#define GPIOB_USB_DISC          9
+#define GPIOB_LED               9
 #define GPIOD_OSC_IN            0
 #define GPIOD_OSC_OUT           1
-
-/* J1 connector */
-
-// pin 1:       AV+
-// pin 2:       AV-
-// pin 3:       VBAT
-#define GPIOC_TAMPER_RTC        13      // pin 4
-#define GPIOC_OSC32_IN          14      // pin 5
-#define GPIOC_OSD32_OUT         15      // pin 6
-// pin 7:       RESET
-#define GPIOA_USART2_CTS        0       // pin 8
-#define GPIOA_USART2_RTS        1       // pin 9
-#define GPIOA_USART2_TX         2       // pin 10
-#define GPIOA_USART2_RX         3       // pin 11
-#define GPIOA_SPI1_NSS          4       // pin 12
-#define GPIOA_SPI1_SCK          5       // pin 13
-#define GPIOA_SPI1_MISO         6       // pin 14
-#define GPIOA_SPI1_MOSI         7       // pin 15
-#define GPIOB_ADC12_IN8         0       // pin 16
-#define GPIOB_BOOT1             2       // pin 17
-#define GPIOB_I2C2_SCL          10      // pin 18
-#define GPIOB_I2C2_SDA          11      // pin 19
-// pin 20: VIN
-
-/* J2 connector */
-
-#define GPIOB_SPI2_NSS          12      // pin 1
-#define GPIOB_SPI2_SCK          13      // pin 2
-#define GPIOB_SPI2_MISO         14      // pin 3
-#define GPIOB_SPI2_MOSI         15      // pin 4
-#define GPIOA_USART1_CK         8       // pin 5
-#define GPIOA_USART1_TX         9       // pin 6
-#define GPIOA_USART1_RX         10      // pin 7
-#define GPIOA_USBDM             11      // pin 8
-#define GPIOA_USBDP             12      // pin 9
-#define GPIOA_JTMS              13      // pin 10
-#define GPIOA_JTCK              14      // pin 11
-#define GPIOA_JTDI              15      // pin 12
-#define GPIOB_JTDO              3       // pin 13
-#define GPIOB_JTRST             4       // pin 14
-#define GPIOB_I2C1_SMBA         5       // pin 15
-#define GPIOB_I2C1_SCL          6       // pin 16
-#define GPIOB_I2C1_SDA          7       // pin 17
-#define GPIOB_BOOT0_BUTTON      8       // pin 18
-// pin 19: GND
-// pin 20: VCC
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
@@ -125,22 +62,17 @@
 /*
  * Port A setup.
  * Everything input with pull-up except:
- * PA2  - Alternate output  (USART2 TX).
- * PA3  - Normal input      (USART2 RX).
- * PA9  - Alternate output  (USART1 TX).
- * PA10 - Normal input      (USART1 RX).
  */
-#define VAL_GPIOACRL            0x88884B88      /*  PA7...PA0 */
-#define VAL_GPIOACRH            0x888884B8      /* PA15...PA8 */
+#define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
+#define VAL_GPIOACRH            0x88888888      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
 /*
  * Port B setup.
  * Everything input with pull-up except:
- * PB1    - Push Pull output  (LED).
- * PB9    - Push Pull output  (USB switch).
+ * PB9    - Push Pull output  (LED).
  */
-#define VAL_GPIOBCRL            0x88888838      /*  PB7...PB0 */
+#define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
 #define VAL_GPIOBCRH            0x88888838      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
@@ -171,14 +103,30 @@
 #define VAL_GPIOEODR            0xFFFFFFFF
 
 /*
+ * Port F setup.
+ * Everything input with pull-up expect:
+ */
+#define VAL_GPIOFCRL            0x88888888      /*  PF7...PF0 */
+#define VAL_GPIOFCRH            0x88888888      /* PF15...PF8 */
+#define VAL_GPIOFODR            0xFFFFFFFF
+
+/*
+ * Port G setup.
+ * Everything input with pull-up expect:
+ */
+#define VAL_GPIOGCRL            0x88888888      /*  PG7...PG0 */
+#define VAL_GPIOGCRH            0x88888888      /* PG15...PG8 */
+#define VAL_GPIOGODR            0xFFFFFFFF
+
+/*
  * USB bus activation macro, required by the USB driver.
  */
-#define usb_lld_connect_bus(usbp) palClearPad(GPIOB, GPIOB_USB_DISC)
+#define usb_lld_connect_bus(usbp) 
 
 /*
  * USB bus de-activation macro, required by the USB driver.
  */
-#define usb_lld_disconnect_bus(usbp) palSetPad(GPIOB, GPIOB_USB_DISC)
+#define usb_lld_disconnect_bus(usbp) 
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus

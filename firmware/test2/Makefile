@@ -83,7 +83,7 @@ endif
 #
 
 # Define project name here
-PROJECT = ch
+PROJECT = test2
 
 # Imported source files and paths
 CHIBIOS = ../ChibiOS

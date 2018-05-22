@@ -42,14 +42,14 @@
  * @brief   System time counter resolution.
  * @note    Allowed values are 16 or 32 bits.
  */
-#define CH_CFG_ST_RESOLUTION                32
+#define CH_CFG_ST_RESOLUTION                16
 
 /**
  * @brief   System tick frequency.
  * @details Frequency of the system timer that drives the system ticks. This
  *          setting also defines the system tick time unit.
  */
-#define CH_CFG_ST_FREQUENCY                 10000
+#define CH_CFG_ST_FREQUENCY                 2000
 
 /**
  * @brief   Time intervals data size.
@@ -153,7 +153,7 @@
  *
  * @note    The default is @p TRUE.
  */
-#define CH_CFG_USE_TM                       TRUE
+#define CH_CFG_USE_TM                       FALSE
 
 /**
  * @brief   Threads registry APIs.
