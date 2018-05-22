@@ -31,7 +31,7 @@
 
 /* on-board */
 
-#define GPIOB_LED               9
+#define LINE_LED                PAL_LINE(GPIOB, 9U)
 #define GPIOD_OSC_IN            0
 #define GPIOD_OSC_OUT           1
 

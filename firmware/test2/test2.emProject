@@ -25,7 +25,18 @@
       Name="Debug"
       external_build_command="build.bat DEBUG=1"
       external_clean_command="build.bat DEBUG=1 clean" />
+    <file file_name="main.cpp" />
+    <folder Name="segger">
+      <file file_name="../lib/segger/SEGGER_RTT.c" />
+    </folder>
+    <file file_name="chconf.h" />
+    <file file_name="halconf.h" />
+    <file file_name="Makefile" />
+    <file file_name="mcuconf.h" />
   </project>
   <configuration Name="Release" />
   <configuration Name="Debug" />
+  <configuration
+    Name="Common"
+    c_system_include_directories=".;$(SolutionDir)/../ChibiOS" />
 </solution>

@@ -73,9 +73,9 @@ typedef struct {
 // Flashing sequence for LED3.
 static const seqop_t LED_sequence[] =
 {
-  {BITSET,      GPIOB_LED},
+  {BITSET,      LINE_LED},
   {SLEEP,       800},
-  {BITCLEAR,    GPIOB_LED},
+  {BITCLEAR,    LINE_LED},
   {SLEEP,       200},
   {GOTO,        0}
 };
