@@ -1,0 +1,31 @@
+<!DOCTYPE CrossStudio_Project_File>
+<solution Name="test2" target="8" version="2">
+  <project Name="test2">
+    <configuration
+      Name="Common"
+      arm_architecture="v7M"
+      arm_core_type="Cortex-M3"
+      arm_endian="Little"
+      arm_fp_abi="Soft"
+      arm_fpu_type="None"
+      arm_simulator_memory_simulation_parameter="RX 08000000,00080000,FFFFFFFF;RWX 20000000,00010000,CDCDCDCD"
+      arm_target_device_name="STM32F103VE"
+      arm_target_interface_type="SWD"
+      build_output_directory="build/$(Configuration)"
+      debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F103xx.svd"
+      debug_start_from_entry_point_symbol="No"
+      debug_target_connection="J-Link"
+      external_build_command="build.bat"
+      external_build_file_name="$(OutDir)/$(ProjectName).elf"
+      external_clean_command="build.bat clean"
+      linker_section_placements_segments="FLASH RX 0x08000000 0x00080000;SRAM RWX 0x20000000 0x00010000"
+      project_directory=""
+      project_type="Externally Built Executable" />
+    <configuration
+      Name="Debug"
+      external_build_command="build.bat DEBUG=1"
+      external_clean_command="build.bat DEBUG=1 clean" />
+  </project>
+  <configuration Name="Release" />
+  <configuration Name="Debug" />
+</solution>

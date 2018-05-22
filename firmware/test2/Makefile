@@ -3,9 +3,21 @@
 # NOTE: Can be overridden externally.
 #
 
+ifeq ($(DEBUG),)
+  BUILDDIR = build/Release
+else
+  BUILDDIR = build/Debug
+endif
+
+DEPDIR = $(BUILDDIR)/dep
+
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  ifeq ($(DEBUG),)
+    USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  else
+    USE_OPT = -O0 -ggdb -falign-functions=16
+  endif
 endif
 
 # C specific options here (added to USE_OPT).
