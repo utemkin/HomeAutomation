@@ -43,7 +43,11 @@ namespace Irq
       if (m_threadId == NULL)
         Error_Handler();
 
-      osSignalSet(m_threadId, 1);
+//      osSignalSet(m_threadId, 1);
+      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+      xTaskGenericNotifyFromISR(m_threadId, 1, eSetBits, NULL, &xHigherPriorityTaskWoken);
+      portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
     }
 
   protected:

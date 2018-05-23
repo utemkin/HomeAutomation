@@ -123,10 +123,11 @@ namespace Analog
 
         tm[0] = DWT->CYCCNT;
 
-        w.wait();
-//        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+//        w.wait();
+//        wait();
+        xTaskNotifyWait(0, 1, NULL, portMAX_DELAY);
 
-        tm[3] = DWT->CYCCNT;
+        tm[4] = DWT->CYCCNT;
 
       }
       
@@ -162,6 +163,9 @@ namespace Analog
           tm[2] = DWT->CYCCNT;
 
           m_handlerDma1Rx.signal();    //distinguish success and error
+
+          tm[3] = DWT->CYCCNT;
+
           return true;
         }
 
