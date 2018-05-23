@@ -175,7 +175,7 @@ static SequencerThread sender1(msg_sequence);
 /*
  * Application entry point.
  */
-fint main(void) {
+int main(void) {
 
   /*
    * System initializations.
