@@ -124,7 +124,8 @@ LDSCRIPT= $(STARTUPLD)/STM32F103xE.ld
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
-       $(TESTSRC) 
+       $(TESTSRC) \
+       ../lib/segger/SEGGER_RTT.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

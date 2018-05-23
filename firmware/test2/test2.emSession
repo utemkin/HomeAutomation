@@ -61,10 +61,10 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="209" useTextEdit="1" useBinaryEdit="0" left="0" path="main.cpp" debugPath="main.cpp" selected="1" top="164" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="45" y="145" useTextEdit="1" useBinaryEdit="0" left="0" path="main.cpp" debugPath="main.cpp" selected="1" top="127" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="766" useTextEdit="1" useBinaryEdit="0" left="0" path="../ChibiOS/os/common/startup/ARMCMx/compilers/GCC/vectors.S" debugPath="../ChibiOS/os/common/startup/ARMCMx/compilers/GCC/vectors.S" selected="0" top="746" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="78" useTextEdit="1" useBinaryEdit="0" left="0" path="../ChibiOS/os/rt/src/chsys.c" debugPath="../ChibiOS/os/rt/src/chsys.c" selected="0" top="58" codecName=""/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="698" useTextEdit="1" useBinaryEdit="0" left="0" path="../ChibiOS/os/common/ports/ARMCMx/chcore_v7m.h" debugPath="../ChibiOS/os/common/ports/ARMCMx/chcore_v7m.h" selected="0" top="673" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="78" useTextEdit="1" useBinaryEdit="0" left="0" path="../ChibiOS/os/rt/src/chsys.c" debugPath="../ChibiOS/os/rt/src/chsys.c" selected="0" top="58" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="698" useTextEdit="1" useBinaryEdit="0" left="0" path="../ChibiOS/os/common/ports/ARMCMx/chcore_v7m.h" debugPath="../ChibiOS/os/common/ports/ARMCMx/chcore_v7m.h" selected="0" top="673" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="test2" fileDialogDefaultFilter="" autoConnectTarget="J-Link" buildConfiguration="Debug" debugSearchFileMap="" fileDialogInitialDirectory="C:/software/HomeAutomation/firmware/test2" debugSearchPath="" autoConnectCapabilities="3711"/>
+ <ARMCrossStudioWindow activeProject="test2" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" debugSearchFileMap="" fileDialogInitialDirectory="C:/software/HomeAutomation/firmware/test2" debugSearchPath="" autoConnectCapabilities="3199"/>
 </session>
