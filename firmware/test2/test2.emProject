@@ -11,6 +11,7 @@
       arm_simulator_memory_simulation_parameter="RX 08000000,00080000,FFFFFFFF;RWX 20000000,00010000,CDCDCDCD"
       arm_target_device_name="STM32F103VE"
       arm_target_interface_type="SWD"
+      build_intermediate_directory="build/$(Configuration)/obj"
       build_output_directory="build/$(Configuration)"
       debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F103xx.svd"
       debug_start_from_entry_point_symbol="No"
@@ -33,10 +34,12 @@
     <file file_name="halconf.h" />
     <file file_name="Makefile" />
     <file file_name="mcuconf.h" />
+    <file file_name="rttstreams.c" />
   </project>
   <configuration Name="Release" />
   <configuration Name="Debug" />
   <configuration
     Name="Common"
+    build_quietly="No"
     c_system_include_directories=".;$(SolutionDir)/../ChibiOS" />
 </solution>

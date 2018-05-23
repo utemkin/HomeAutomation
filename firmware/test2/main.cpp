@@ -18,8 +18,21 @@
 #include "hal.h"
 #include "rt_test_root.h"
 #include "oslib_test_root.h"
+#include "rttstreams.h"
+#include "chprintf.h"
+#include "shell.h"
+#include "shell_cmd.h"
+
+#define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(1024)
 
 using namespace chibios_rt;
+
+RttStream RS;
+
+static const ShellConfig shell_cfg1 = {
+  (BaseSequentialStream *)&RS,
+  shell_local_commands
+};
 
 /*
  * Message server thread class. It receives messages and does nothing except
@@ -143,8 +156,8 @@ protected:
 
     setName("tester");
 
-    test_execute((BaseSequentialStream *)&SD2, &rt_test_suite);
-    test_execute((BaseSequentialStream *)&SD2, &oslib_test_suite);
+    test_execute((BaseSequentialStream *)&RS, &rt_test_suite);
+    test_execute((BaseSequentialStream *)&RS, &oslib_test_suite);
     exit(test_global_fail);
   }
 
@@ -162,7 +175,7 @@ static SequencerThread sender1(msg_sequence);
 /*
  * Application entry point.
  */
-int main(void) {
+fint main(void) {
 
   /*
    * System initializations.
@@ -174,11 +187,16 @@ int main(void) {
   halInit();
   System::init();
 
+  rttObjectInit(&RS);
+  chprintf((BaseSequentialStream*)&RS, "hello\n");
+
+  shellInit();
+
   /*
    * Activates the serial driver 2 using the driver default configuration.
    * PA2(TX) and PA3(RX) are routed to USART2.
    */
-  sdStart(&SD2, NULL);
+//  sdStart(&SD2, NULL);
 //  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
 //  palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
 
@@ -194,6 +212,9 @@ int main(void) {
   blinker1.start(NORMALPRIO + 10);
   sender1.start(NORMALPRIO + 10);
 
+//  ThreadReference tref = tester.start(NORMALPRIO);
+//  tref.wait();
+
   /*
    * Serves timer events.
    */
@@ -202,6 +223,11 @@ int main(void) {
 //      ThreadReference tref = tester.start(NORMALPRIO);
 //      tref.wait();
 //    };
+    thread_t *shelltp = chThdCreateFromHeap(NULL, SHELL_WA_SIZE,
+                                            "shell", NORMALPRIO + 1,
+                                            shellThread, (void *)&shell_cfg1);
+    chThdWait(shelltp);               /* Waiting termination.             */
+
     BaseThread::sleep(TIME_MS2I(500));
   }
 
