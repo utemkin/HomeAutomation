@@ -2,8 +2,7 @@
 #include <common/handlers.h>
 #include <limits>
 
-extern "C" uint32_t tm[10];
-uint32_t tm[10];
+//#define USE_SEMAPHORE 1
 
 namespace Analog
 {
@@ -114,21 +113,20 @@ namespace Analog
 
       virtual void convert() override
       {
+#ifndef USE_SEMAPHORE
         Irq::SignalingWaiter w(m_handlerDma1Rx);
+#endif
 
         if (m_switchBsrr)
           start2();
         else
           start1();
 
-        tm[0] = DWT->CYCCNT;
-
-//        w.wait();
-//        wait();
-        xTaskNotifyWait(0, 1, NULL, portMAX_DELAY);
-
-        tm[4] = DWT->CYCCNT;
-
+#ifndef USE_SEMAPHORE
+        w.wait();
+#else
+        m_handlerDma1Rx.wait();
+#endif
       }
       
     protected:
@@ -146,7 +144,6 @@ namespace Analog
 #if defined(STM32F1)
         *m_switchBsrr = m_switchSelect2;
         m_dma2Rx->CNDTR = c_data2Size;
-//        m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC /*| DMA_CCR_TCIE | DMA_CCR_TEIE*/ | DMA_CCR_EN;
         m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
 #endif
@@ -159,13 +156,7 @@ namespace Analog
         {
           m_dma1->IFCR = clear;
           m_dma1Rx->CCR = 0;
-
-          tm[2] = DWT->CYCCNT;
-
           m_handlerDma1Rx.signal();    //distinguish success and error
-
-          tm[3] = DWT->CYCCNT;
-
           return true;
         }
 
@@ -199,8 +190,11 @@ namespace Analog
       DMA_TypeDef* m_dma1;
       DMA_Channel_TypeDef* m_dma1Rx;
       uint32_t m_dma1RxFlags;
-//      Irq::DelegatedHandler<Irq::SemaphoreHandler, AdcImpl, &AdcImpl::handleDma1Rx> m_handlerDma1Rx;
+#ifndef USE_SEMAPHORE
       Irq::DelegatedHandler<Irq::SignalingHandler, AdcImpl, &AdcImpl::handleDma1Rx> m_handlerDma1Rx;
+#else
+      Irq::DelegatedHandler<Irq::SemaphoreHandler, AdcImpl, &AdcImpl::handleDma1Rx> m_handlerDma1Rx;
+#endif
       DMA_TypeDef* m_dma2;
       DMA_Channel_TypeDef* m_dma2Rx;
       uint32_t m_dma2RxFlags;
