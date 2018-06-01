@@ -9,7 +9,7 @@ namespace
 
   constexpr unsigned calibrate(uint64_t const value, uint64_t const total)
   {
-    return ((value << 16) + (total >> 1)) / total;
+    return unsigned(mstd::ridiv(value << 16, total));
   }
 
   extern "C" ATTR_SUPER_OPTIMIZE void vApplicationIdleHook()
@@ -56,14 +56,14 @@ namespace Tools
     update();
     {
       OS::CriticalSection cs;
-      unsigned const p = (::calibrate(m_value, m_total) * 1000u + (s_cal >> 1)) / s_cal;
+      unsigned const p = mstd::ridiv(::calibrate(m_value, m_total) * 1000u, s_cal);
       if (tenths)
       {
         *tenths = p % 10u;
         return  p / 10u;
       }
 
-      return (p + 5u) / 10u;
+      return mstd::ridiv(p, 10u);
     }
   }
 

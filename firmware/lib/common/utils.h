@@ -1,6 +1,7 @@
 #pragma once
 #include "cmsis_os.h"
 #include <memory>
+#include <limits>
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
 #define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
@@ -20,6 +21,20 @@ namespace mstd
     noncopyable(const noncopyable&) = delete;
     noncopyable& operator =(const noncopyable&) = delete;
   };
+
+  template<typename T>
+  constexpr T ridiv(T const v1, T const v2)
+  {
+    return (v1 + (v2 >> 1)) / v2;
+  }
+
+  template<int shift, typename T>
+  constexpr T rsar(T const v)
+  {
+    using UT = typename std::make_unsigned<T>::type;
+    UT const offset = std::numeric_limits<UT>::max() / 2 + 1;
+    return T((UT(v) + offset + (UT(1) << (shift - 1))) >> shift) - T(offset >> shift);
+  }
 }
 
 namespace RT
