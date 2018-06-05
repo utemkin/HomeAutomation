@@ -76,7 +76,10 @@ namespace Enc28j60
         , m_handlerDmaTx(this)
       {
 #if defined(STM32F1)
-        if (m_spi == SPI1)
+        if (false)
+          ;
+#  ifdef SPI1
+        else if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_CLK_ENABLE();
           
@@ -89,6 +92,7 @@ namespace Enc28j60
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
           m_dmaRx = DMA1_Channel2;
         }
+#  endif
 #  ifdef SPI2
         else if (m_spi == SPI2)
         {
