@@ -15,18 +15,31 @@ namespace Irq
   class Handler : mstd::noncopyable
   {
   public:
-    // instance of Handler can only be installed once
-    void install(IRQn_Type IRQn);
-
-  protected:
-    virtual ~Handler()
+    ~Handler()
     {
       Error_Handler();
     }
-    virtual bool handle(IRQn_Type IRQn) = 0;
+
+    // instance of Handler can only be installed once
+    void install(IRQn_Type IRQn, bool(*func)(void*, IRQn_Type IRQn), void* ctx);
+
+    template<class T, bool(T::*func)(IRQn_Type IRQn)>
+    void install(IRQn_Type IRQn, T& obj)
+    {
+      install(IRQn, &Handler::f<T, func>, &obj);
+    }
+
+  protected:
+    template<class T, bool(T::*func)(IRQn_Type IRQn)>
+    static bool f(void* ctx, IRQn_Type IRQn)
+    {
+      return (static_cast<T*>(ctx)->*func)(IRQn);
+    }
 
   protected:
     Handler* m_next = nullptr;
+    bool(*m_func)(void*, IRQn_Type IRQn);
+    void* m_ctx;
 
   friend class Vectors;
   };
@@ -72,24 +85,5 @@ namespace Irq
 
   protected:
     SignalingHandler& m_handler;
-  };
-
-  template<class P, class T, bool(T::*func)(IRQn_Type)>
-  class DelegatedHandler : public P
-  {
-  public:
-    DelegatedHandler(T* object)
-      : m_object(object)
-    {
-    }
-
-  protected:
-    virtual bool handle(IRQn_Type IRQn) override
-    {
-      return (m_object->*func)(IRQn);
-    }
-
-  protected:
-    T* m_object;
   };
 }

@@ -15,8 +15,6 @@ namespace Analog
         : m_switchBsrr(switchGPIO ? &switchGPIO->BSRR : nullptr)
         , m_switchSelect1(switchInvert ? switchPin << 16 : switchPin)
         , m_switchSelect2(switchInvert ? switchPin : switchPin << 16)
-        , m_handlerDma1Rx(this)
-        , m_handlerDma2Rx(this)
       {
 #if defined(STM32F1)
         __HAL_RCC_ADC1_CLK_ENABLE();
@@ -88,7 +86,7 @@ namespace Analog
         m_dma1 = DMA1;
         m_dma1Rx = DMA1_Channel1;
         m_dma1RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (1 - 1) * 4;
-        m_handlerDma1Rx.install(DMA1_Channel1_IRQn);
+        m_handlerDma1Rx.install<AdcImpl, &AdcImpl::handleDma1Rx>(DMA1_Channel1_IRQn, *this);
         HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
         m_dma1Rx->CPAR = uint32_t(&m_adc1->DR);
@@ -100,7 +98,7 @@ namespace Analog
           m_dma2 = DMA2;
           m_dma2Rx = DMA2_Channel5;
           m_dma2RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
-          m_handlerDma2Rx.install(DMA2_Channel4_5_IRQn);
+          m_handlerDma2Rx.install<AdcImpl, &AdcImpl::handleDma2Rx>(DMA2_Channel4_5_IRQn, *this);
           HAL_NVIC_SetPriority(DMA2_Channel4_5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel4_5_IRQn);
           m_dma2Rx->CPAR = uint32_t(&m_adc3->DR);
@@ -191,14 +189,14 @@ namespace Analog
       DMA_Channel_TypeDef* m_dma1Rx;
       uint32_t m_dma1RxFlags;
 #ifndef USE_SEMAPHORE
-      Irq::DelegatedHandler<Irq::SignalingHandler, AdcImpl, &AdcImpl::handleDma1Rx> m_handlerDma1Rx;
+      Irq::SignalingHandler m_handlerDma1Rx;
 #else
-      Irq::DelegatedHandler<Irq::SemaphoreHandler, AdcImpl, &AdcImpl::handleDma1Rx> m_handlerDma1Rx;
+      Irq::SemaphoreHandler m_handlerDma1Rx;
 #endif
       DMA_TypeDef* m_dma2;
       DMA_Channel_TypeDef* m_dma2Rx;
       uint32_t m_dma2RxFlags;
-      Irq::DelegatedHandler<Irq::Handler, AdcImpl, &AdcImpl::handleDma2Rx> m_handlerDma2Rx;
+      Irq::Handler m_handlerDma2Rx;
       uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
     };
   }

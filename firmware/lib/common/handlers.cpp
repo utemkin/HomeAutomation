@@ -26,10 +26,13 @@ namespace
   std::atomic<Irq::Handler*> handlers[NUM_HANDLERS + 16];
 }
 
-void Irq::Handler::install(IRQn_Type IRQn)
+void Irq::Handler::install(IRQn_Type IRQn, bool(*func)(void*, IRQn_Type IRQn), void* ctx)
 {
   if (m_next)
     Error_Handler();
+
+  m_func = func;
+  m_ctx = ctx;
 
   IRQn = IRQn_Type(int(IRQn) + 16);
   assert_param(IRQn < NUM_HANDLERS + 16);
@@ -41,9 +44,9 @@ void __always_inline ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
 {
   unsigned IRQn = __get_IPSR();
   Irq::Handler* next = handlers[IRQn].load(std::memory_order_acquire);
-  bool handled = false;
-  for(;next != 0; next = next->m_next)
-    handled |= next->handle(IRQn_Type(IRQn));
+  unsigned handled = 0;
+  for(;next; next = next->m_next)
+    handled += next->m_func(next->m_ctx, IRQn_Type(IRQn));
 
   if (!handled)
     Error_Handler();

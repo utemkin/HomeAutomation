@@ -7,7 +7,7 @@
 #include "main.h"
 #include "adc.h"
 
-uint32_t tm[10] = {};
+//uint32_t tm[10] = {};
 
 static uint16_t s_buf[7 + 7 + 6];
 
@@ -31,7 +31,6 @@ class HiresTimer
 public:
   HiresTimer(TIM_TypeDef *const tim, uint32_t const hz)
     : m_tim(tim)
-    , m_handler(this)
   {
     uint32_t pclk;
     RCC_ClkInitTypeDef clk;
@@ -49,7 +48,7 @@ public:
       pclk = HAL_RCC_GetPCLK2Freq();
       if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM1_UP_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM1_UP_IRQn, *this);
       HAL_NVIC_SetPriority(TIM1_UP_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
     }
@@ -63,7 +62,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM2_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM2_IRQn, *this);
       HAL_NVIC_SetPriority(TIM2_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM2_IRQn);
     }
@@ -77,7 +76,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM3_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM3_IRQn, *this);
       HAL_NVIC_SetPriority(TIM3_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM3_IRQn);
     }
@@ -91,7 +90,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM4_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM4_IRQn, *this);
       HAL_NVIC_SetPriority(TIM4_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM4_IRQn);
     }
@@ -105,7 +104,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM5_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM5_IRQn, *this);
       HAL_NVIC_SetPriority(TIM5_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM5_IRQn);
     }
@@ -119,7 +118,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM6_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM6_IRQn, *this);
       HAL_NVIC_SetPriority(TIM6_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM6_IRQn);
     }
@@ -133,7 +132,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM7_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM7_IRQn, *this);
       HAL_NVIC_SetPriority(TIM7_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM7_IRQn);
     }
@@ -147,7 +146,7 @@ public:
       pclk = HAL_RCC_GetPCLK2Freq();
       if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
         pclk <<= 1;
-      m_handler.install(TIM8_UP_IRQn);
+      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM8_UP_IRQn, *this);
       HAL_NVIC_SetPriority(TIM8_UP_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
     }
@@ -175,25 +174,45 @@ public:
     m_tim->EGR = TIM_EGR_UG;
     m_tim->ARR = div - 1;
 
-    tm[0] = DWT->CYCCNT;
+//    tm[0] = DWT->CYCCNT;
 
     m_tim->CR1 = TIM_CR1_URS | TIM_CR1_CEN;
   }
 
-  bool handle(IRQn_Type)
+  bool handleTim(IRQn_Type)
   {
-    uint16_t const sr = m_tim->SR;
+    auto const sr = m_tim->SR;
     if (sr & TIM_SR_UIF)
     {
       m_tim->SR = sr & ~TIM_SR_UIF;
 //      m_handlerDmaTx.signal();    //distinguish success and error
 
-      if (tm[1] == 0)
-        tm[1] = DWT->CYCCNT;
-      else if (tm[2] == 0)
-        tm[2] = DWT->CYCCNT;
-      else if (tm[3] == 0)
-        tm[3] = DWT->CYCCNT;
+//      if (tm[1] == 0)
+//        tm[1] = DWT->CYCCNT;
+//      else if (tm[2] == 0)
+//        tm[2] = DWT->CYCCNT;
+//      else if (tm[3] == 0)
+//        tm[3] = DWT->CYCCNT;
+
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
+//      __NOP();
 
       return true;
     }
@@ -203,7 +222,7 @@ public:
 
 protected:
       TIM_TypeDef* const m_tim;
-      Irq::DelegatedHandler<Irq::Handler, HiresTimer, &HiresTimer::handle> m_handler;
+      Irq::Handler m_handler;
 };
 
 extern "C" void maintask()
@@ -230,8 +249,8 @@ extern "C" void maintask()
 ////  portYIELD();
 //  printf("%lu\n", DWT->CYCCNT - clk);
 
-  HiresTimer ht(TIM7, 1000);
-  OS::Thread::delay(1000);
+  HiresTimer ht(TIM7, 72000000 / 1000);
+//  OS::Thread::delay(1000);
 
   for(;;)
   {
