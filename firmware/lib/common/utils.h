@@ -35,6 +35,46 @@ namespace mstd
     UT const offset = std::numeric_limits<UT>::max() / 2 + 1;
     return T((UT(v) + offset + (UT(1) << (shift - 1))) >> shift) - T(offset >> shift);
   }
+
+  template<typename Ret, typename ...Args>
+  class Callback
+  {
+  public:
+    Callback() = default;
+
+    template<typename T, Ret(T::*func)(Args...)>
+    static Callback make(T& obj)
+    {
+      return Callback(&Callback::fn<T, func>, &obj);
+    }
+
+    operator bool() const
+    {
+      return !!m_func;
+    }
+
+    Ret operator()(Args... args) const
+    {
+      return m_func(m_ctx, args...);
+    }
+
+  protected:
+    Ret(*m_func)(void*, Args...) = nullptr;
+    void* m_ctx;
+
+  protected:
+    Callback(Ret(*func)(void*, Args...), void* ctx)
+      : m_func(func)
+      , m_ctx(ctx)
+    {
+    }
+
+    template<typename T, Ret(T::*func)(Args...)>
+    static bool fn(void* ctx, Args ...args)
+    {
+      return (static_cast<T*>(ctx)->*func)(args...);
+    }
+  };
 }
 
 namespace RT

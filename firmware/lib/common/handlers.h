@@ -15,42 +15,46 @@ namespace Irq
   class Handler : mstd::noncopyable
   {
   public:
+    using Callback = mstd::Callback<bool, IRQn_Type>;
+
+  public:
+    Handler(Callback&& callback)
+      : m_callback(std::move(callback))
+    {
+    }
+
     ~Handler()
     {
       Error_Handler();
     }
 
     // instance of Handler can only be installed once
-    void install(IRQn_Type IRQn, bool(*func)(void*, IRQn_Type IRQn), void* ctx);
-
-    template<class T, bool(T::*func)(IRQn_Type IRQn)>
-    void install(IRQn_Type IRQn, T& obj)
-    {
-      install(IRQn, &Handler::f<T, func>, &obj);
-    }
-
-  protected:
-    template<class T, bool(T::*func)(IRQn_Type IRQn)>
-    static bool f(void* ctx, IRQn_Type IRQn)
-    {
-      return (static_cast<T*>(ctx)->*func)(IRQn);
-    }
+    void install(IRQn_Type IRQn);
 
   protected:
     Handler* m_next = nullptr;
-    bool(*m_func)(void*, IRQn_Type IRQn);
-    void* m_ctx;
+    Callback m_callback;
 
   friend class Vectors;
   };
 
   class SemaphoreHandler : public Handler, public OS::BinarySemaphore
   {
+  public:
+    SemaphoreHandler(Callback&& callback)
+      : Handler(std::move(callback))
+    {
+    }
   };
 
   class SignalingHandler : public Handler
   {
   public:
+    SignalingHandler(Callback&& callback)
+      : Handler(std::move(callback))
+    {
+    }
+
     void signal()
     {
       if (m_threadId == NULL)

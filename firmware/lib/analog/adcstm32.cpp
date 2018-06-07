@@ -15,6 +15,8 @@ namespace Analog
         : m_switchBsrr(switchGPIO ? &switchGPIO->BSRR : nullptr)
         , m_switchSelect1(switchInvert ? switchPin << 16 : switchPin)
         , m_switchSelect2(switchInvert ? switchPin : switchPin << 16)
+        , m_handlerDma1Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1Rx>(*this))
+        , m_handlerDma2Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2Rx>(*this))
       {
 #if defined(STM32F1)
         __HAL_RCC_ADC1_CLK_ENABLE();
@@ -86,7 +88,7 @@ namespace Analog
         m_dma1 = DMA1;
         m_dma1Rx = DMA1_Channel1;
         m_dma1RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (1 - 1) * 4;
-        m_handlerDma1Rx.install<AdcImpl, &AdcImpl::handleDma1Rx>(DMA1_Channel1_IRQn, *this);
+        m_handlerDma1Rx.install(DMA1_Channel1_IRQn);
         HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
         m_dma1Rx->CPAR = uint32_t(&m_adc1->DR);
@@ -98,7 +100,7 @@ namespace Analog
           m_dma2 = DMA2;
           m_dma2Rx = DMA2_Channel5;
           m_dma2RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
-          m_handlerDma2Rx.install<AdcImpl, &AdcImpl::handleDma2Rx>(DMA2_Channel4_5_IRQn, *this);
+          m_handlerDma2Rx.install(DMA2_Channel4_5_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel4_5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel4_5_IRQn);
           m_dma2Rx->CPAR = uint32_t(&m_adc3->DR);

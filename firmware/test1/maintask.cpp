@@ -31,6 +31,7 @@ class HiresTimer
 public:
   HiresTimer(TIM_TypeDef *const tim, uint32_t const hz)
     : m_tim(tim)
+    , m_handler(Irq::Handler::Callback::make<HiresTimer, &HiresTimer::handleTim>(*this))
   {
     uint32_t pclk;
     RCC_ClkInitTypeDef clk;
@@ -48,7 +49,7 @@ public:
       pclk = HAL_RCC_GetPCLK2Freq();
       if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM1_UP_IRQn, *this);
+      m_handler.install(TIM1_UP_IRQn);
       HAL_NVIC_SetPriority(TIM1_UP_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
     }
@@ -62,7 +63,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM2_IRQn, *this);
+      m_handler.install(TIM2_IRQn);
       HAL_NVIC_SetPriority(TIM2_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM2_IRQn);
     }
@@ -76,7 +77,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM3_IRQn, *this);
+      m_handler.install(TIM3_IRQn);
       HAL_NVIC_SetPriority(TIM3_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM3_IRQn);
     }
@@ -90,7 +91,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM4_IRQn, *this);
+      m_handler.install(TIM4_IRQn);
       HAL_NVIC_SetPriority(TIM4_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM4_IRQn);
     }
@@ -104,7 +105,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM5_IRQn, *this);
+      m_handler.install(TIM5_IRQn);
       HAL_NVIC_SetPriority(TIM5_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM5_IRQn);
     }
@@ -118,7 +119,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM6_IRQn, *this);
+      m_handler.install(TIM6_IRQn);
       HAL_NVIC_SetPriority(TIM6_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM6_IRQn);
     }
@@ -132,7 +133,7 @@ public:
       pclk = HAL_RCC_GetPCLK1Freq();
       if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM7_IRQn, *this);
+      m_handler.install(TIM7_IRQn);
       HAL_NVIC_SetPriority(TIM7_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM7_IRQn);
     }
@@ -146,7 +147,7 @@ public:
       pclk = HAL_RCC_GetPCLK2Freq();
       if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
         pclk <<= 1;
-      m_handler.install<HiresTimer, &HiresTimer::handleTim>(TIM8_UP_IRQn, *this);
+      m_handler.install(TIM8_UP_IRQn);
       HAL_NVIC_SetPriority(TIM8_UP_IRQn, 14, 0);
       HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
     }

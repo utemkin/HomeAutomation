@@ -73,6 +73,7 @@ namespace Enc28j60
         , m_csSelect(csInvert ? csPin << 16 : csPin)
         , m_csDeselect(csInvert ? csPin : csPin << 16)
         , m_delayHclk((210ul * (HAL_RCC_GetHCLKFreq() / 1000ul) + 999999ul) / 1000000ul)
+        , m_handlerDmaTx(Irq::Handler::Callback::make<SpiImpl, &SpiImpl::handleDmaTx>(*this))
       {
 #if defined(STM32F1)
         if (false)
@@ -86,7 +87,7 @@ namespace Enc28j60
           m_dma = DMA1;
           m_dmaTx = DMA1_Channel3;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (3 - 1) * 4;
-          m_handlerDmaTx.install<SpiImpl, &SpiImpl::handleDmaTx>(DMA1_Channel3_IRQn, *this);
+          m_handlerDmaTx.install(DMA1_Channel3_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
           m_dmaRx = DMA1_Channel2;
@@ -101,7 +102,7 @@ namespace Enc28j60
           m_dma = DMA1;
           m_dmaTx = DMA1_Channel5;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
-          m_handlerDmaTx.install<SpiImpl, &SpiImpl::handleDmaTx>(DMA1_Channel5_IRQn, *this);
+          m_handlerDmaTx.install(DMA1_Channel5_IRQn);
           HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
           m_dmaRx = DMA1_Channel4;
@@ -116,7 +117,7 @@ namespace Enc28j60
           m_dma = DMA2;
           m_dmaTx = DMA2_Channel2;
           m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (2 - 1) * 4;
-          m_handlerDmaTx.install<SpiImpl, &SpiImpl::handleDmaTx>(DMA2_Channel2_IRQn, *this);
+          m_handlerDmaTx.install(DMA2_Channel2_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
           m_dmaRx = DMA2_Channel1;
