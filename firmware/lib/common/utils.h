@@ -103,6 +103,7 @@ namespace RT
   class HiresTimer : mstd::noncopyable
   {
   public:
+    //must be ready to be called from handler context
     using Callback = mstd::Callback<void>;
 
   public:

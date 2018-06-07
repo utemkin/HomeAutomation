@@ -16,6 +16,7 @@ namespace Irq
   class Handler : mstd::noncopyable
   {
   public:
+    //must be ready to be called from handler context
     using Callback = mstd::Callback<bool, IRQn_Type>;
 
   public:

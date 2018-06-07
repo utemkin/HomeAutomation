@@ -6,5 +6,5 @@
 
 namespace Analog
 {
-  std::unique_ptr<Adc> CreateAdcStm32(GPIO_TypeDef* switchGPIO, uint16_t switchPin, bool switchInvert);
+  std::unique_ptr<Adc> CreateAdcStm32(GPIO_TypeDef* switchGPIO, uint16_t switchPin, bool switchInvert, Adc::Callback&& callback);
 }

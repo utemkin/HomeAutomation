@@ -2,8 +2,6 @@
 #include <common/handlers.h>
 #include <limits>
 
-//#define USE_SEMAPHORE 1
-
 namespace Analog
 {
   namespace
@@ -11,10 +9,11 @@ namespace Analog
     class AdcImpl : public Adc
     {
     public:
-      AdcImpl(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert)
+      AdcImpl(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert, Callback&& callback)
         : m_switchBsrr(switchGPIO ? &switchGPIO->BSRR : nullptr)
         , m_switchSelect1(switchInvert ? switchPin << 16 : switchPin)
         , m_switchSelect2(switchInvert ? switchPin : switchPin << 16)
+        , m_callback(std::move(callback))
         , m_handlerDma1Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1Rx>(*this))
         , m_handlerDma2Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2Rx>(*this))
       {
@@ -111,22 +110,12 @@ namespace Analog
 #endif
       }
 
-      virtual void convert() override
+      virtual void start() override
       {
-#ifndef USE_SEMAPHORE
-        Irq::SignalingWaiter w(m_handlerDma1Rx);
-#endif
-
         if (m_switchBsrr)
           start2();
         else
           start1();
-
-#ifndef USE_SEMAPHORE
-        w.wait();
-#else
-        m_handlerDma1Rx.wait();
-#endif
       }
       
     protected:
@@ -156,7 +145,7 @@ namespace Analog
         {
           m_dma1->IFCR = clear;
           m_dma1Rx->CCR = 0;
-          m_handlerDma1Rx.signal();    //distinguish success and error
+          m_callback(m_data, std::extent<decltype(m_data)>::value);    //distinguish success and error
           return true;
         }
 
@@ -184,11 +173,8 @@ namespace Analog
       __IO uint32_t* const m_switchBsrr;
       uint32_t const m_switchSelect1;
       uint32_t const m_switchSelect2;
-#ifndef USE_SEMAPHORE
-      Irq::SignalingHandler m_handlerDma1Rx;
-#else
-      Irq::SemaphoreHandler m_handlerDma1Rx;
-#endif
+      Callback const m_callback;
+      Irq::Handler m_handlerDma1Rx;
       Irq::Handler m_handlerDma2Rx;
       ADC_TypeDef* m_adc1;
       ADC_TypeDef* m_adc2;
@@ -204,7 +190,7 @@ namespace Analog
   }
 }
 
-auto Analog::CreateAdcStm32(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert) -> std::unique_ptr<Adc>
+auto Analog::CreateAdcStm32(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert, Adc::Callback&& callback) -> std::unique_ptr<Adc>
 {
-  return std::make_unique<AdcImpl>(switchGPIO, switchPin, switchInvert);
+  return std::make_unique<AdcImpl>(switchGPIO, switchPin, switchInvert, std::move(callback));
 }

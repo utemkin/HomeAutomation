@@ -8,15 +8,28 @@
 #include "main.h"
 #include "adc.h"
 
-class C
+class Sampler
 {
 public:
+  Sampler()
+    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Sampler, &Sampler::timer>(*this)))
+    , m_adc(Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false, Analog::Adc::Callback::make<Sampler, &Sampler::adcReady>(*this)))
+  {
+    m_timer->start(5000);
+  }
+
+protected:
   void timer()
   {
+    m_adc->start();
   }
-  static void timer2()
+  void adcReady(uint16_t*, size_t)
   {
   }
+
+protected:
+  std::unique_ptr<RT::HiresTimer> m_timer;
+  std::unique_ptr<Analog::Adc> m_adc;
 };
 
 extern "C" void maintask()
@@ -41,11 +54,13 @@ extern "C" void maintask()
 ////  portYIELD();
 //  printf("%lu\n", DWT->CYCCNT - clk);
 
-  C c;
+//  C c;
 //  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<C, &C::timer>(c));
-  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<&C::timer2>());
-  ht->start(72000000 / 1000);
+//  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<&C::timer2>());
+//  ht->start(72000000 / 1000);
 //  OS::Thread::delay(1000);
+
+  Sampler sampler;
 
   for(;;)
   {
