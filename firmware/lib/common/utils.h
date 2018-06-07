@@ -43,6 +43,12 @@ namespace mstd
   public:
     Callback() = default;
 
+    template<Ret(*func)(Args...)>
+    static Callback make()
+    {
+      return Callback(&Callback::fn<func>);
+    }
+
     template<typename T, Ret(T::*func)(Args...)>
     static Callback make(T& obj)
     {
@@ -64,10 +70,21 @@ namespace mstd
     void* m_ctx;
 
   protected:
+    Callback(Ret(*func)(void*, Args...))
+      : m_func(func)
+    {
+    }
+
     Callback(Ret(*func)(void*, Args...), void* ctx)
       : m_func(func)
       , m_ctx(ctx)
     {
+    }
+
+    template<Ret(*func)(Args...)>
+    static Ret fn(void* /*ctx*/, Args ...args)
+    {
+      return func(args...);
     }
 
     template<typename T, Ret(T::*func)(Args...)>

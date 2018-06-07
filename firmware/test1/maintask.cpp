@@ -14,6 +14,9 @@ public:
   void timer()
   {
   }
+  static void timer2()
+  {
+  }
 };
 
 extern "C" void maintask()
@@ -39,7 +42,8 @@ extern "C" void maintask()
 //  printf("%lu\n", DWT->CYCCNT - clk);
 
   C c;
-  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<C, &C::timer>(c));
+//  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<C, &C::timer>(c));
+  auto ht = RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<&C::timer2>());
   ht->start(72000000 / 1000);
 //  OS::Thread::delay(1000);
 
