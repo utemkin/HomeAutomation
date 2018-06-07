@@ -1,8 +1,189 @@
-#include <common/utils.h>
-#include <common/stm32.h>
+#include <common/handlers.h>
+#include <common/utils_stm32.h>
 
 namespace RT
 {
+  namespace
+  {
+    class HiresTimerImpl : public HiresTimer
+    {
+    public:
+      HiresTimerImpl(TIM_TypeDef *const tim, Callback&& callback)
+        : m_tim(tim)
+        , m_callback(std::move(callback))
+        , m_handlerTim(Irq::Handler::Callback::make<HiresTimerImpl, &HiresTimerImpl::handleTim>(*this))
+      {
+        uint32_t pclk;
+        RCC_ClkInitTypeDef clk;
+        uint32_t lat;
+        HAL_RCC_GetClockConfig(&clk, &lat);
+    #if defined(STM32F1)
+        if (false)
+          ;
+    #  ifdef TIM1
+        else if (m_tim == TIM1)
+        {
+          __HAL_RCC_TIM1_CLK_ENABLE();
+          __HAL_RCC_TIM1_FORCE_RESET();
+          __HAL_RCC_TIM1_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM1_UP_IRQn);
+          HAL_NVIC_SetPriority(TIM1_UP_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
+        }
+    #  endif
+    #  ifdef TIM2
+        else if (m_tim == TIM2)
+        {
+          __HAL_RCC_TIM2_CLK_ENABLE();
+          __HAL_RCC_TIM2_FORCE_RESET();
+          __HAL_RCC_TIM2_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM2_IRQn);
+          HAL_NVIC_SetPriority(TIM2_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM2_IRQn);
+        }
+    #  endif
+    #  ifdef TIM3
+        else if (m_tim == TIM3)
+        {
+          __HAL_RCC_TIM3_CLK_ENABLE();
+          __HAL_RCC_TIM3_FORCE_RESET();
+          __HAL_RCC_TIM3_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM3_IRQn);
+          HAL_NVIC_SetPriority(TIM3_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM3_IRQn);
+        }
+    #  endif
+    #  ifdef TIM4
+        else if (m_tim == TIM4)
+        {
+          __HAL_RCC_TIM4_CLK_ENABLE();
+          __HAL_RCC_TIM4_FORCE_RESET();
+          __HAL_RCC_TIM4_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM4_IRQn);
+          HAL_NVIC_SetPriority(TIM4_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM4_IRQn);
+        }
+    #  endif
+    #  ifdef TIM5
+        else if (m_tim == TIM5)
+        {
+          __HAL_RCC_TIM5_CLK_ENABLE();
+          __HAL_RCC_TIM5_FORCE_RESET();
+          __HAL_RCC_TIM5_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM5_IRQn);
+          HAL_NVIC_SetPriority(TIM5_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM5_IRQn);
+        }
+    #  endif
+    #  ifdef TIM6
+        else if (m_tim == TIM6)
+        {
+          __HAL_RCC_TIM6_CLK_ENABLE();
+          __HAL_RCC_TIM6_FORCE_RESET();
+          __HAL_RCC_TIM6_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM6_IRQn);
+          HAL_NVIC_SetPriority(TIM6_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM6_IRQn);
+        }
+    #  endif
+    #  ifdef TIM7
+        else if (m_tim == TIM7)
+        {
+          __HAL_RCC_TIM7_CLK_ENABLE();
+          __HAL_RCC_TIM7_FORCE_RESET();
+          __HAL_RCC_TIM7_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM7_IRQn);
+          HAL_NVIC_SetPriority(TIM7_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM7_IRQn);
+        }
+    #  endif
+    #  ifdef TIM8
+        else if (m_tim == TIM8)
+        {
+          __HAL_RCC_TIM8_CLK_ENABLE();
+          __HAL_RCC_TIM8_FORCE_RESET();
+          __HAL_RCC_TIM8_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM8_UP_IRQn);
+          HAL_NVIC_SetPriority(TIM8_UP_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
+        }
+    #  endif
+    #else
+    #  error Unsupported architecture
+    #endif
+        else
+        {
+          //fixme
+          return;
+        }
+        
+        m_pclk = pclk;
+      }
+
+      virtual void start(uint32_t const hz) override
+      {
+        uint32_t div = m_pclk / hz;
+        uint32_t psc = 1;
+        while (div > 0x10000)
+        {
+          div >>= 1;
+          psc <<= 1;
+        }
+
+        m_tim->DIER = TIM_DIER_UIE;
+        m_tim->PSC = psc - 1;
+        m_tim->CR1 = TIM_CR1_URS;
+        m_tim->EGR = TIM_EGR_UG;
+        m_tim->ARR = div - 1;
+        m_tim->CR1 = TIM_CR1_URS | TIM_CR1_CEN;
+      }
+
+    protected:
+      bool handleTim(IRQn_Type)
+      {
+        auto const sr = m_tim->SR;
+        if (sr & TIM_SR_UIF)
+        {
+          m_tim->SR = sr & ~TIM_SR_UIF;
+          m_callback();
+          return true;
+        }
+
+        return false;
+      }
+
+    protected:
+      TIM_TypeDef* const m_tim;
+      Callback const m_callback;
+      Irq::Handler m_handlerTim;
+      uint32_t m_pclk;
+    };
+  }
+
 #if 1
   // real measured delay min(24, [cycles, cycles + 7])
   void ATTR_SUPER_OPTIMIZE stall(const unsigned cycles)
@@ -61,4 +242,9 @@ namespace RT
     HAL_GetUID(uid);
     return Tools::CRC32::calculate((const uint8_t*)&uid, sizeof(uid));
   }
+}
+
+auto RT::CreateHiresTimer(TIM_TypeDef *tim, HiresTimer::Callback&& callback) -> std::unique_ptr<HiresTimer>
+{
+  return std::make_unique<HiresTimerImpl>(tim, std::move(callback));
 }

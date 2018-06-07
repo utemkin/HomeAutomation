@@ -1,6 +1,7 @@
 #pragma once
-#include <common/utils.h>
+
 #include <common/stm32.h>
+#include <common/utils.h>
 
 namespace Irq
 {
@@ -33,7 +34,7 @@ namespace Irq
 
   protected:
     Handler* m_next = nullptr;
-    Callback m_callback;
+    Callback const m_callback;
 
   friend class Vectors;
   };

@@ -347,11 +347,11 @@ namespace Enc28j60
       uint32_t const m_csSelect;
       uint32_t const m_csDeselect;
       uint32_t const m_delayHclk;
+      Irq::SemaphoreHandler m_handlerDmaTx;
       DMA_TypeDef* m_dma;
       DMA_Channel_TypeDef* m_dmaTx;
       uint32_t m_dmaTxFlags;
       DMA_Channel_TypeDef* m_dmaRx;
-      Irq::SemaphoreHandler m_handlerDmaTx;
 
     protected:
       void deinit()

@@ -1,7 +1,8 @@
 #pragma once
+
 #include "cmsis_os.h"
-#include <memory>
 #include <limits>
+#include <memory>
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
 #define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
@@ -70,7 +71,7 @@ namespace mstd
     }
 
     template<typename T, Ret(T::*func)(Args...)>
-    static bool fn(void* ctx, Args ...args)
+    static Ret fn(void* ctx, Args ...args)
     {
       return (static_cast<T*>(ctx)->*func)(args...);
     }
@@ -81,6 +82,16 @@ namespace RT
 {
   void stall(const unsigned cycles);
   uint32_t getUnique();
+
+  class HiresTimer : mstd::noncopyable
+  {
+  public:
+    using Callback = mstd::Callback<void>;
+
+  public:
+    virtual ~HiresTimer() = default;
+    virtual void start(uint32_t hz) = 0;
+  };
 }
 
 namespace OS

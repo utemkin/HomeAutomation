@@ -1,7 +1,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
-#include <malloc.h>
 #include <errno.h>
+#include <malloc.h>
 
 #ifndef __NEWLIB__
 #error only NEWLIB supported

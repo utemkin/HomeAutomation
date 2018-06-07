@@ -1,4 +1,5 @@
 #pragma once
+
 #include <analog/adc.h>
 #include <common/stm32.h>
 #include <memory>

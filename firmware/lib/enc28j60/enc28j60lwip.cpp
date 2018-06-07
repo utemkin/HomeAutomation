@@ -1,7 +1,7 @@
 #include <enc28j60/enc28j60lwip.h>
+#include "lwip/netifapi.h"
 #include "netif/ethernet.h"
 #include "netif/etharp.h"
-#include "lwip/netifapi.h"
 #include <common/utils.h>
 
 #if NO_SYS

@@ -184,21 +184,21 @@ namespace Analog
       __IO uint32_t* const m_switchBsrr;
       uint32_t const m_switchSelect1;
       uint32_t const m_switchSelect2;
+#ifndef USE_SEMAPHORE
+      Irq::SignalingHandler m_handlerDma1Rx;
+#else
+      Irq::SemaphoreHandler m_handlerDma1Rx;
+#endif
+      Irq::Handler m_handlerDma2Rx;
       ADC_TypeDef* m_adc1;
       ADC_TypeDef* m_adc2;
       ADC_TypeDef* m_adc3;
       DMA_TypeDef* m_dma1;
       DMA_Channel_TypeDef* m_dma1Rx;
       uint32_t m_dma1RxFlags;
-#ifndef USE_SEMAPHORE
-      Irq::SignalingHandler m_handlerDma1Rx;
-#else
-      Irq::SemaphoreHandler m_handlerDma1Rx;
-#endif
       DMA_TypeDef* m_dma2;
       DMA_Channel_TypeDef* m_dma2Rx;
       uint32_t m_dma2RxFlags;
-      Irq::Handler m_handlerDma2Rx;
       uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
     };
   }
