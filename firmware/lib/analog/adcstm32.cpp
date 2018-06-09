@@ -110,6 +110,12 @@ namespace Analog
 #endif
       }
 
+      virtual const volatile uint16_t* channel(size_t num) const override
+      {
+        auto const count = m_switchBsrr ? c_data1Size * 2 + c_data2Size : c_data1Size * 2;
+        return num < count ? m_data + num : nullptr;
+      }
+
       virtual void start() override
       {
         if (m_switchBsrr)
@@ -121,21 +127,17 @@ namespace Analog
     protected:
       void start1()
       {
-#if defined(STM32F1)
         m_dma1Rx->CNDTR = c_data1Size;
         m_dma1Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-#endif
       }
 
       void start2()
       {
-#if defined(STM32F1)
         *m_switchBsrr = m_switchSelect2;
         m_dma2Rx->CNDTR = c_data2Size;
         m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-#endif
       }
 
       bool handleDma1Rx(IRQn_Type)
@@ -145,7 +147,7 @@ namespace Analog
         {
           m_dma1->IFCR = clear;
           m_dma1Rx->CCR = 0;
-          m_callback(m_data, std::extent<decltype(m_data)>::value);    //distinguish success and error
+          m_callback();    //distinguish success and error
           return true;
         }
 
@@ -185,7 +187,7 @@ namespace Analog
       DMA_TypeDef* m_dma2;
       DMA_Channel_TypeDef* m_dma2Rx;
       uint32_t m_dma2RxFlags;
-      uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
+      volatile uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
     };
   }
 }

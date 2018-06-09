@@ -10,10 +10,11 @@ namespace Analog
   {
   public:
     //must be ready to be called from handler context
-    using Callback = mstd::Callback<void, uint16_t*, size_t>;
+    using Callback = mstd::Callback<void>;
 
   public:
     virtual ~Adc() = default;
+    virtual const volatile uint16_t* channel(size_t num) const = 0;
     virtual void start() = 0;
   };
 }
