@@ -48,6 +48,7 @@
       <file file_name="../lib/common/utils.cpp" />
       <file file_name="../lib/common/freertos_syscalls.cpp" />
       <file file_name="../lib/common/utils_stm32.cpp" />
+      <file file_name="../lib/common/pin_stm32.cpp" />
     </folder>
     <folder Name="cubemx">
       <file file_name="Src/freertos.c" />
@@ -97,9 +98,9 @@
     </folder>
     <file file_name="maintask.cpp" />
     <folder Name="enc28j60">
-      <file file_name="../lib/enc28j60/enc28j60spistm32.cpp" />
+      <file file_name="../lib/enc28j60/enc28j60_spi_stm32.cpp" />
       <file file_name="../lib/enc28j60/enc28j60.cpp" />
-      <file file_name="../lib/enc28j60/enc28j60lwip.cpp" />
+      <file file_name="../lib/enc28j60/enc28j60_lwip.cpp" />
     </folder>
     <folder Name="microlan">
       <file file_name="../lib/microlan/microlan.cpp" />
@@ -156,7 +157,7 @@
       <file file_name="Middlewares/Third_Party/LwIP/src/apps/mqtt/mqtt.c" />
     </folder>
     <folder Name="analog">
-      <file file_name="../lib/analog/adcstm32.cpp" />
+      <file file_name="../lib/analog/adc_stm32.cpp" />
     </folder>
   </project>
   <configuration

@@ -56,7 +56,7 @@ static int txrx(struct enc28j60spi* spi, uint8_t* txrx, size_t txrx_len)
 }
 #endif
 
-#include <enc28j60/enc28j60spistm32.h>
+#include <enc28j60/enc28j60_spi_stm32.h>
 #include <common/handlers.h>
 #include <limits>
 
@@ -67,11 +67,9 @@ namespace Enc28j60
     class SpiImpl : public Spi
     {
     public:
-      SpiImpl(SPI_TypeDef* const spi, GPIO_TypeDef* const csGPIO, uint16_t const csPin, bool const csInvert)
+      SpiImpl(SPI_TypeDef* const spi, const Pin::Def& cs)
         : m_spi(spi)
-        , m_csBsrr(&csGPIO->BSRR)
-        , m_csSelect(csInvert ? csPin << 16 : csPin)
-        , m_csDeselect(csInvert ? csPin : csPin << 16)
+        , m_cs(cs)
         , m_delayHclk((210ul * (HAL_RCC_GetHCLKFreq() / 1000ul) + 999999ul) / 1000000ul)
         , m_handlerDmaTx(Irq::Handler::Callback::make<SpiImpl, &SpiImpl::handleDmaTx>(*this))
       {
@@ -152,7 +150,7 @@ namespace Enc28j60
       {
         //fixme: deinit() ?
 
-        *m_csBsrr = m_csDeselect;
+        m_cs.toPassive();
 
         uint32_t pclk = std::numeric_limits<decltype(pclk)>::max();
 #if defined(STM32F1)
@@ -202,7 +200,7 @@ namespace Enc28j60
 
       virtual int txRx(uint8_t* const txRx, size_t const txRxLen, bool const delay) override
       {
-        *m_csBsrr = m_csSelect;
+        m_cs.toActive();
         __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
@@ -231,7 +229,7 @@ namespace Enc28j60
           RT::stall(m_delayHclk);
 
         __DMB();
-        *m_csBsrr = m_csDeselect;
+        m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
         return 0;
@@ -239,7 +237,7 @@ namespace Enc28j60
 
       virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
-        *m_csBsrr = m_csSelect;
+        m_cs.toActive();
         __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
@@ -271,7 +269,7 @@ namespace Enc28j60
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
         __DMB();
-        *m_csBsrr = m_csDeselect;
+        m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
         return 0;
@@ -279,7 +277,7 @@ namespace Enc28j60
   
       virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
-        *m_csBsrr = m_csSelect;
+        m_cs.toActive();
         __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
@@ -319,7 +317,7 @@ namespace Enc28j60
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
         __DMB();
-        *m_csBsrr = m_csDeselect;
+        m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
         return 0;
@@ -343,9 +341,7 @@ namespace Enc28j60
       constexpr static uint32_t c_maxSpiRate = 20000000;
       constexpr static uint32_t c_maxBusyLoop = 50;
       SPI_TypeDef* const m_spi;
-      __IO uint32_t* const m_csBsrr;
-      uint32_t const m_csSelect;
-      uint32_t const m_csDeselect;
+      Pin::Out const m_cs;
       uint32_t const m_delayHclk;
       Irq::SemaphoreHandler m_handlerDmaTx;
       DMA_TypeDef* m_dma;
@@ -356,7 +352,7 @@ namespace Enc28j60
     protected:
       void deinit()
       {
-        *m_csBsrr = m_csDeselect;
+        m_cs.toPassive();
         m_spi->CR1 = 0;
         m_dmaRx->CCR = 0;
         m_dmaTx->CCR = 0;
@@ -365,7 +361,7 @@ namespace Enc28j60
   }
 }
 
-auto Enc28j60::CreateSpiStm32(SPI_TypeDef* const spi, GPIO_TypeDef* const csGPIO, uint16_t const csPin, bool const csInvert) -> std::unique_ptr<Spi>
+auto Enc28j60::CreateSpiStm32(SPI_TypeDef* const spi, const Pin::Def& cs) -> std::unique_ptr<Spi>
 {
-  return std::make_unique<SpiImpl>(spi, csGPIO, csPin, csInvert);
+  return std::make_unique<SpiImpl>(spi, cs);
 }

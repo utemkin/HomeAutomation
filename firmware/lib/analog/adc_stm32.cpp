@@ -1,4 +1,4 @@
-#include <analog/adcstm32.h>
+#include <analog/adc_stm32.h>
 #include <common/handlers.h>
 #include <limits>
 
@@ -9,10 +9,8 @@ namespace Analog
     class AdcImpl : public Adc
     {
     public:
-      AdcImpl(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert, Callback&& callback)
-        : m_switchBsrr(switchGPIO ? &switchGPIO->BSRR : nullptr)
-        , m_switchSelect1(switchInvert ? switchPin << 16 : switchPin)
-        , m_switchSelect2(switchInvert ? switchPin : switchPin << 16)
+      AdcImpl(const Pin::Def& select2, Callback&& callback)
+        : m_select2(select2)
         , m_callback(std::move(callback))
         , m_handlerDma1Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1Rx>(*this))
         , m_handlerDma2Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2Rx>(*this))
@@ -60,7 +58,7 @@ namespace Analog
                        (ADC_CHANNEL_3 << ADC_SQR3_SQ2_Pos) | 
                        (ADC_CHANNEL_1 << ADC_SQR3_SQ1_Pos);
 
-        if (m_switchBsrr)
+        if (m_select2)
         {
           __HAL_RCC_ADC3_CLK_ENABLE();
           __HAL_RCC_ADC3_FORCE_RESET();
@@ -93,7 +91,7 @@ namespace Analog
         m_dma1Rx->CPAR = uint32_t(&m_adc1->DR);
         m_dma1Rx->CMAR = uint32_t(&m_data[0]);
 
-        if (m_switchBsrr)
+        if (m_select2)
         {
           __HAL_RCC_DMA2_CLK_ENABLE();
           m_dma2 = DMA2;
@@ -112,13 +110,13 @@ namespace Analog
 
       virtual const volatile uint16_t* channel(size_t num) const override
       {
-        auto const count = m_switchBsrr ? c_data1Size * 2 + c_data2Size : c_data1Size * 2;
+        auto const count = m_select2 ? c_data1Size * 2 + c_data2Size : c_data1Size * 2;
         return num < count ? m_data + num : nullptr;
       }
 
       virtual void start() override
       {
-        if (m_switchBsrr)
+        if (m_select2)
           start2();
         else
           start1();
@@ -134,7 +132,7 @@ namespace Analog
 
       void start2()
       {
-        *m_switchBsrr = m_switchSelect2;
+        m_select2.toActive();
         m_dma2Rx->CNDTR = c_data2Size;
         m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
         m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
@@ -161,7 +159,7 @@ namespace Analog
         {
           m_dma2->IFCR = clear;
           m_dma2Rx->CCR = 0;
-          *m_switchBsrr = m_switchSelect1;
+          m_select2.toPassive();
           start1();
           return true;
         }
@@ -172,9 +170,7 @@ namespace Analog
     protected:
       constexpr static size_t c_data1Size = 7;
       constexpr static size_t c_data2Size = 6;
-      __IO uint32_t* const m_switchBsrr;
-      uint32_t const m_switchSelect1;
-      uint32_t const m_switchSelect2;
+      Pin::Out const m_select2;
       Callback const m_callback;
       Irq::Handler m_handlerDma1Rx;
       Irq::Handler m_handlerDma2Rx;
@@ -192,7 +188,7 @@ namespace Analog
   }
 }
 
-auto Analog::CreateAdcStm32(GPIO_TypeDef* const switchGPIO, uint16_t const switchPin, bool const switchInvert, Adc::Callback&& callback) -> std::unique_ptr<Adc>
+auto Analog::CreateAdcStm32(const Pin::Def& select2, Adc::Callback&& callback) -> std::unique_ptr<Adc>
 {
-  return std::make_unique<AdcImpl>(switchGPIO, switchPin, switchInvert, std::move(callback));
+  return std::make_unique<AdcImpl>(select2, std::move(callback));
 }

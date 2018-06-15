@@ -1,4 +1,4 @@
-#include <enc28j60/enc28j60lwip.h>
+#include <enc28j60/enc28j60_lwip.h>
 #include "lwip/netifapi.h"
 #include "netif/ethernet.h"
 #include "netif/etharp.h"

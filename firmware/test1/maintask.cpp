@@ -2,9 +2,10 @@
 #include <common/handlers.h>
 #include <common/stm32.h>
 #include <common/utils_stm32.h>
-#include <enc28j60/enc28j60spistm32.h>
-#include <enc28j60/enc28j60lwip.h>
-#include <analog/adcstm32.h>
+#include <common/pin_stm32.h>
+#include <enc28j60/enc28j60_spi_stm32.h>
+#include <enc28j60/enc28j60_lwip.h>
+#include <analog/adc_stm32.h>
 #include "main.h"
 #include "adc.h"
 
@@ -168,7 +169,7 @@ class Sampler
 public:
   Sampler()
     : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Sampler, &Sampler::timer>(*this)))
-    , m_adc(Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false, Analog::Adc::Callback::make<Sampler, &Sampler::adcReady>(*this)))
+    , m_adc(Analog::CreateAdcStm32(Pin::Def(ADC_SELECT2_GPIO_Port, ADC_SELECT2_Pin, false), Analog::Adc::Callback::make<Sampler, &Sampler::adcReady>(*this)))
   {
     for (size_t i = 0;; ++i)
     {
@@ -209,10 +210,13 @@ extern "C" void maintask()
 
   Tools::IdleMeasure::calibrate();
 
-//  Enc28j60::LwipNetif::initLwip();
-//  auto netif = Enc28j60::CreateLwipNetif(Enc28j60::CreateSpiStm32(SPI1, SPI1_CS_GPIO_Port, SPI1_CS_Pin, true));
-//  netif->setDefault();
-//  netif->startDhcp();
+  Pin::Def pd;
+  pd.load("PC1");
+
+  Enc28j60::LwipNetif::initLwip();
+  auto netif = Enc28j60::CreateLwipNetif(Enc28j60::CreateSpiStm32(SPI1, Pin::Def(SPI1_CS_GPIO_Port, SPI1_CS_Pin, true)));
+  netif->setDefault();
+  netif->startDhcp();
 
 //  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
