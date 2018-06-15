@@ -1,8 +1,8 @@
-#include <enc28j60/enc28j60_lwip.h>
+#include <lib/enc28j60/enc28j60_lwip.h>
 #include "lwip/netifapi.h"
 #include "netif/ethernet.h"
 #include "netif/etharp.h"
-#include <common/utils.h>
+#include <lib/common/utils.h>
 
 #if NO_SYS
 #error NO_SYS!=0 not supported

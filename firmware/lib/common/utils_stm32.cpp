@@ -1,5 +1,5 @@
-#include <common/handlers.h>
-#include <common/utils_stm32.h>
+#include <lib/common/handlers.h>
+#include <lib/common/utils_stm32.h>
 
 namespace RT
 {

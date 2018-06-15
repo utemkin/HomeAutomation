@@ -1,4 +1,4 @@
-#include <common/pin_stm32.h>
+#include <lib/common/pin_stm32.h>
 
 namespace Pin
 {

@@ -1,4 +1,4 @@
-#include <enc28j60/enc28j60.h>
+#include <lib/enc28j60/enc28j60.h>
 #include <type_traits>
 
 /*

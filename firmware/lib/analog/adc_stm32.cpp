@@ -1,5 +1,5 @@
-#include <analog/adc_stm32.h>
-#include <common/handlers.h>
+#include <lib/analog/adc_stm32.h>
+#include <lib/common/handlers.h>
 #include <limits>
 
 namespace Analog

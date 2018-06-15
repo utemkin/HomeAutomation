@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/stm32.h>
+#include <lib/common/stm32.h>
 
 namespace Pin
 {

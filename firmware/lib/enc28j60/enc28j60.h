@@ -28,8 +28,8 @@ extern int enc28j60_packet_read_finish(
 
 #pragma once
 
-#include <enc28j60/enc28j60.h>
-#include <common/utils.h>
+#include <lib/enc28j60/enc28j60.h>
+#include <lib/common/utils.h>
 #include <memory>
 
 namespace Enc28j60

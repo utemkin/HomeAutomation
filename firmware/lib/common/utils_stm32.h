@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/stm32.h>
-#include <common/utils.h>
+#include <lib/common/stm32.h>
+#include <lib/common/utils.h>
 
 namespace RT
 {

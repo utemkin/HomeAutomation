@@ -13,7 +13,7 @@
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="USE_HAL_DRIVER;STM32F103xE"
       c_system_include_directories="$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include/c++/7.2.1;$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include/c++/7.2.1/arm-none-eabi;$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include/c++/7.2.1/backward;$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/include;$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/include-fixed;$(StudioDir)/gcc-arm-none-eabi-7-2017-q4-major-win32/lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include"
-      c_user_include_directories=".;./Inc;../lib;./Middlewares/Third_Party/LwIP/ports/freertos/include;./Middlewares/Third_Party/LwIP/src/include;./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3;./Middlewares/Third_Party/FreeRTOS/Source/include;./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include"
+      c_user_include_directories=".;./Inc;..;./Middlewares/Third_Party/LwIP/ports/freertos/include;./Middlewares/Third_Party/LwIP/src/include;./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3;./Middlewares/Third_Party/FreeRTOS/Source/include;./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include"
       debug_initial_breakpoint="main"
       debug_leave_target_running="Yes"
       debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F103xx.svd"
@@ -158,6 +158,9 @@
     </folder>
     <folder Name="analog">
       <file file_name="../lib/analog/adc_stm32.cpp" />
+    </folder>
+    <folder Name="frozen">
+      <file file_name="../frozen/frozen.c" />
     </folder>
   </project>
   <configuration

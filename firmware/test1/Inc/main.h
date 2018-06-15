@@ -54,7 +54,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-#include <common/legacy_handlers_stm32f103xe.h>
+#include <lib/common/legacy_handlers_stm32f103xe.h>
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/

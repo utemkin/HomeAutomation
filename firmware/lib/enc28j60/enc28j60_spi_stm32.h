@@ -1,8 +1,8 @@
 #pragma once
 
-#include <enc28j60/enc28j60.h>
-#include <common/pin_stm32.h>
-#include <common/stm32.h>
+#include <lib/enc28j60/enc28j60.h>
+#include <lib/common/pin_stm32.h>
+#include <lib/common/stm32.h>
 #include <memory>
 
 namespace Enc28j60

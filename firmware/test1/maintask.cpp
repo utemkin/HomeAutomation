@@ -1,11 +1,12 @@
-#include <common/utils.h>
-#include <common/handlers.h>
-#include <common/stm32.h>
-#include <common/utils_stm32.h>
-#include <common/pin_stm32.h>
-#include <enc28j60/enc28j60_spi_stm32.h>
-#include <enc28j60/enc28j60_lwip.h>
-#include <analog/adc_stm32.h>
+#include <lib/common/utils.h>
+#include <lib/common/handlers.h>
+#include <lib/common/stm32.h>
+#include <lib/common/utils_stm32.h>
+#include <lib/common/pin_stm32.h>
+#include <lib/enc28j60/enc28j60_spi_stm32.h>
+#include <lib/enc28j60/enc28j60_lwip.h>
+#include <lib/analog/adc_stm32.h>
+#include <frozen/frozen.h>
 #include "main.h"
 #include "adc.h"
 

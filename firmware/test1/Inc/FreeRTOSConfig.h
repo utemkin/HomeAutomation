@@ -84,7 +84,7 @@
 
 /* USER CODE BEGIN Includes */   	      
 /* Section where include file can be added */
-#include <common/stm32.h>
+#include <lib/common/stm32.h>
 /* USER CODE END Includes */ 
 
 /* Ensure stdint is only used by the compiler, and not the assembler. */

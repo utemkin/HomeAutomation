@@ -56,8 +56,8 @@ static int txrx(struct enc28j60spi* spi, uint8_t* txrx, size_t txrx_len)
 }
 #endif
 
-#include <enc28j60/enc28j60_spi_stm32.h>
-#include <common/handlers.h>
+#include <lib/enc28j60/enc28j60_spi_stm32.h>
+#include <lib/common/handlers.h>
 #include <limits>
 
 namespace Enc28j60

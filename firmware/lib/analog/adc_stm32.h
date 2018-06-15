@@ -1,8 +1,8 @@
 #pragma once
 
-#include <analog/adc.h>
-#include <common/pin_stm32.h>
-#include <common/stm32.h>
+#include <lib/analog/adc.h>
+#include <lib/common/pin_stm32.h>
+#include <lib/common/stm32.h>
 #include <memory>
 
 namespace Analog
