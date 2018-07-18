@@ -5,7 +5,7 @@
 #include <memory>
 
 #define ATTR_OPTIMIZE __attribute__((optimize("-O2")))
-#define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3", "-falign-functions=8", "-falign-labels=8", "-falign-loops=8", "-falign-jumps=8")))
+#define ATTR_SUPER_OPTIMIZE __attribute__((optimize("-O3"))) __attribute__((aligned(8)))
 
 namespace mstd
 {
