@@ -1,4 +1,5 @@
 #include <lib/common/utils.h>
+#include <lib/common/math.h>
 #include <lib/common/handlers.h>
 #include <lib/common/stm32.h>
 #include <lib/common/utils_stm32.h>
@@ -169,7 +170,7 @@ class Sampler
 {
 public:
   Sampler()
-    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Sampler, &Sampler::timer>(*this)))
+    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Sampler, &Sampler::periodic>(*this)))
     , m_adc(Analog::CreateAdcStm32(Pin::Def(ADC_SELECT2_GPIO_Port, ADC_SELECT2_Pin, false), Analog::Adc::Callback::make<Sampler, &Sampler::adcReady>(*this)))
   {
     for (size_t i = 0;; ++i)
@@ -187,7 +188,7 @@ public:
   }
 
 protected:
-  void timer()
+  void periodic()
   {
     m_adc->start();
   }
@@ -203,6 +204,61 @@ protected:
   Meters m_meters;
 };
 
+class Receiver
+{
+public:
+  Receiver()
+    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Receiver, &Receiver::periodic>(*this)))
+  {
+    m_timer->start(1000000 / c_samplePeriodUs);
+  }
+
+protected:
+  void periodic()
+  {
+    if (!m_filter.next(true))
+    {
+      m_currentDurationUs += c_samplePeriodUs;
+      if (m_currentDurationUs >= c_idlePeriodUs)
+      {
+        ++m_lastSample;
+        if (m_lastSample >= std::extent<decltype(m_samples)>::value)
+          m_lastSample = 0;
+
+        m_samples[m_lastSample] = m_currentDurationUs;
+        m_currentDurationUs = 0;
+
+        // signal m_lastSample
+      }
+    }
+    else
+    {
+      ++m_lastSample;
+      if (m_lastSample >= std::extent<decltype(m_samples)>::value)
+        m_lastSample = 0;
+
+      m_samples[m_lastSample] = m_currentDurationUs;
+      m_currentDurationUs = c_samplePeriodUs;
+    }
+  }
+
+protected:
+  constexpr static uint16_t c_idlePeriodUs = 3500;
+
+  constexpr static uint16_t c_samplePeriodUs = 10;
+  constexpr static size_t c_samples = 125;
+
+  constexpr static int c_filterFrame = 10;
+  constexpr static int c_filterLower = 3;
+  constexpr static int c_filterUpper = 8;
+
+  std::unique_ptr<RT::HiresTimer> m_timer;
+  math::BounceFilter<uint32_t, c_filterFrame, c_filterLower, c_filterUpper> m_filter;
+  uint16_t m_currentDurationUs = 0;
+  size_t m_lastSample = 0;
+  uint16_t m_samples[c_samples] = {c_idlePeriodUs};
+};
+
 extern "C" void maintask()
 {
   uint32_t uid[3];
@@ -211,13 +267,13 @@ extern "C" void maintask()
 
   Tools::IdleMeasure::calibrate();
 
-  Pin::Def pd;
-  pd.load("PC1");
+//  Pin::Def pd;
+//  pd.load("PC1");
 
-  Enc28j60::LwipNetif::initLwip();
-  auto netif = Enc28j60::CreateLwipNetif(Enc28j60::CreateSpiStm32(SPI1, Pin::Def(SPI1_CS_GPIO_Port, SPI1_CS_Pin, true)));
-  netif->setDefault();
-  netif->startDhcp();
+//  Enc28j60::LwipNetif::initLwip();
+//  auto netif = Enc28j60::CreateLwipNetif(Enc28j60::CreateSpiStm32(SPI1, Pin::Def(SPI1_CS_GPIO_Port, SPI1_CS_Pin, true)));
+//  netif->setDefault();
+//  netif->startDhcp();
 
 //  auto adc = Analog::CreateAdcStm32(SWITCH_ADC_GPIO_Port, SWITCH_ADC_Pin, false);
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
@@ -234,7 +290,9 @@ extern "C" void maintask()
 //  ht->start(72000000 / 1000);
 //  OS::Thread::delay(1000);
 
-  Sampler sampler;
+//  Sampler sampler;
+
+  Receiver receiver;
 
   for(;;)
   {
