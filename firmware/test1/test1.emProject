@@ -49,6 +49,7 @@
       <file file_name="../lib/common/freertos_syscalls.cpp" />
       <file file_name="../lib/common/utils_stm32.cpp" />
       <file file_name="../lib/common/pin_stm32.cpp" />
+      <file file_name="../lib/common/math.cpp" />
     </folder>
     <folder Name="cubemx">
       <file file_name="Src/freertos.c" />
