@@ -216,7 +216,7 @@ public:
 protected:
   void periodic()
   {
-    if (!m_filter.next(true))
+    if (!m_filter.next(m_in.read()))
     {
       m_currentDurationUs += c_samplePeriodUs;
       if (m_currentDurationUs >= c_idlePeriodUs)
@@ -251,6 +251,8 @@ protected:
   constexpr static int c_filterFrame = 10;
   constexpr static int c_filterLower = 3;
   constexpr static int c_filterUpper = 8;
+
+  Pin::In m_in = Pin::Def(GPIOE, GPIO_PIN_1, false);
 
   std::unique_ptr<RT::HiresTimer> m_timer;
   math::BounceFilter<uint32_t, c_filterFrame, c_filterLower, c_filterUpper> m_filter;
