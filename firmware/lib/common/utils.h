@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cmsis_os.h"
+#include <atomic>
 #include <limits>
 #include <memory>
 
@@ -92,6 +93,57 @@ namespace mstd
     {
       return (static_cast<T*>(ctx)->*func)(args...);
     }
+  };
+
+  template<typename T, size_t N>
+  class NonlockedFifo
+  {
+  public:
+    NonlockedFifo()
+      : m_readIndex(0)
+      , m_writeIndex(0)
+    {
+    }
+
+    bool store(const T& value)
+    {
+      auto writeIndex = m_writeIndex.load(std::memory_order_acquire);
+      auto oldWriteIndex = writeIndex;
+
+      ++writeIndex;
+      if (writeIndex == N + 1)
+        writeIndex = 0;
+
+      if (writeIndex == m_readIndex.load(std::memory_order_relaxed))
+        return false;
+
+      m_buffer[oldWriteIndex] = value;
+
+      m_writeIndex.store(writeIndex, std::memory_order_release);
+      return true;
+    }
+
+    bool load(T& value)
+    {
+      auto readIndex = m_readIndex.load(std::memory_order_acquire);
+
+      if (readIndex == m_writeIndex.load(std::memory_order_relaxed))
+        return false;
+
+      value = m_buffer[readIndex];
+    
+      ++readIndex;
+      if (readIndex == N + 1)
+        readIndex = 0;
+
+      m_readIndex.store(readIndex, std::memory_order_release);
+      return true;
+    }
+
+  protected:
+    T m_buffer[N + 1];
+    std::atomic<size_t> m_readIndex;
+    std::atomic<size_t> m_writeIndex;
   };
 }
 
