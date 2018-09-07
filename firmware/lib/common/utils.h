@@ -24,18 +24,27 @@ namespace mstd
     noncopyable& operator =(const noncopyable&) = delete;
   };
 
+  //provides correct rounding for unsigned integers
   template<typename T>
-  constexpr T ridiv(T const v1, T const v2)
+  constexpr typename std::enable_if<std::is_unsigned<T>::value, T>::type ridiv(T const v1, T const v2)
   {
     return (v1 + (v2 >> 1)) / v2;
   }
 
+  //provides correct rounding for signed integers
   template<int shift, typename T>
-  constexpr T rsar(T const v)
+  constexpr typename std::enable_if<std::is_signed<T>::value, T>::type rsar(T const v)
   {
     using UT = typename std::make_unsigned<T>::type;
     UT const offset = std::numeric_limits<UT>::max() / 2 + 1;
     return T((UT(v) + offset + (UT(1) << (shift - 1))) >> shift) - T(offset >> shift);
+  }
+
+  //provides correct rounding for unsigned integers
+  template<int shift, typename T>
+  constexpr typename std::enable_if<std::is_unsigned<T>::value, T>::type rsar(T const v)
+  {
+    return (v + (T(1) << (shift - 1))) >> shift;
   }
 
   template<typename Ret, typename ...Args>

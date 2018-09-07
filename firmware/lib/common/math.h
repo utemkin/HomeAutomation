@@ -1,41 +1,25 @@
 #pragma once
 
+#include <lib/common/utils.h>
 #include <limits>
 
 namespace math
 {
-  template<typename T, int frame, int lower, int upper>
-  class BounceFilter
+  template<int shift, unsigned lowerPercent, unsigned upperPercent>
+  class BounceFilter : mstd::noncopyable
   {
-    static_assert(frame >= 1);
-    static_assert(frame <= std::numeric_limits<T>::digits);
-    static_assert(lower >= 1);
-    static_assert(lower <= upper);
-    static_assert(upper <= frame);
-
   public:
-    BounceFilter() = default;
-
     bool next(bool const bit)
     {
-      auto current = m_current;
-      auto ones = m_ones;
+      auto acc = m_acc;
 
-      if (current & 1)
-        --ones;
-
-      current >>= 1;
-
+      acc -= acc >> shift;
       if (bit)
-      {
-        current |= T(1) << (frame - 1);
-        ++ones;
-      }
+        acc += c_range >> shift;
 
-      m_current = current;
-      m_ones = ones;
+      m_acc = acc;
 
-      if (ones < lower)
+      if (acc < c_range / 100u * lowerPercent)
       {
         if (m_state)
         {
@@ -43,7 +27,7 @@ namespace math
           return true;
         }
       }
-      else if (ones >= upper)
+      else if (acc > c_range / 100u * upperPercent)
       {
         if (!m_state)
         {
@@ -59,10 +43,10 @@ namespace math
     {
       return m_state;
     }
-
+  
   protected:
-    T m_current = 0;
-    int m_ones = 0;
+    unsigned m_acc = 0;
+    constexpr static auto c_range = std::numeric_limits<decltype(m_acc)>::max();
     bool m_state = false;
   };
 }

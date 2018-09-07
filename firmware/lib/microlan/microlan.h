@@ -197,7 +197,7 @@ namespace MicroLan
     Bus* m_bus = nullptr;
   };
 
-  class Device
+  class Device : mstd::noncopyable
   {
   public:
     enum class Command : uint8_t

@@ -522,14 +522,15 @@ protected:
   constexpr static uint16_t c_samplePeriodUs = 10;
   constexpr static size_t c_samples = 200;
 
-  constexpr static int c_filterFrame = 10;
-  constexpr static int c_filterLower = 3;
-  constexpr static int c_filterUpper = 8;
+  //this filters out all pulses shorter than 9 samples
+  constexpr static int c_filterShift = 3;
+  constexpr static unsigned c_filterLowerPercent = 25;
+  constexpr static unsigned c_filterUpperPercent = 75;
 
   Pin::In m_in = Pin::Def(GPIOE, GPIO_PIN_1, false);
 
   std::unique_ptr<RT::HiresTimer> m_timer;
-  math::BounceFilter<uint32_t, c_filterFrame, c_filterLower, c_filterUpper> m_filter;
+  math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
   uint16_t m_currentDurationUs = 0;
   mstd::NonlockedFifo<uint16_t, c_samples> m_samples;
 };
