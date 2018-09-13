@@ -443,6 +443,9 @@ uint16_t s_durationUs = 0;
 class Receiver
 {
 public:
+  using Sample = int16_t;
+
+public:
   Receiver()
     : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Receiver, &Receiver::periodic>(*this)))
   {
@@ -451,22 +454,26 @@ public:
 
   void test()
   {
-    uint16_t value;
-    while (m_samples.load(value))
+    Sample sample;
+    while (m_samples.load(sample))
     {
-//      printf("%u\n", value);
+      printf("%hi\n", sample);
 
-      if (unsigned(s_durationUs) + unsigned(value) < std::numeric_limits<uint16_t>::max())
-        s_durationUs += value;
-      else
-        s_durationUs = std::numeric_limits<uint16_t>::max();
-
-      if (value == c_idlePeriodUs)
-        continue;
-
-//      printf("%hu\n", s_durationUs);
-      s_ctl.process(s_durationUs);
-      s_durationUs = 0;
+//      if (sample < 0)
+//        sample = -sample;
+//
+//      if (unsigned(s_durationUs) + unsigned(sample) < std::numeric_limits<Sample>::max())
+//        s_durationUs += sample;
+//      else
+//        s_durationUs = std::numeric_limits<Sample>::max();
+//
+//      if (sample == c_maxPeriodUs)
+//        continue;
+//
+////      printf("%hi\n", s_durationUs);
+//
+//      s_ctl.process(s_durationUs);
+//      s_durationUs = 0;
     }
 
 //    printf("\n");
@@ -496,19 +503,21 @@ public:
 protected:
   void periodic()
   {
+//    putchar('0' + m_in.read());
+
     auto currentDurationUs = m_currentDurationUs;
     
     if (m_filter.next(m_in.read()))
     {
-      m_samples.store(currentDurationUs);
+      m_samples.store(m_filter.getState() ? -currentDurationUs : currentDurationUs);
       currentDurationUs = c_samplePeriodUs;
     }
     else
     {
       currentDurationUs += c_samplePeriodUs;
-      if (currentDurationUs >= c_idlePeriodUs)
+      if (currentDurationUs >= c_maxPeriodUs)
       {
-        m_samples.store(currentDurationUs);
+        m_samples.store(m_filter.getState() ? currentDurationUs : -currentDurationUs);
         currentDurationUs = 0;
       }
     }
@@ -517,10 +526,10 @@ protected:
   }
 
 protected:
-  constexpr static uint16_t c_idlePeriodUs = 3500;
-
-  constexpr static uint16_t c_samplePeriodUs = 10;
+  constexpr static Sample c_samplePeriodUs = 10;
   constexpr static size_t c_samples = 200;
+
+  constexpr static Sample c_maxPeriodUs = 10000 - c_samplePeriodUs;
 
   //this filters out all pulses shorter than 9 samples
   constexpr static int c_filterShift = 3;
@@ -531,8 +540,8 @@ protected:
 
   std::unique_ptr<RT::HiresTimer> m_timer;
   math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
-  uint16_t m_currentDurationUs = 0;
-  mstd::NonlockedFifo<uint16_t, c_samples> m_samples;
+  Sample m_currentDurationUs = 0;
+  mstd::NonlockedFifo<Sample, c_samples> m_samples;
 };
 
 extern "C" void maintask()
