@@ -205,13 +205,58 @@ protected:
   Meters m_meters;
 };
 
+class Decoder
+{
+public:
+  using DurationUs = uint16_t;
+  struct Cycle
+  {
+    DurationUs oneDurationUs;
+    DurationUs zeroDurationUs;
+  };
+
+public:
+  void process(bool const bit, DurationUs const durationUs)
+  {
+    if (bit == m_lastBit)
+    {
+      auto& d = bit ? m_lastCycle.oneDurationUs : m_lastCycle.zeroDurationUs;
+      if (d < std::numeric_limits<DurationUs>::max() - durationUs)
+        d += durationUs;
+      else
+        d = std::numeric_limits<DurationUs>::max();
+    }
+    else
+    {
+      if (bit)
+      {
+        printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
+        
+        m_lastCycle.oneDurationUs = durationUs;
+        m_lastCycle.zeroDurationUs = 0;
+      }
+      else
+      {
+        m_lastCycle.zeroDurationUs = durationUs;
+      }
+      m_lastBit = bit;
+    }
+  }
+
+protected:
+  bool m_lastBit = true;
+  Cycle m_lastCycle = {100, 0};
+};
+
 RC::RFControl s_ctl;
-RC::RFControl::Sample s_durationUs = 0;
+RC::RFControl::DurationUs s_durationUs = 0;
+
+Decoder s_decoder;
 
 class Receiver
 {
 public:
-  using Sample = int16_t;
+  using DurationUs = int16_t;
 
 public:
   Receiver()
@@ -222,32 +267,35 @@ public:
 
   void test()
   {
-    Sample sample;
-    while (m_samples.load(sample))
+    DurationUs durationUs;
+    while (m_samples.load(durationUs))
     {
-//      printf("%hi\n", sample);
+//      printf("%hi\n", durationUs);
+      s_decoder.process(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs);
 
-      if (sample < 0)
-        sample = -sample;
+#if 0
+      if (durationUs < 0)
+        durationUs = -durationUs;
 
-      if (unsigned(s_durationUs) + unsigned(sample) < std::numeric_limits<Sample>::max())
-        s_durationUs += sample;
+      if (s_durationUs < std::numeric_limits<DurationUs>::max() - durationUs)
+        s_durationUs += durationUs;
       else
-        s_durationUs = std::numeric_limits<Sample>::max();
+        s_durationUs = std::numeric_limits<DurationUs>::max();
 
-      if (sample == c_maxPeriodUs)
+      if (durationUs == c_maxPeriodUs)
         continue;
 
 //      printf("%hi\n", s_durationUs);
 
       s_ctl.process(s_durationUs);
       s_durationUs = 0;
+#endif
     }
 
 //    printf("\n");
 
     if(s_ctl.hasData()) {
-      const RC::RFControl::Sample* timingsUs;
+      const RC::RFControl::DurationUs* timingsUs;
       size_t timings_size;
       s_ctl.getRaw(&timingsUs, &timings_size);
       printf("Code found:\n");
@@ -273,31 +321,23 @@ protected:
   {
 //    putchar('0' + m_in.read());
 
-    auto currentDurationUs = m_currentDurationUs;
+    auto const lastState = m_filter.getState();
+    auto currentDurationUs = m_currentDurationUs + c_samplePeriodUs;
     
-    if (m_filter.next(m_in.read()))
+    if (m_filter.next(m_in.read()) || currentDurationUs >= c_maxPeriodUs)
     {
-      m_samples.store(m_filter.getState() ? -currentDurationUs : currentDurationUs);
-      currentDurationUs = c_samplePeriodUs;
-    }
-    else
-    {
-      currentDurationUs += c_samplePeriodUs;
-      if (currentDurationUs >= c_maxPeriodUs)
-      {
-        m_samples.store(m_filter.getState() ? currentDurationUs : -currentDurationUs);
-        currentDurationUs = 0;
-      }
+      m_samples.store(lastState ? currentDurationUs : -currentDurationUs);
+      currentDurationUs = 0;
     }
 
     m_currentDurationUs = currentDurationUs;
   }
 
 protected:
-  constexpr static Sample c_samplePeriodUs = 10;
+  constexpr static DurationUs c_samplePeriodUs = 10;
   constexpr static size_t c_samples = 200;
 
-  constexpr static Sample c_maxPeriodUs = 10000 - c_samplePeriodUs;
+  constexpr static DurationUs c_maxPeriodUs = 10000 - c_samplePeriodUs;
 
   //this filters out all pulses shorter than 9 samples
   constexpr static int c_filterShift = 3;
@@ -308,8 +348,8 @@ protected:
 
   std::unique_ptr<RT::HiresTimer> m_timer;
   math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
-  Sample m_currentDurationUs = 0;
-  mstd::NonlockedFifo<Sample, c_samples> m_samples;
+  DurationUs m_currentDurationUs = 0;
+  mstd::NonlockedFifo<DurationUs, c_samples> m_samples;
 };
 
 extern "C" void maintask()
@@ -364,7 +404,7 @@ extern "C" void maintask()
       OS::Thread::delay(10);
     }
 
-    unsigned tenths;
-    printf("CPU IDLE=%02u.%01u%%\n", im.get(&tenths), tenths);
+//    unsigned tenths;
+//    printf("CPU IDLE=%02u.%01u%%\n", im.get(&tenths), tenths);
   }
 }

@@ -11,7 +11,7 @@ namespace RC
   class RFControl : mstd::noncopyable
   {
   public:
-    using Sample = uint16_t;
+    using DurationUs = uint16_t;
 
   public:
     bool hasData() const
@@ -19,7 +19,7 @@ namespace RC
       return m_data1Ready || m_data2Ready;
     }
 
-    void getRaw(const Sample** const timingsUs, size_t* const timings_size)
+    void getRaw(const DurationUs** const timingsUs, size_t* const timings_size)
     {
       if (m_data1Ready)
       {
@@ -45,7 +45,7 @@ namespace RC
       }
     }
 
-    void process(Sample const durationUs)
+    void process(DurationUs const durationUs)
     {
       switch (m_state)
       {
@@ -74,18 +74,18 @@ namespace RC
     }
 
   protected:
-    bool probablyFooter(Sample const durationUs) const
+    bool probablyFooter(DurationUs const durationUs) const
     {
       return durationUs >= c_minFooterUs; 
     }
 
-    bool matchesFooter(Sample const durationUs) const
+    bool matchesFooter(DurationUs const durationUs) const
     {
       auto footerDeltaUs = m_footerUs/4;
       return m_footerUs - footerDeltaUs < durationUs && durationUs < m_footerUs + footerDeltaUs;
     }
 
-    void startRecording(Sample const durationUs)
+    void startRecording(DurationUs const durationUs)
     {
       m_footerUs = durationUs;
       m_dataEnd[0] = 0;
@@ -106,7 +106,7 @@ namespace RC
       m_state = State::STATUS_RECORDING_0;
     }
 
-    void recording(Sample const durationUs, size_t const package)
+    void recording(DurationUs const durationUs, size_t const package)
     {
       if (matchesFooter(durationUs)) //test for footer (+-25%).
       {
@@ -168,7 +168,7 @@ namespace RC
       }
     }
 
-    void verify(bool* const verifiyState, bool* const dataState, Sample const refValMax, Sample const refValMin, size_t const pos, size_t const package) const
+    void verify(bool* const verifiyState, bool* const dataState, DurationUs const refValMax, DurationUs const refValMin, size_t const pos, size_t const package) const
     {
       if (*verifiyState && pos >= 0)
       {
@@ -187,10 +187,10 @@ namespace RC
 
     void verification(size_t const package)
     {
-      Sample refVal = m_timingsUs[m_dataEnd[package] - 1];
-      Sample delta = refVal / 8 + refVal / 4; //+-37,5%
-      Sample refValMin = refVal - delta;
-      Sample refValMax = refVal + delta;
+      DurationUs refVal = m_timingsUs[m_dataEnd[package] - 1];
+      DurationUs delta = refVal / 8 + refVal / 4; //+-37,5%
+      DurationUs refValMin = refVal - delta;
+      DurationUs refValMax = refVal + delta;
       size_t pos = m_dataEnd[package] - 1 - m_dataStart[package];
 
       switch (package)
@@ -219,9 +219,9 @@ namespace RC
 
   protected:
     constexpr static size_t c_maxRecordings = 512;
-    constexpr static Sample c_minFooterUs = 3500;
+    constexpr static DurationUs c_minFooterUs = 3500;
 
-    Sample m_timingsUs[c_maxRecordings];
+    DurationUs m_timingsUs[c_maxRecordings];
     bool m_data1Ready = false;
     bool m_data2Ready = false;
     size_t m_dataStart[5] = {};
@@ -234,7 +234,7 @@ namespace RC
       STATUS_RECORDING_3,
       STATUS_RECORDING_END,
     } m_state = State::STATUS_WAITING;
-    Sample m_footerUs = 0;
+    DurationUs m_footerUs = 0;
     bool m_pack0EqualPack1 = false;
     bool m_pack0EqualPack2 = false;
     bool m_pack0EqualPack3 = false;
