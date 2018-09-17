@@ -47,6 +47,12 @@ namespace mstd
     return (v + (T(1) << (shift - 1))) >> shift;
   }
 
+  template<typename T>
+  constexpr typename std::enable_if<std::is_unsigned<T>::value, T>::type badd(T const v1, T const v2, T const limit = std::numeric_limits<T>::max())
+  {
+    return v1 < limit - v2 ? v1 + v2 : limit;
+  }
+
   template<typename Ret, typename ...Args>
   class Callback
   {

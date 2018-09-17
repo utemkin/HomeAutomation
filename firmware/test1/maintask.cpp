@@ -221,17 +221,13 @@ public:
     if (bit == m_lastBit)
     {
       auto& d = bit ? m_lastCycle.oneDurationUs : m_lastCycle.zeroDurationUs;
-      if (d < std::numeric_limits<DurationUs>::max() - durationUs)
-        d += durationUs;
-      else
-        d = std::numeric_limits<DurationUs>::max();
+      d = mstd::badd(d, durationUs);
     }
     else
     {
       if (bit)
       {
-        printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
-        
+        process();
         m_lastCycle.oneDurationUs = durationUs;
         m_lastCycle.zeroDurationUs = 0;
       }
@@ -244,8 +240,33 @@ public:
   }
 
 protected:
+  void process()
+  {
+    printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
+
+    switch(m_phase)
+    {
+    case 0:
+      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThrethold)
+      {
+        m_phase = 1;
+        break;
+      }
+    case 1:
+      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) < c_syncThrethold)
+      {
+        m_phase = 2;
+        break;
+      }
+    }
+  }
+
+protected:
+  constexpr static DurationUs c_syncThrethold = 3500;
+
   bool m_lastBit = true;
   Cycle m_lastCycle = {100, 0};
+  int m_phase = 0;
 };
 
 RC::RFControl s_ctl;
