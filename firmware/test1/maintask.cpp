@@ -242,34 +242,64 @@ public:
 protected:
   void process()
   {
-    printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
+//    printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
+
+    auto const isSync = mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThreshold;
 
     switch(m_phase)
     {
-    case 0:
-      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThrethold)
-      {
-        m_phase = 1;
-        break;
-      }
-    case 1:
-      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThrethold)
+    case Phase::WaitSync:
+      if (!isSync)
         break;
 
-      m_dataSize = 0;
-      m_phase = 2;
-    case 2:
+      m_phase = Phase::WaitData;
+      break;
+
+    case Phase::WaitData:
+      if (isSync)
+        break;
+
+      m_data[0] = m_lastCycle;
+      m_dataSize = 1;
+      m_phase = Phase::ReceiveData;
+      break;
+
+    case Phase::ReceiveData:
+      if (isSync)
+      {
+        if (m_dataSize >= c_minData)
+        {
+          //fixme: end of packet
+          printf("m_dataSize=%u \n", m_dataSize);
+        }
+
+        m_phase = Phase::WaitData;
+        break;
+      }
+      if (m_dataSize >= m_data.size())
+      {
+        //fixme: overflow
+        m_phase = Phase::WaitSync;
+        break;
+      }
+      m_data[m_dataSize] = m_lastCycle;
+      ++m_dataSize;
       break;
     }
   }
 
 protected:
-  constexpr static DurationUs c_syncThrethold = 3500;
+  constexpr static DurationUs c_syncThreshold = 3500;
   constexpr static size_t c_maxData = 132;
+  constexpr static size_t c_minData = 16;
 
   bool m_lastBit = true;
   Cycle m_lastCycle = {100, 0};
-  int m_phase = 0;
+  enum class Phase {
+    WaitSync,
+    WaitData,
+    ReceiveData,
+  } m_phase = Phase::WaitSync;
   std::array<Cycle, c_maxData> m_data;
   size_t m_dataSize;
 };
