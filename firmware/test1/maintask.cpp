@@ -253,20 +253,25 @@ protected:
         break;
       }
     case 1:
-      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) < c_syncThrethold)
-      {
-        m_phase = 2;
+      if (mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThrethold)
         break;
-      }
+
+      m_dataSize = 0;
+      m_phase = 2;
+    case 2:
+      break;
     }
   }
 
 protected:
   constexpr static DurationUs c_syncThrethold = 3500;
+  constexpr static size_t c_maxData = 132;
 
   bool m_lastBit = true;
   Cycle m_lastCycle = {100, 0};
   int m_phase = 0;
+  std::array<Cycle, c_maxData> m_data;
+  size_t m_dataSize;
 };
 
 RC::RFControl s_ctl;
@@ -320,12 +325,12 @@ public:
       size_t timings_size;
       s_ctl.getRaw(&timingsUs, &timings_size);
       printf("Code found:\n");
-      for(size_t i=0; i < timings_size; ++i) {
+      for(size_t i = 0; i < timings_size; ++i) {
         auto timingUs = timingsUs[i];
 //        Serial.print(timingUs);
 //        Serial.write(' ');
         printf("%hu ", timingUs);
-        if((i+1)%16 == 0) {
+        if((i + 1) % 16 == 0) {
 //          Serial.write('\n');
           printf("\n");
         }

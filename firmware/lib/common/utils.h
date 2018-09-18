@@ -156,7 +156,7 @@ namespace mstd
     }
 
   protected:
-    T m_buffer[N + 1];
+    std::array<T, N + 1> m_buffer;
     std::atomic<size_t> m_readIndex;
     std::atomic<size_t> m_writeIndex;
   };
