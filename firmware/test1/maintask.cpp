@@ -248,42 +248,66 @@ protected:
 
     switch(m_phase)
     {
-    case Phase::WaitSync:
+    case Phase::WaitFirstSync:
       if (!isSync)
         break;
 
-      m_phase = Phase::WaitData;
+      m_phase = Phase::WaitFirstData;
       break;
 
-    case Phase::WaitData:
+    case Phase::WaitFirstData:
       if (isSync)
         break;
 
       m_data[0] = m_lastCycle;
       m_dataSize = 1;
-      m_phase = Phase::ReceiveData;
+      m_phase = Phase::ReceiveFirstData;
       break;
 
-    case Phase::ReceiveData:
+    case Phase::ReceiveFirstData:
       if (isSync)
       {
         if (m_dataSize >= c_minData)
         {
-          //fixme: end of packet
-          printf("m_dataSize=%u \n", m_dataSize);
+          m_syncCount = 1;
+          m_phase = Phase::WaitNextData;
+          break;
         }
 
-        m_phase = Phase::WaitData;
+        m_phase = Phase::WaitFirstData;
         break;
       }
+
       if (m_dataSize >= m_data.size())
       {
-        //fixme: overflow
-        m_phase = Phase::WaitSync;
+        m_phase = Phase::WaitFirstSync;
         break;
       }
+
       m_data[m_dataSize] = m_lastCycle;
       ++m_dataSize;
+      break;
+
+    case Phase::WaitNextData:
+      if (isSync)
+      {
+        ++m_syncCount;
+        if (m_syncCount > c_maxSyncCount)
+        {
+          m_phase = Phase::WaitFirstData;
+          break;
+        }
+
+        break;
+      }
+
+      m_phase = Phase::ReceiveNextData;
+      //no break
+
+    case Phase::ReceiveNextData:
+
+      //fixme
+
       break;
     }
   }
@@ -292,16 +316,22 @@ protected:
   constexpr static DurationUs c_syncThreshold = 3500;
   constexpr static size_t c_maxData = 132;
   constexpr static size_t c_minData = 16;
+  constexpr static unsigned c_maxSyncCount = 2;
 
   bool m_lastBit = true;
   Cycle m_lastCycle = {100, 0};
   enum class Phase {
-    WaitSync,
-    WaitData,
-    ReceiveData,
-  } m_phase = Phase::WaitSync;
+    WaitFirstSync,
+    WaitFirstData,
+    ReceiveFirstData,
+    WaitNextData,
+    ReceiveNextData,
+  } m_phase = Phase::WaitFirstSync;
   std::array<Cycle, c_maxData> m_data;
   size_t m_dataSize;
+  unsigned m_syncCount;
+  size_t m_dataPos;
+  unsigned m_repeatCount;
 };
 
 RC::RFControl s_ctl;
