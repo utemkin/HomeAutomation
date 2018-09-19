@@ -259,10 +259,9 @@ protected:
       if (isSync)
         break;
 
-      m_data[0] = m_lastCycle;
-      m_dataSize = 1;
+      m_dataSize = 0;
       m_phase = Phase::ReceiveFirstData;
-      break;
+      //no break
 
     case Phase::ReceiveFirstData:
       if (isSync)
@@ -270,6 +269,7 @@ protected:
         if (m_dataSize >= c_minData)
         {
           m_syncCount = 1;
+          m_repeatCount = 1;
           m_phase = Phase::WaitNextData;
           break;
         }
@@ -301,15 +301,76 @@ protected:
         break;
       }
 
+      m_dataPos = 0;
       m_phase = Phase::ReceiveNextData;
       //no break
 
     case Phase::ReceiveNextData:
+      if (isSync)
+      {
+        if (m_dataPos != m_dataSize)
+        {
+          m_syncCount = 1;
+          m_phase = Phase::WaitFirstData;
+          break;
+        }
 
-      //fixme
+        ++m_repeatCount;
 
+        //fixme: report
+        printf("size: %u rep: %u\n", m_dataSize, m_repeatCount);
+
+        m_phase = Phase::WaitNextData;
+        break;
+      }
+
+      if (m_dataPos > m_dataSize)
+      {
+        m_phase = Phase::WaitFirstSync;
+        break;
+      }
+
+      if (!merge(m_data[m_dataPos].oneDurationUs, m_lastCycle.oneDurationUs) ||
+          !merge(m_data[m_dataPos].zeroDurationUs, m_lastCycle.zeroDurationUs))
+      {
+        m_phase = Phase::WaitFirstSync;
+        break;
+      }
+
+      ++m_dataPos;
       break;
     }
+  }
+
+  // if (v1 / 1.5 <= v2 && v2 <= v1 * 1.5)
+  // {
+  //   v1 = avg(v1, v2);
+  //   return true;
+  // }
+  // else
+  //   return false;
+  static bool merge(DurationUs& v1, DurationUs const v2)
+  {
+    if (v2 > v1)
+    {
+      DurationUs const diff = v2 - v1;
+      if (v1 >= (diff << 1))
+      {
+        v1 += mstd::rsar<1>(diff);
+        return true;
+      }
+    }
+    else
+    {
+      DurationUs const diff = v1 - v2;
+      if (v2 >= (diff << 1))
+      {
+        v1 -= mstd::rsar<1>(diff);
+        return true;
+      }
+    }
+
+    return false;
   }
 
 protected:
