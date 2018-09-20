@@ -111,14 +111,10 @@ namespace mstd
   };
 
   template<typename T, size_t N>
-  class NonlockedFifo
+  class NonlockedFifo : noncopyable
   {
   public:
-    NonlockedFifo()
-      : m_readIndex(0)
-      , m_writeIndex(0)
-    {
-    }
+    NonlockedFifo() = default;
 
     bool store(const T& value)
     {
@@ -126,7 +122,7 @@ namespace mstd
       auto oldWriteIndex = writeIndex;
 
       ++writeIndex;
-      if (writeIndex == N + 1)
+      if (writeIndex >= m_buffer.size())
         writeIndex = 0;
 
       if (writeIndex == m_readIndex.load(std::memory_order_relaxed))
@@ -148,7 +144,7 @@ namespace mstd
       value = m_buffer[readIndex];
     
       ++readIndex;
-      if (readIndex == N + 1)
+      if (readIndex >= m_buffer.size())
         readIndex = 0;
 
       m_readIndex.store(readIndex, std::memory_order_release);
@@ -157,8 +153,8 @@ namespace mstd
 
   protected:
     std::array<T, N + 1> m_buffer;
-    std::atomic<size_t> m_readIndex;
-    std::atomic<size_t> m_writeIndex;
+    std::atomic<size_t> m_readIndex = {0};
+    std::atomic<size_t> m_writeIndex = {0};
   };
 }
 

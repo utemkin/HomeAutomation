@@ -294,6 +294,9 @@ protected:
         ++m_syncCount;
         if (m_syncCount > c_maxSyncCount)
         {
+
+          printf("->WaitFirstData\n");
+
           m_phase = Phase::WaitFirstData;
           break;
         }
@@ -311,6 +314,9 @@ protected:
         if (m_dataPos != m_dataSize)
         {
           m_syncCount = 1;
+
+          printf("->WaitFirstData\n");
+
           m_phase = Phase::WaitFirstData;
           break;
         }
@@ -326,6 +332,9 @@ protected:
 
       if (m_dataPos > m_dataSize)
       {
+
+        printf("->WaitFirstSync\n");
+
         m_phase = Phase::WaitFirstSync;
         break;
       }
@@ -333,6 +342,9 @@ protected:
       if (!merge(m_data[m_dataPos].oneDurationUs, m_lastCycle.oneDurationUs) ||
           !merge(m_data[m_dataPos].zeroDurationUs, m_lastCycle.zeroDurationUs))
       {
+
+        printf("->WaitFirstSync\n");
+
         m_phase = Phase::WaitFirstSync;
         break;
       }
@@ -351,6 +363,8 @@ protected:
   //   return false;
   static bool merge(DurationUs& v1, DurationUs const v2)
   {
+    printf("%u -> %u\n", v1, v2);
+
     if (v2 > v1)
     {
       DurationUs const diff = v2 - v1;
@@ -545,10 +559,10 @@ extern "C" void maintask()
 //      adc->convert();
 //    }
 
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 1000; ++i)
     {
       receiver.test();
-      OS::Thread::delay(10);
+      OS::Thread::delay(1);
     }
 
 //    unsigned tenths;
