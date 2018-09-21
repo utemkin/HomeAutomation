@@ -163,6 +163,9 @@
     <folder Name="frozen">
       <file file_name="../frozen/frozen.c" />
     </folder>
+    <folder Name="remotecontrol">
+      <file file_name="../lib/remotecontrol/decoder.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"

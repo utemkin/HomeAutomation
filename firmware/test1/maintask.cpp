@@ -8,6 +8,7 @@
 #include <lib/enc28j60/enc28j60_lwip.h>
 #include <lib/analog/adc_stm32.h>
 #include <lib/remotecontrol/RFControl.h>
+#include <lib/remotecontrol/decoder.h>
 #include <frozen/frozen.h>
 #include "main.h"
 #include "adc.h"
@@ -205,214 +206,10 @@ protected:
   Meters m_meters;
 };
 
-class Decoder
-{
-public:
-  using DurationUs = uint16_t;
-  struct Cycle
-  {
-    DurationUs oneDurationUs;
-    DurationUs zeroDurationUs;
-  };
-
-public:
-  void process(bool const bit, DurationUs const durationUs)
-  {
-    if (bit == m_lastBit)
-    {
-      auto& d = bit ? m_lastCycle.oneDurationUs : m_lastCycle.zeroDurationUs;
-      d = mstd::badd(d, durationUs);
-    }
-    else
-    {
-      if (bit)
-      {
-        process();
-        m_lastCycle.oneDurationUs = durationUs;
-        m_lastCycle.zeroDurationUs = 0;
-      }
-      else
-      {
-        m_lastCycle.zeroDurationUs = durationUs;
-      }
-      m_lastBit = bit;
-    }
-  }
-
-protected:
-  void process()
-  {
-//    printf("%hu %hu\n", m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs);
-
-    auto const isSync = mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThreshold;
-
-    switch(m_phase)
-    {
-    case Phase::WaitFirstSync:
-      if (!isSync)
-        break;
-
-      m_phase = Phase::WaitFirstData;
-      break;
-
-    case Phase::WaitFirstData:
-      if (isSync)
-        break;
-
-      m_dataSize = 0;
-      m_phase = Phase::ReceiveFirstData;
-      //no break
-
-    case Phase::ReceiveFirstData:
-      if (isSync)
-      {
-        if (m_dataSize >= c_minData)
-        {
-          m_syncCount = 1;
-          m_repeatCount = 1;
-          m_phase = Phase::WaitNextData;
-          break;
-        }
-
-        m_phase = Phase::WaitFirstData;
-        break;
-      }
-
-      if (m_dataSize >= m_data.size())
-      {
-        m_phase = Phase::WaitFirstSync;
-        break;
-      }
-
-      m_data[m_dataSize] = m_lastCycle;
-      ++m_dataSize;
-      break;
-
-    case Phase::WaitNextData:
-      if (isSync)
-      {
-        ++m_syncCount;
-        if (m_syncCount > c_maxSyncCount)
-        {
-
-          printf("->WaitFirstData\n");
-
-          m_phase = Phase::WaitFirstData;
-          break;
-        }
-
-        break;
-      }
-
-      m_dataPos = 0;
-      m_phase = Phase::ReceiveNextData;
-      //no break
-
-    case Phase::ReceiveNextData:
-      if (isSync)
-      {
-        if (m_dataPos != m_dataSize)
-        {
-          m_syncCount = 1;
-
-          printf("->WaitFirstData\n");
-
-          m_phase = Phase::WaitFirstData;
-          break;
-        }
-
-        ++m_repeatCount;
-
-        //fixme: report
-        printf("size: %u rep: %u\n", m_dataSize, m_repeatCount);
-
-        m_phase = Phase::WaitNextData;
-        break;
-      }
-
-      if (m_dataPos > m_dataSize)
-      {
-
-        printf("->WaitFirstSync\n");
-
-        m_phase = Phase::WaitFirstSync;
-        break;
-      }
-
-      if (!merge(m_data[m_dataPos].oneDurationUs, m_lastCycle.oneDurationUs) ||
-          !merge(m_data[m_dataPos].zeroDurationUs, m_lastCycle.zeroDurationUs))
-      {
-
-        printf("->WaitFirstSync\n");
-
-        m_phase = Phase::WaitFirstSync;
-        break;
-      }
-
-      ++m_dataPos;
-      break;
-    }
-  }
-
-  // if (v1 / 1.5 <= v2 && v2 <= v1 * 1.5)
-  // {
-  //   v1 = avg(v1, v2);
-  //   return true;
-  // }
-  // else
-  //   return false;
-  static bool merge(DurationUs& v1, DurationUs const v2)
-  {
-    printf("%u -> %u\n", v1, v2);
-
-    if (v2 > v1)
-    {
-      DurationUs const diff = v2 - v1;
-      if (v1 >= (diff << 1))
-      {
-        v1 += mstd::rsar<1>(diff);
-        return true;
-      }
-    }
-    else
-    {
-      DurationUs const diff = v1 - v2;
-      if (v2 >= (diff << 1))
-      {
-        v1 -= mstd::rsar<1>(diff);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-protected:
-  constexpr static DurationUs c_syncThreshold = 3500;
-  constexpr static size_t c_maxData = 132;
-  constexpr static size_t c_minData = 16;
-  constexpr static unsigned c_maxSyncCount = 2;
-
-  bool m_lastBit = true;
-  Cycle m_lastCycle = {100, 0};
-  enum class Phase {
-    WaitFirstSync,
-    WaitFirstData,
-    ReceiveFirstData,
-    WaitNextData,
-    ReceiveNextData,
-  } m_phase = Phase::WaitFirstSync;
-  std::array<Cycle, c_maxData> m_data;
-  size_t m_dataSize;
-  unsigned m_syncCount;
-  size_t m_dataPos;
-  unsigned m_repeatCount;
-};
-
 RC::RFControl s_ctl;
 RC::RFControl::DurationUs s_durationUs = 0;
 
-Decoder s_decoder;
+RC::Decoder s_decoder;
 
 class Receiver
 {
@@ -432,7 +229,9 @@ public:
     while (m_samples.load(durationUs))
     {
 //      printf("%hi\n", durationUs);
-      s_decoder.process(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs);
+
+      RC::Decoder::Message message;
+      s_decoder.next(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs, message);
 
 #if 0
       if (durationUs < 0)
