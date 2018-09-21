@@ -26,8 +26,8 @@ namespace RC
     Decoder() = default;
 
     // - returns true if there is a message
-    // - message.data is only valid until next call to next()
-    bool next(bool bit, DurationUs durationUs, Message& message);
+    // - message.data is only valid until next call to process()
+    bool process(bool bit, DurationUs durationUs, Message& message);
 
   protected:
     bool process(Message& message);

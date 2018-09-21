@@ -39,7 +39,7 @@ namespace RC
     }
   }
 
-  bool Decoder::next(bool const bit, DurationUs const durationUs, Message& message)
+  bool Decoder::process(bool const bit, DurationUs const durationUs, Message& message)
   {
     if (bit == m_lastBit)
     {

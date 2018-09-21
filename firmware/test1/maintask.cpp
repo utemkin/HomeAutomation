@@ -9,6 +9,8 @@
 #include <lib/analog/adc_stm32.h>
 #include <lib/remotecontrol/RFControl.h>
 #include <lib/remotecontrol/decoder.h>
+#include <lib/remotecontrol/receiver.h>
+#include <lib/remotecontrol/receiver_stm32.h>
 #include <frozen/frozen.h>
 #include "main.h"
 #include "adc.h"
@@ -206,32 +208,20 @@ protected:
   Meters m_meters;
 };
 
-RC::RFControl s_ctl;
-RC::RFControl::DurationUs s_durationUs = 0;
-
-RC::Decoder s_decoder;
-
 class Receiver
 {
 public:
-  using DurationUs = int16_t;
-
-public:
-  Receiver()
-    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Receiver, &Receiver::periodic>(*this)))
-  {
-    m_timer->start(1000000 / c_samplePeriodUs);
-  }
+  Receiver() = default;
 
   void test()
   {
-    DurationUs durationUs;
-    while (m_samples.load(durationUs))
+    RC::Receiver::DurationUs durationUs;
+    while (m_receiver->receive(durationUs))
     {
 //      printf("%hi\n", durationUs);
 
       RC::Decoder::Message message;
-      s_decoder.next(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs, message);
+      m_decoder->process(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs, message);
 
 #if 0
       if (durationUs < 0)
@@ -254,62 +244,33 @@ public:
 
 //    printf("\n");
 
-    if(s_ctl.hasData()) {
-      const RC::RFControl::DurationUs* timingsUs;
-      size_t timings_size;
-      s_ctl.getRaw(&timingsUs, &timings_size);
-      printf("Code found:\n");
-      for(size_t i = 0; i < timings_size; ++i) {
-        auto timingUs = timingsUs[i];
-//        Serial.print(timingUs);
-//        Serial.write(' ');
-        printf("%hu ", timingUs);
-        if((i + 1) % 16 == 0) {
-//          Serial.write('\n');
-          printf("\n");
-        }
-      }
-//      Serial.write('\n');
-//      Serial.write('\n');
-      printf("\n\n");
-      s_ctl.continueReceiving();
-    }
+//    if(m_ctl.hasData()) {
+//      const RC::RFControl::DurationUs* timingsUs;
+//      size_t timings_size;
+//      m_ctl.getRaw(&timingsUs, &timings_size);
+//      printf("Code found:\n");
+//      for(size_t i = 0; i < timings_size; ++i) {
+//        auto timingUs = timingsUs[i];
+////        Serial.print(timingUs);
+////        Serial.write(' ');
+//        printf("%hu ", timingUs);
+//        if((i + 1) % 16 == 0) {
+////          Serial.write('\n');
+//          printf("\n");
+//        }
+//      }
+////      Serial.write('\n');
+////      Serial.write('\n');
+//      printf("\n\n");
+//      m_ctl.continueReceiving();
+//    }
   }
 
 protected:
-  void periodic()
-  {
-//    putchar('0' + m_in.read());
-
-    auto const lastState = m_filter.getState();
-    auto currentDurationUs = m_currentDurationUs + c_samplePeriodUs;
-    
-    if (m_filter.next(m_in.read()) || currentDurationUs >= c_maxPeriodUs)
-    {
-      m_samples.store(lastState ? currentDurationUs : -currentDurationUs);
-      currentDurationUs = 0;
-    }
-
-    m_currentDurationUs = currentDurationUs;
-  }
-
-protected:
-  constexpr static DurationUs c_samplePeriodUs = 10;
-  constexpr static size_t c_samples = 200;
-
-  constexpr static DurationUs c_maxPeriodUs = 10000 - c_samplePeriodUs;
-
-  //this filters out all pulses shorter than 9 samples
-  constexpr static int c_filterShift = 3;
-  constexpr static unsigned c_filterLowerPercent = 25;
-  constexpr static unsigned c_filterUpperPercent = 75;
-
-  Pin::In m_in = Pin::Def(GPIOE, GPIO_PIN_1, false);
-
-  std::unique_ptr<RT::HiresTimer> m_timer;
-  math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
-  DurationUs m_currentDurationUs = 0;
-  mstd::NonlockedFifo<DurationUs, c_samples> m_samples;
+  RC::RFControl m_ctl;
+  RC::RFControl::DurationUs m_durationUs = 0;
+  std::unique_ptr<RC::Decoder> m_decoder = std::make_unique<RC::Decoder>();
+  std::unique_ptr<RC::Receiver> m_receiver = RC::CreateReceiverStm32(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
 };
 
 extern "C" void maintask()

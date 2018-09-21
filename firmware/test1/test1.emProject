@@ -165,6 +165,7 @@
     </folder>
     <folder Name="remotecontrol">
       <file file_name="../lib/remotecontrol/decoder.cpp" />
+      <file file_name="../lib/remotecontrol/receiver_stm32.cpp" />
     </folder>
   </project>
   <configuration
