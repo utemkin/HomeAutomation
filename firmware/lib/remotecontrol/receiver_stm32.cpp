@@ -24,13 +24,10 @@ namespace RC
     protected:
       void periodic()
       {
-
-    //    putchar('0' + m_in.read());
-
         auto const lastState = m_filter.getState();
         auto currentDurationUs = m_currentDurationUs + c_samplePeriodUs;
     
-        if (m_filter.next(m_pin.read()) || currentDurationUs >= c_maxPeriodUs)
+        if (m_filter.next(m_pin.read()) || currentDurationUs >= c_maxDurationUs)
         {
           m_samples.store(lastState ? currentDurationUs : -currentDurationUs);
           currentDurationUs = 0;
@@ -42,7 +39,7 @@ namespace RC
     protected:
       constexpr static DurationUs c_samplePeriodUs = 10;
       constexpr static size_t c_samples = 200;
-      constexpr static DurationUs c_maxPeriodUs = 10000 - c_samplePeriodUs;
+      constexpr static DurationUs c_maxDurationUs = 10000 - c_samplePeriodUs;
 
       //this filters out all pulses shorter than 9 samples
       constexpr static int c_filterShift = 3;

@@ -208,69 +208,91 @@ protected:
   Meters m_meters;
 };
 
-class Receiver
+class MyReceiver : mstd::noncopyable
 {
 public:
-  Receiver() = default;
+  MyReceiver(TIM_TypeDef* tim, const Pin::Def& pin)
+    : m_receiver(RC::CreateReceiverStm32(tim, pin))
+  {
+  }
 
-  void test()
+  void receive()
   {
     RC::Receiver::DurationUs durationUs;
     while (m_receiver->receive(durationUs))
     {
+
 //      printf("%hi\n", durationUs);
 
       RC::Decoder::Message message;
-      m_decoder->process(durationUs < 0 ? false : true, durationUs < 0 ? -durationUs : durationUs, message);
-
-#if 0
-      if (durationUs < 0)
-        durationUs = -durationUs;
-
-      if (s_durationUs < std::numeric_limits<DurationUs>::max() - durationUs)
-        s_durationUs += durationUs;
-      else
-        s_durationUs = std::numeric_limits<DurationUs>::max();
-
-      if (durationUs == c_maxPeriodUs)
-        continue;
-
-//      printf("%hi\n", s_durationUs);
-
-      s_ctl.process(s_durationUs);
-      s_durationUs = 0;
-#endif
+      m_decoder->process(durationUs > 0, durationUs > 0 ? durationUs : -durationUs, message);
     }
-
-//    printf("\n");
-
-//    if(m_ctl.hasData()) {
-//      const RC::RFControl::DurationUs* timingsUs;
-//      size_t timings_size;
-//      m_ctl.getRaw(&timingsUs, &timings_size);
-//      printf("Code found:\n");
-//      for(size_t i = 0; i < timings_size; ++i) {
-//        auto timingUs = timingsUs[i];
-////        Serial.print(timingUs);
-////        Serial.write(' ');
-//        printf("%hu ", timingUs);
-//        if((i + 1) % 16 == 0) {
-////          Serial.write('\n');
-//          printf("\n");
-//        }
-//      }
-////      Serial.write('\n');
-////      Serial.write('\n');
-//      printf("\n\n");
-//      m_ctl.continueReceiving();
-//    }
   }
 
 protected:
-  RC::RFControl m_ctl;
-  RC::RFControl::DurationUs m_durationUs = 0;
+  std::unique_ptr<RC::Receiver> m_receiver;
   std::unique_ptr<RC::Decoder> m_decoder = std::make_unique<RC::Decoder>();
-  std::unique_ptr<RC::Receiver> m_receiver = RC::CreateReceiverStm32(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
+};
+
+class RFControlReceiver : mstd::noncopyable
+{
+public:
+  RFControlReceiver(TIM_TypeDef* tim, const Pin::Def& pin)
+    : m_receiver(RC::CreateReceiverStm32(tim, pin))
+  {
+  }
+
+  void receive()
+  {
+    RC::Receiver::DurationUs durationUs;
+    while (m_receiver->receive(durationUs))
+    {
+
+//      printf("%hi\n", durationUs);
+
+      auto const bit = durationUs > 0;
+      RC::RFControl::DurationUs const d = durationUs > 0 ? durationUs : -durationUs;
+      if (bit == m_lastBit)
+      {
+        m_durationUs = mstd::badd(m_durationUs, d);
+        continue;
+      }
+
+      m_lastBit = bit;
+
+//      printf("%hi\n", s_durationUs);
+
+      m_decoder->process(m_durationUs);
+      m_durationUs = d;
+
+      if(m_decoder->hasData()) {
+        const RC::RFControl::DurationUs* timingsUs;
+        size_t timings_size;
+        m_decoder->getRaw(&timingsUs, &timings_size);
+        printf("Code found:\n");
+        for(size_t i = 0; i < timings_size; ++i) {
+          auto timingUs = timingsUs[i];
+  //        Serial.print(timingUs);
+  //        Serial.write(' ');
+          printf("%hu ", timingUs);
+          if((i + 1) % 16 == 0) {
+  //          Serial.write('\n');
+            printf("\n");
+          }
+        }
+  //      Serial.write('\n');
+  //      Serial.write('\n');
+        printf("\n\n");
+        m_decoder->continueReceiving();
+      }
+    }
+  }
+
+protected:
+  std::unique_ptr<RC::Receiver> m_receiver;
+  std::unique_ptr<RC::RFControl> m_decoder = std::make_unique<RC::RFControl>();
+  bool m_lastBit = true;
+  RC::RFControl::DurationUs m_durationUs = 0;
 };
 
 extern "C" void maintask()
@@ -306,7 +328,8 @@ extern "C" void maintask()
 
 //  Sampler sampler;
 
-  Receiver receiver;
+//  MyReceiver receiver(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
+  RFControlReceiver receiver(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
 
   for(;;)
   {
@@ -321,7 +344,7 @@ extern "C" void maintask()
 
     for (int i = 0; i < 1000; ++i)
     {
-      receiver.test();
+      receiver.receive();
       OS::Thread::delay(1);
     }
 
