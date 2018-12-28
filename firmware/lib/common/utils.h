@@ -160,6 +160,8 @@ namespace mstd
 
 namespace RT
 {
+  void fatal();
+
   void stall(const unsigned cycles);
   uint32_t getUnique();
 
@@ -348,7 +350,7 @@ namespace OS
     static void func(const void* arg)
     {
       ((Thread*)arg)->func();
-      Error_Handler();          //fixme
+      RT::fatal();          //fixme
     }
   };
 

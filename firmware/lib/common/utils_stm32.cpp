@@ -184,6 +184,11 @@ namespace RT
     };
   }
 
+  void fatal()
+  {
+    for (;;);     //fixme
+  }
+
 #if 1
   // real measured delay min(24, [cycles, cycles + 7])
   void ATTR_SUPER_OPTIMIZE stall(const unsigned cycles)

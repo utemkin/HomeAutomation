@@ -29,7 +29,7 @@ namespace
 void Irq::Handler::install(IRQn_Type IRQn)
 {
   if (m_next)
-    Error_Handler();
+    RT::fatal();
 
   IRQn = IRQn_Type(int(IRQn) + 16);
   assert_param(IRQn < NUM_HANDLERS + 16);
@@ -46,7 +46,7 @@ void __always_inline ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
     handled += next->m_callback(IRQn_Type(IRQn));
 
   if (!handled)
-    Error_Handler();
+    RT::fatal();
 }
 
 extern "C" uint8_t _estack;
