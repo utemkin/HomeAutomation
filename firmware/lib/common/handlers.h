@@ -27,7 +27,7 @@ namespace Irq
 
     ~Handler()
     {
-      Error_Handler();
+      RT::fatal();
     }
 
     // instance of Handler can only be installed once
@@ -60,7 +60,7 @@ namespace Irq
     void signal()
     {
       if (m_threadId == NULL)
-        Error_Handler();
+        RT::fatal();
 
       osSignalSet(m_threadId, 1);
     }
