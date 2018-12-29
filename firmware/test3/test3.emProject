@@ -1,0 +1,93 @@
+<!DOCTYPE CrossStudio_Project_File>
+<solution Name="test3" target="8" version="2">
+  <project Name="test3">
+    <configuration
+      Name="Common"
+      arm_architecture="v7EM"
+      arm_core_type="Cortex-M4"
+      arm_endian="Little"
+      arm_fp_abi="Hard"
+      arm_fpu_type="FPv4-SP-D16"
+      arm_simulator_memory_simulation_parameter="RX 08000000,00100000,FFFFFFFF;RWX 20000000,00020000,CDCDCDCD"
+      arm_target_device_name="STM32F407ZG"
+      arm_target_interface_type="SWD"
+      debug_start_from_entry_point_symbol="No"
+      debug_target_connection="J-Link"
+      linker_section_placements_segments="FLASH RX 0x08000000 0x00100000;RAM RWX 0x20000000 0x00020000"
+      project_directory=""
+      project_type="Executable" />
+    <configuration
+      Name="Debug External"
+      armgnu_cl_enable_debug_info="Yes"
+      asm_additional_options="-g"
+      c_additional_options="" />
+    <configuration Name="Release External" c_additional_options="-O1" />
+    <configuration
+      Name="External GNU"
+      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/bin"
+      link_linker_script_file="$(ProjectDir)/flash.ld"
+      link_use_linker_script_file="Yes"
+      project_type="Externally Built Executable" />
+    <configuration
+      Name="Internal"
+      arm_linker_variant="SEGGER"
+      link_linker_script_file="$(ProjectDir)/SEGGER_Flash.icf" />
+    <folder Name="Source Files">
+      <configuration Name="Common" filter="c;cpp;cxx;cc;h;s;asm;inc" />
+      <file file_name="main.c" />
+    </folder>
+    <folder Name="RTT Files">
+      <file file_name="SEGGER_RTT.c" />
+      <file file_name="SEGGER_RTT.h" />
+      <file file_name="SEGGER_RTT_Conf.h" />
+    </folder>
+    <folder Name="System Files">
+      <file file_name="HardFaultHandler.S" />
+      <file file_name="SEGGER_HardFaultHandler.c" />
+    </folder>
+    <folder Name="External Files">
+      <configuration Name="Common" build_exclude_from_build="Yes" />
+      <configuration Name="External GNU" build_exclude_from_build="No" />
+      <file file_name="startup_ARMCM_GCC.S" />
+      <file file_name="SEGGER_RTT_Syscalls_GCC.c" />
+    </folder>
+    <folder Name="Internal Files">
+      <configuration Name="Common" build_exclude_from_build="Yes" />
+      <configuration Name="Internal" build_exclude_from_build="No" />
+      <file file_name="Cortex_M_Startup.s" />
+      <file file_name="SEGGER_THUMB_Startup.s" />
+      <file file_name="SEGGER_RTT_Syscalls_SES.c" />
+    </folder>
+  </project>
+  <configuration
+    Name="Debug Internal"
+    inherited_configurations="Internal;Debug" />
+  <configuration
+    Name="Release Internal"
+    inherited_configurations="Internal;Release" />
+  <configuration
+    Name="Debug External"
+    inherited_configurations="External GNU" />
+  <configuration
+    Name="Release External"
+    inherited_configurations="External GNU" />
+  <configuration
+    Name="Debug"
+    c_preprocessor_definitions="DEBUG"
+    gcc_debugging_level="Level 3"
+    gcc_optimization_level="None"
+    hidden="Yes" />
+  <configuration
+    Name="Release"
+    c_preprocessor_definitions="NDEBUG"
+    gcc_debugging_level="None"
+    gcc_omit_frame_pointer="Yes"
+    gcc_optimization_level="Level 1"
+    hidden="Yes" />
+  <configuration
+    Name="External GNU"
+    build_generic_options_file_name="$(StudioDir)/targets/ARMGNU_build_options.xml"
+    hidden="Yes"
+    linker_additional_options="-Xlinker;--gc-sections;--specs=nano.specs;--specs=nosys.specs;-Wl,--start-group;-lm;-lc;-lgcc" />
+  <configuration Name="Internal" hidden="Yes" />
+</solution>
