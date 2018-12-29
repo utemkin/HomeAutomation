@@ -11,11 +11,19 @@
       arm_simulator_memory_simulation_parameter="RX 08000000,00100000,FFFFFFFF;RWX 20000000,00020000,CDCDCDCD"
       arm_target_device_name="STM32F407ZG"
       arm_target_interface_type="SWD"
-      debug_start_from_entry_point_symbol="No"
+      c_preprocessor_definitions="USE_HAL_DRIVER ;STM32F407xx"
+      c_system_include_directories="$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1 ;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1/arm-none-eabi;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1/backward;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/lib/gcc/arm-none-eabi/7.3.1/include;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/lib/gcc/arm-none-eabi/7.3.1/include-fixed;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include"
+      c_user_include_directories=". ;./Inc;..;./Middlewares/Third_Party/LwIP/ports/freertos/include;./Middlewares/Third_Party/LwIP/src/include;./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F;./Middlewares/Third_Party/FreeRTOS/Source/include;./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;./Drivers/STM32F4xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F4xx/Include;./Drivers/CMSIS/Include"
+      debug_leave_target_running="Yes"
+      debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F40x.svd"
       debug_target_connection="J-Link"
+      gcc_c_language_standard="gnu11"
+      gcc_cplusplus_language_standard="gnu++14"
+      gcc_enable_all_warnings="Yes"
       linker_section_placements_segments="FLASH RX 0x08000000 0x00100000;RAM RWX 0x20000000 0x00020000"
       project_directory=""
-      project_type="Executable" />
+      project_type="Executable"
+      speed="12000" />
     <configuration
       Name="Debug External"
       armgnu_cl_enable_debug_info="Yes"
@@ -28,49 +36,53 @@
       link_linker_script_file="$(ProjectDir)/flash.ld"
       link_use_linker_script_file="Yes"
       project_type="Externally Built Executable" />
-    <configuration
-      Name="Internal"
-      arm_linker_variant="SEGGER"
-      link_linker_script_file="$(ProjectDir)/SEGGER_Flash.icf" />
-    <folder Name="Source Files">
-      <configuration Name="Common" filter="c;cpp;cxx;cc;h;s;asm;inc" />
-      <file file_name="main.c" />
+    <folder Name="cubemx">
+      <file file_name="Src/main.c" />
+      <file file_name="Src/stm32f4xx_hal_msp.c" />
+      <file file_name="Src/stm32f4xx_it.c" />
+      <file file_name="Src/system_stm32f4xx.c" />
     </folder>
-    <folder Name="RTT Files">
-      <file file_name="SEGGER_RTT.c" />
-      <file file_name="SEGGER_RTT.h" />
-      <file file_name="SEGGER_RTT_Conf.h" />
+    <folder Name="hal">
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc_ex.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c" />
+      <file file_name="Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c" />
     </folder>
-    <folder Name="System Files">
-      <file file_name="HardFaultHandler.S" />
-      <file file_name="SEGGER_HardFaultHandler.c" />
+    <folder Name="segger">
+      <file file_name="../lib/segger/HardFaultHandler.S" />
+      <file file_name="../lib/segger/SEGGER_HardFaultHandler.c" />
+      <file file_name="../lib/segger/SEGGER_RTT.c" />
+      <file file_name="../lib/segger/SEGGER_RTT_Syscalls_GCC.c" />
     </folder>
-    <folder Name="External Files">
-      <configuration Name="Common" build_exclude_from_build="Yes" />
-      <configuration Name="External GNU" build_exclude_from_build="No" />
-      <file file_name="startup_ARMCM_GCC.S" />
-      <file file_name="SEGGER_RTT_Syscalls_GCC.c" />
-    </folder>
-    <folder Name="Internal Files">
-      <configuration Name="Common" build_exclude_from_build="Yes" />
-      <configuration Name="Internal" build_exclude_from_build="No" />
-      <file file_name="Cortex_M_Startup.s" />
-      <file file_name="SEGGER_THUMB_Startup.s" />
-      <file file_name="SEGGER_RTT_Syscalls_SES.c" />
+    <folder Name="freertos">
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/croutine.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/event_groups.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/list.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/queue.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/tasks.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/timers.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c" />
+      <file file_name="Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c" />
     </folder>
   </project>
   <configuration
-    Name="Debug Internal"
-    inherited_configurations="Internal;Debug" />
-  <configuration
-    Name="Release Internal"
-    inherited_configurations="Internal;Release" />
-  <configuration
     Name="Debug External"
-    inherited_configurations="External GNU" />
+    inherited_configurations="External GNU;Debug" />
   <configuration
     Name="Release External"
-    inherited_configurations="External GNU" />
+    inherited_configurations="External GNU;Release" />
   <configuration
     Name="Debug"
     c_preprocessor_definitions="DEBUG"
@@ -89,5 +101,11 @@
     build_generic_options_file_name="$(StudioDir)/targets/ARMGNU_build_options.xml"
     hidden="Yes"
     linker_additional_options="-Xlinker;--gc-sections;--specs=nano.specs;--specs=nosys.specs;-Wl,--start-group;-lm;-lc;-lgcc" />
-  <configuration Name="Internal" hidden="Yes" />
+  <configuration Name="Simulated" hidden="Yes" />
+  <configuration
+    Name="Debug External Simulated"
+    inherited_configurations="Debug;External GNU;Simulated" />
+  <configuration
+    Name="Release External Simulated"
+    inherited_configurations="Release;External GNU;Simulated" />
 </solution>
