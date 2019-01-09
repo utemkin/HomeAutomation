@@ -94,6 +94,7 @@
       <file file_name="Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c" />
       <file file_name="Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c" />
     </folder>
+    <file file_name="maintask.cpp" />
   </project>
   <configuration
     Name="Debug External"

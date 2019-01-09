@@ -1,8 +1,8 @@
 #MicroXplorer Configuration settings - do not modify
-FREERTOS.IPParameters=Tasks01,configENABLE_BACKWARD_COMPATIBILITY,configUSE_IDLE_HOOK,configTOTAL_HEAP_SIZE
-FREERTOS.Tasks01=defaultTask,0,128,StartDefaultTask,Default,NULL
+FREERTOS.FootprintOK=true
+FREERTOS.IPParameters=Tasks01,FootprintOK,configUSE_IDLE_HOOK,configENABLE_BACKWARD_COMPATIBILITY
+FREERTOS.Tasks01=defaultTask,0,512,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
 FREERTOS.configENABLE_BACKWARD_COMPATIBILITY=0
-FREERTOS.configTOTAL_HEAP_SIZE=3072
 FREERTOS.configUSE_IDLE_HOOK=1
 File.Version=6
 KeepUserPlacement=false
