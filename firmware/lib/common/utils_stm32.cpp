@@ -132,6 +132,90 @@ namespace RT
           HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
         }
     #  endif
+    #  ifdef TIM9
+        else if (m_tim == TIM9)
+        {
+          __HAL_RCC_TIM9_CLK_ENABLE();
+          __HAL_RCC_TIM9_FORCE_RESET();
+          __HAL_RCC_TIM9_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM9_IRQn);
+          HAL_NVIC_SetPriority(TIM9_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM9_IRQn);
+        }
+    #  endif
+    #  ifdef TIM10
+        else if (m_tim == TIM10)
+        {
+          __HAL_RCC_TIM10_CLK_ENABLE();
+          __HAL_RCC_TIM10_FORCE_RESET();
+          __HAL_RCC_TIM10_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM10_IRQn);
+          HAL_NVIC_SetPriority(TIM10_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM10_IRQn);
+        }
+    #  endif
+    #  ifdef TIM11
+        else if (m_tim == TIM11)
+        {
+          __HAL_RCC_TIM11_CLK_ENABLE();
+          __HAL_RCC_TIM11_FORCE_RESET();
+          __HAL_RCC_TIM11_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM11_IRQn);
+          HAL_NVIC_SetPriority(TIM11_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM11_IRQn);
+        }
+    #  endif
+    #  ifdef TIM12
+        else if (m_tim == TIM12)
+        {
+          __HAL_RCC_TIM12_CLK_ENABLE();
+          __HAL_RCC_TIM12_FORCE_RESET();
+          __HAL_RCC_TIM12_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM12_IRQn);
+          HAL_NVIC_SetPriority(TIM12_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM12_IRQn);
+        }
+    #  endif
+    #  ifdef TIM13
+        else if (m_tim == TIM13)
+        {
+          __HAL_RCC_TIM13_CLK_ENABLE();
+          __HAL_RCC_TIM13_FORCE_RESET();
+          __HAL_RCC_TIM13_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM13_IRQn);
+          HAL_NVIC_SetPriority(TIM13_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM13_IRQn);
+        }
+    #  endif
+    #  ifdef TIM14
+        else if (m_tim == TIM14)
+        {
+          __HAL_RCC_TIM14_CLK_ENABLE();
+          __HAL_RCC_TIM14_FORCE_RESET();
+          __HAL_RCC_TIM14_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM14_IRQn);
+          HAL_NVIC_SetPriority(TIM14_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM14_IRQn);
+        }
+    #  endif
     #elif defined(STM32F4)
     #  ifdef TIM1
         else if (m_tim == TIM1)
@@ -142,9 +226,191 @@ namespace RT
           pclk = HAL_RCC_GetPCLK2Freq();
           if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
             pclk <<= 1;
-          m_handlerTim.install(TIM1_UP_IRQn);
-          HAL_NVIC_SetPriority(TIM1_UP_IRQn, 14, 0);
-          HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
+          m_handlerTim.install(TIM1_UP_TIM10_IRQn);
+          HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+        }
+    #  endif
+    #  ifdef TIM2
+        else if (m_tim == TIM2)
+        {
+          __HAL_RCC_TIM2_CLK_ENABLE();
+          __HAL_RCC_TIM2_FORCE_RESET();
+          __HAL_RCC_TIM2_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM2_IRQn);
+          HAL_NVIC_SetPriority(TIM2_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM2_IRQn);
+        }
+    #  endif
+    #  ifdef TIM3
+        else if (m_tim == TIM3)
+        {
+          __HAL_RCC_TIM3_CLK_ENABLE();
+          __HAL_RCC_TIM3_FORCE_RESET();
+          __HAL_RCC_TIM3_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM3_IRQn);
+          HAL_NVIC_SetPriority(TIM3_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM3_IRQn);
+        }
+    #  endif
+    #  ifdef TIM4
+        else if (m_tim == TIM4)
+        {
+          __HAL_RCC_TIM4_CLK_ENABLE();
+          __HAL_RCC_TIM4_FORCE_RESET();
+          __HAL_RCC_TIM4_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM4_IRQn);
+          HAL_NVIC_SetPriority(TIM4_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM4_IRQn);
+        }
+    #  endif
+    #  ifdef TIM5
+        else if (m_tim == TIM5)
+        {
+          __HAL_RCC_TIM5_CLK_ENABLE();
+          __HAL_RCC_TIM5_FORCE_RESET();
+          __HAL_RCC_TIM5_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM5_IRQn);
+          HAL_NVIC_SetPriority(TIM5_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM5_IRQn);
+        }
+    #  endif
+    #  ifdef TIM6
+        else if (m_tim == TIM6)
+        {
+          __HAL_RCC_TIM6_CLK_ENABLE();
+          __HAL_RCC_TIM6_FORCE_RESET();
+          __HAL_RCC_TIM6_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM6_DAC_IRQn);
+          HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
+        }
+    #  endif
+    #  ifdef TIM7
+        else if (m_tim == TIM7)
+        {
+          __HAL_RCC_TIM7_CLK_ENABLE();
+          __HAL_RCC_TIM7_FORCE_RESET();
+          __HAL_RCC_TIM7_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM7_IRQn);
+          HAL_NVIC_SetPriority(TIM7_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM7_IRQn);
+        }
+    #  endif
+    #  ifdef TIM8
+        else if (m_tim == TIM8)
+        {
+          __HAL_RCC_TIM8_CLK_ENABLE();
+          __HAL_RCC_TIM8_FORCE_RESET();
+          __HAL_RCC_TIM8_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM8_UP_TIM13_IRQn);
+          HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
+        }
+    #  endif
+    #  ifdef TIM9
+        else if (m_tim == TIM9)
+        {
+          __HAL_RCC_TIM9_CLK_ENABLE();
+          __HAL_RCC_TIM9_FORCE_RESET();
+          __HAL_RCC_TIM9_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM1_BRK_TIM9_IRQn);
+          HAL_NVIC_SetPriority(TIM1_BRK_TIM9_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_BRK_TIM9_IRQn);
+        }
+    #  endif
+    #  ifdef TIM10
+        else if (m_tim == TIM10)
+        {
+          __HAL_RCC_TIM10_CLK_ENABLE();
+          __HAL_RCC_TIM10_FORCE_RESET();
+          __HAL_RCC_TIM10_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM1_UP_TIM10_IRQn);
+          HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+        }
+    #  endif
+    #  ifdef TIM11
+        else if (m_tim == TIM11)
+        {
+          __HAL_RCC_TIM11_CLK_ENABLE();
+          __HAL_RCC_TIM11_FORCE_RESET();
+          __HAL_RCC_TIM11_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM1_TRG_COM_TIM11_IRQn);
+          HAL_NVIC_SetPriority(TIM1_TRG_COM_TIM11_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_TRG_COM_TIM11_IRQn);
+        }
+    #  endif
+    #  ifdef TIM12
+        else if (m_tim == TIM12)
+        {
+          __HAL_RCC_TIM12_CLK_ENABLE();
+          __HAL_RCC_TIM12_FORCE_RESET();
+          __HAL_RCC_TIM12_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM8_BRK_TIM12_IRQn);
+          HAL_NVIC_SetPriority(TIM8_BRK_TIM12_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM8_BRK_TIM12_IRQn);
+        }
+    #  endif
+    #  ifdef TIM13
+        else if (m_tim == TIM13)
+        {
+          __HAL_RCC_TIM13_CLK_ENABLE();
+          __HAL_RCC_TIM13_FORCE_RESET();
+          __HAL_RCC_TIM13_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM8_UP_TIM13_IRQn);
+          HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
+        }
+    #  endif
+    #  ifdef TIM14
+        else if (m_tim == TIM14)
+        {
+          __HAL_RCC_TIM14_CLK_ENABLE();
+          __HAL_RCC_TIM14_FORCE_RESET();
+          __HAL_RCC_TIM14_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+          if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM8_TRG_COM_TIM14_IRQn);
+          HAL_NVIC_SetPriority(TIM8_TRG_COM_TIM14_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM8_TRG_COM_TIM14_IRQn);
         }
     #  endif
     #else
