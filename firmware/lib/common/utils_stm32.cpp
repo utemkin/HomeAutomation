@@ -17,9 +17,9 @@ namespace RT
         RCC_ClkInitTypeDef clk;
         uint32_t lat;
         HAL_RCC_GetClockConfig(&clk, &lat);
-    #if defined(STM32F1)
         if (false)
           ;
+    #if defined(STM32F1)
     #  ifdef TIM1
         else if (m_tim == TIM1)
         {
@@ -130,6 +130,21 @@ namespace RT
           m_handlerTim.install(TIM8_UP_IRQn);
           HAL_NVIC_SetPriority(TIM8_UP_IRQn, 14, 0);
           HAL_NVIC_EnableIRQ(TIM8_UP_IRQn);
+        }
+    #  endif
+    #elif defined(STM32F4)
+    #  ifdef TIM1
+        else if (m_tim == TIM1)
+        {
+          __HAL_RCC_TIM1_CLK_ENABLE();
+          __HAL_RCC_TIM1_FORCE_RESET();
+          __HAL_RCC_TIM1_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+          if (clk.APB2CLKDivider != RCC_CFGR_PPRE2_DIV1)
+            pclk <<= 1;
+          m_handlerTim.install(TIM1_UP_IRQn);
+          HAL_NVIC_SetPriority(TIM1_UP_IRQn, 14, 0);
+          HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
         }
     #  endif
     #else

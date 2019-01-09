@@ -28,6 +28,7 @@
       speed="12000" />
     <configuration
       Name="Debug External"
+      armgnu_cl_enable_debug_info="Yes"
       asm_additional_options="-O0 -g3"
       c_additional_options="-O0 -g3" />
     <configuration
@@ -207,5 +208,4 @@
   <configuration
     Name="Release External Simulated"
     inherited_configurations="External GNU;Release;Simulated" />
-  <configuration Name="Common" debug_initial_breakpoint="" />
 </solution>

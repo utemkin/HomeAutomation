@@ -52,7 +52,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <lib/common/legacy_handlers_stm32f407xx.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
