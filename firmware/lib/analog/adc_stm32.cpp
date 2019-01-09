@@ -29,8 +29,8 @@ namespace Analog
         while (m_adc1->CR2 & ADC_CR2_CAL);
         m_adc1->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
         static_assert(c_data1Size == 7);
-        m_adc1->SQR3 = (ADC_CHANNEL_14 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_12 << ADC_SQR3_SQ6_Pos) | 
+        m_adc1->SQR2 = ADC_CHANNEL_14 << ADC_SQR2_SQ7_Pos;
+        m_adc1->SQR3 = (ADC_CHANNEL_12 << ADC_SQR3_SQ6_Pos) | 
                        (ADC_CHANNEL_10 << ADC_SQR3_SQ5_Pos) | 
                        (ADC_CHANNEL_8 << ADC_SQR3_SQ4_Pos) | 
                        (ADC_CHANNEL_6 << ADC_SQR3_SQ3_Pos) | 
@@ -50,8 +50,8 @@ namespace Analog
         while (m_adc2->CR2 & ADC_CR2_CAL);
         m_adc2->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
         static_assert(c_data1Size == 7);
-        m_adc2->SQR3 = (ADC_CHANNEL_15 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_13 << ADC_SQR3_SQ6_Pos) | 
+        m_adc2->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
+        m_adc2->SQR3 = (ADC_CHANNEL_13 << ADC_SQR3_SQ6_Pos) | 
                        (ADC_CHANNEL_11 << ADC_SQR3_SQ5_Pos) | 
                        (ADC_CHANNEL_9 << ADC_SQR3_SQ4_Pos) | 
                        (ADC_CHANNEL_7 << ADC_SQR3_SQ3_Pos) | 
