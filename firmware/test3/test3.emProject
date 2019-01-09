@@ -95,6 +95,9 @@
       <file file_name="Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c" />
     </folder>
     <file file_name="maintask.cpp" />
+    <folder Name="analog">
+      <file file_name="../lib/analog/adc_stm32.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"

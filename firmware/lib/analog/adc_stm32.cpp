@@ -6,6 +6,7 @@ namespace Analog
 {
   namespace
   {
+#if defined(STM32F1)
     class AdcImpl : public Adc
     {
     public:
@@ -15,7 +16,6 @@ namespace Analog
         , m_handlerDma1Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1Rx>(*this))
         , m_handlerDma2Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2Rx>(*this))
       {
-#if defined(STM32F1)
         __HAL_RCC_ADC1_CLK_ENABLE();
         __HAL_RCC_ADC1_FORCE_RESET();
         __HAL_RCC_ADC1_RELEASE_RESET();
@@ -103,9 +103,6 @@ namespace Analog
           m_dma2Rx->CPAR = uint32_t(&m_adc3->DR);
           m_dma2Rx->CMAR = uint32_t(&m_data[c_data1Size * 2]);
         }
-#else
-#error Unsupported architecture
-#endif
       }
 
       virtual const volatile uint16_t* channel(size_t num) const override
@@ -185,6 +182,33 @@ namespace Analog
       uint32_t m_dma2RxFlags;
       volatile uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
     };
+#elif defined(STM32F4)
+    class AdcImpl : public Adc
+    {
+    public:
+      AdcImpl(const Pin::Def& select2, Callback&& callback)
+      {
+        //fixme
+      }
+
+      virtual const volatile uint16_t* channel(size_t num) const override
+      {
+        auto const count = c_dataSize * 3;
+        return num < count ? m_data + num : nullptr;
+      }
+
+      virtual void start() override
+      {
+        //fixme
+      }
+
+    protected:
+      constexpr static size_t c_dataSize = 7;
+      volatile uint16_t m_data[c_dataSize * 3] = {};
+    };
+#else
+#error Unsupported architecture
+#endif
   }
 }
 

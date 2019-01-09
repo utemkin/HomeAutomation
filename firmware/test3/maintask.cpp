@@ -1,4 +1,5 @@
 #include <lib/common/utils.h>
+#include <lib/analog/adc_stm32.h>
 
 extern "C" void maintask()
 {
@@ -8,11 +9,14 @@ extern "C" void maintask()
 
   Tools::IdleMeasure::calibrate();
 
+//  auto adc = Analog::CreateAdcStm32(0, 0, false);
+
   for(;;)
   {
     Tools::IdleMeasure im;
 
-    OS::Thread::delay(10);
+    OS::Thread::delay(1000);
+    RT::stall(SystemCoreClock);
 
 //    for(int i = 0; i < 10000; ++i)
 //    {
