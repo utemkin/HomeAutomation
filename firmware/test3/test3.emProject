@@ -98,6 +98,9 @@
     <folder Name="analog">
       <file file_name="../lib/analog/adc_stm32.cpp" />
     </folder>
+    <folder Name="microlan">
+      <file file_name="../lib/microlan/microlan.cpp" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"
