@@ -395,7 +395,7 @@ namespace Tools
     void update(uint8_t data);
     void update(const uint8_t* data, size_t size)
     {
-      for(;size !=0; ++data, --size)
+      for (;size !=0; ++data, --size)
         update(*data);
     }
     uint32_t get() const

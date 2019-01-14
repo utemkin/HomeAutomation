@@ -2,6 +2,7 @@
 #include <lib/common/handlers.h>
 #include <lib/analog/adc_stm32.h>
 #include <lib/microlan/microlan.h>
+#include <lib/common/hal.h>
 #include <limits>
 
 class TimingGenerator
@@ -157,7 +158,7 @@ extern "C" void maintask()
 
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
 
-  for(;;)
+  for (;;)
   {
     Tools::IdleMeasure im;
 

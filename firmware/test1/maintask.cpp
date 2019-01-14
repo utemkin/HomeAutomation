@@ -275,7 +275,7 @@ public:
   //        Serial.print(timingUs);
   //        Serial.write(' ');
           printf("%hu ", timingUs);
-          if((i + 1) % 16 == 0) {
+          if ((i + 1) % 16 == 0) {
   //          Serial.write('\n');
             printf("\n");
           }
@@ -331,7 +331,7 @@ extern "C" void maintask()
 //  MyReceiver receiver(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
   RFControlReceiver receiver(TIM7, Pin::Def(GPIOE, GPIO_PIN_1, false));
 
-  for(;;)
+  for (;;)
   {
     Tools::IdleMeasure im;
 

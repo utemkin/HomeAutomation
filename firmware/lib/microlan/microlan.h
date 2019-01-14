@@ -438,7 +438,7 @@ namespace MicroLan
         presence=!m_busTraits.in();
       }
       RT::stall(c_J_units);
-      if(!m_busTraits.in())
+      if (!m_busTraits.in())
       {
         return Status::BusShortToGnd;
       }
@@ -459,7 +459,7 @@ namespace MicroLan
         bit=m_busTraits.in();
       }
       RT::stall(c_F_units);
-      if(!m_busTraits.in())
+      if (!m_busTraits.in())
       {
         return Status::BusShortToGnd;
       }
@@ -480,7 +480,7 @@ namespace MicroLan
           m_busTraits.out1();
         }
         RT::stall(c_B_units);
-        if(!m_busTraits.in())
+        if (!m_busTraits.in())
         {
           return Status::BusShortToGnd;
         }
@@ -498,7 +498,7 @@ namespace MicroLan
           m_busTraits.out1();
         }
         RT::stall(c_D_units);
-        if(!m_busTraits.in())
+        if (!m_busTraits.in())
         {
           return Status::BusShortToGnd;
         }

@@ -278,7 +278,7 @@ void StartDefaultTask(void const * argument)
   maintask();
 
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(1);
   }

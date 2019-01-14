@@ -59,7 +59,7 @@ extern "C"
     void* ret = malloc(xSize);
 #if configUSE_MALLOC_FAILED_HOOK == 1
     {
-      if(ret == NULL)
+      if (ret == NULL)
       {
         extern void vApplicationMallocFailedHook();
         vApplicationMallocFailedHook();

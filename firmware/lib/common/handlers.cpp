@@ -42,7 +42,7 @@ void __always_inline ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
   unsigned IRQn = __get_IPSR();
   Irq::Handler* next = handlers[IRQn].load(std::memory_order_acquire);
   unsigned handled = 0;
-  for(;next; next = next->m_next)
+  for (;next; next = next->m_next)
     handled += next->m_callback(IRQn_Type(IRQn));
 
   if (!handled)
