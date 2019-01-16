@@ -5,148 +5,230 @@
 #include <lib/common/hal.h>
 #include <limits>
 
-class TimingGenerator
+namespace MicroLan
 {
-public:
-  TimingGenerator()
-    : m_tim(TIM2)               //fixme
-    , m_IRQn(TIM2_IRQn)         //fixme
-    , m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
-    , m_dmaIn(DMA1_Channel5)    //fixme
-    , m_dmaOut(DMA1_Channel7)   //fixme
+  class TimingGenerator
   {
-    init();
-    start();
-  }
-
-protected:
-  bool handleTimIrq(IRQn_Type /*IRQn*/)
-  {
-    if (m_tim->SR & TIM_IT_UPDATE)
+  public:
+    struct Timings
     {
-      m_tim->SR = ~TIM_IT_UPDATE;
-      m_handlerTim.signal();
-      return true;
+      uint16_t ticksTotal;
+      uint16_t ticksOut0;
+      uint16_t ticksOut1;
+      uint16_t ticksSample;
+    };
+
+    struct Data
+    {
+      uint32_t outAddr;
+      uint32_t out1;
+      uint32_t out0;
+      uint32_t inAddr;
+      uint16_t inMask;
+      bool inInvert;
+    };
+
+  public:
+    TimingGenerator()
+      : m_tim(TIM2)               //fixme
+      , m_IRQn(TIM2_IRQn)         //fixme
+      , m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
+      , m_dmaIn(DMA1_Stream5, 3, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_P2M, 0, 0)    //fixme
+      , m_dmaOut(DMA1_Stream6, 3, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_M2P, 0, 0)   //fixme
+    {
+      init();
+      start();
     }
 
-    return false;
-  }
-
-protected:
-  TIM_TypeDef* const m_tim;
-  IRQn_Type const m_IRQn;
-  Irq::SemaphoreHandler m_handlerTim;
-  DMA_Channel_TypeDef* const m_dmaIn;
-  DMA_Channel_TypeDef* const m_dmaOut;
-  uint16_t m_prescale;
-  volatile uint32_t m_in;
-  volatile uint32_t m_out[2];
-  
-//  static constexpr unsigned c_prescale = 2;
-//  static constexpr unsigned c_CLK = TIMCLK / c_prescale;
-
-  struct Timings
-  {
-    uint16_t UnitsTotal;
-    uint16_t Unitsout0;
-    uint16_t Unitsout1;
-    uint16_t UnitsSample;
-  };
-
-  struct Data
-  {
-    uint32_t outAddr;
-    uint32_t out1;
-    uint32_t out0;
-    uint32_t inAddr;
-    uint16_t inMask;
-    bool inInvert;
-  };
-
-protected:
-
-  // Must do permanent initializations like turning on peripheral clocks, setting interrupt priorities, installing interrupt handlers
-  void init()
-  {
-    __HAL_RCC_TIM2_CLK_ENABLE();  //fixme
-    __HAL_RCC_DMA1_CLK_ENABLE();  //fixme
-    m_handlerTim.install(m_IRQn);
-    HAL_NVIC_SetPriority(m_IRQn, 5, 0);
-
-    uint32_t pclk = HAL_RCC_GetPCLK1Freq();
-    RCC_ClkInitTypeDef clk;
-    uint32_t lat;
-    HAL_RCC_GetClockConfig(&clk, &lat);
-    if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
-      pclk <<= 1;
-    uint16_t prescale = 1;
-    while (pclk / 1000 > std::numeric_limits<uint16_t>::max())
+    uint16_t toTicks(const unsigned intervalNs)
     {
-      prescale <<= 1;
-      pclk >>= 1;
+      return Bus::toUnit(intervalNs, m_unitClock) + 1;
     }
-    m_prescale = prescale;
-  }
 
-  // Must put peripheral to normal operational state either after init() or stop()
-  void start()
+    bool touch(const Timings& timings, const Data& data)
+    {
+      m_dmaIn.setPAR(data.inAddr);
+      m_dmaIn.start();
+
+      m_out[0] = data.out0;
+      m_out[1] = data.out1;
+
+      m_dmaOut.setPAR(data.outAddr);
+      m_dmaOut.start();
+
+      m_tim->ARR = timings.ticksTotal;
+      m_tim->CCR2 = timings.ticksOut0;
+      m_tim->CCR4 = timings.ticksOut1;
+      m_tim->CCR1 = timings.ticksSample;
+      m_tim->CR1 |= TIM_CR1_CEN;
+
+      m_handlerTim.wait();
+
+      __DMB();
+      return (!!(m_in & data.inMask)) ^ data.inInvert;
+    }    
+
+  protected:
+    bool handleTimIrq(IRQn_Type /*IRQn*/)
+    {
+      if (m_tim->SR & TIM_IT_UPDATE)
+      {
+        m_tim->SR = ~TIM_IT_UPDATE;
+        m_handlerTim.signal();
+        return true;
+      }
+
+      return false;
+    }
+
+  protected:
+    TIM_TypeDef* const m_tim;
+    IRQn_Type const m_IRQn;
+    Irq::SemaphoreHandler m_handlerTim;
+    HAL::DMALine m_dmaIn;
+    HAL::DMALine m_dmaOut;
+    uint16_t m_prescale;
+    uint32_t m_unitClock;
+    volatile uint32_t m_in;
+    volatile uint32_t m_out[2];
+
+  protected:
+
+    // Must do permanent initializations like turning on peripheral clocks, setting interrupt priorities, installing interrupt handlers
+    void init()
+    {
+      __HAL_RCC_TIM2_CLK_ENABLE();  //fixme
+      m_handlerTim.install(m_IRQn);
+      HAL_NVIC_SetPriority(m_IRQn, 5, 0);
+
+      uint32_t pclk = HAL_RCC_GetPCLK1Freq();
+      RCC_ClkInitTypeDef clk;
+      uint32_t lat;
+      HAL_RCC_GetClockConfig(&clk, &lat);
+      if (clk.APB1CLKDivider != RCC_CFGR_PPRE1_DIV1)
+        pclk <<= 1;
+      uint16_t prescale = 1;
+      while (pclk / 1000 > std::numeric_limits<uint16_t>::max())
+      {
+        prescale <<= 1;
+        pclk >>= 1;
+      }
+      m_prescale = prescale;
+      m_unitClock = pclk;
+    }
+
+    // Must put peripheral to normal operational state either after init() or stop()
+    void start()
+    {
+      __HAL_RCC_TIM2_FORCE_RESET();   //fixme
+      __HAL_RCC_TIM2_RELEASE_RESET(); //fixme
+
+      m_dmaIn.setMAR(uint32_t(&m_in));
+      m_dmaIn.setNDTR(1);
+      m_dmaOut.setMAR(uint32_t(&m_out));
+      m_dmaOut.setNDTR(2);
+
+      m_tim->DIER = TIM_DIER_CC4DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;
+      m_tim->PSC = m_prescale - 1;
+      m_tim->CR1 = TIM_CR1_OPM | TIM_CR1_URS;
+      m_tim->EGR = TIM_EGR_UG;
+
+      HAL_NVIC_EnableIRQ(m_IRQn);
+    }
+
+    // Must stop all peripheral activities (even if called the middle of operation) and prevent further interrupt|DMA requests
+    void stop()
+    {
+      HAL_NVIC_DisableIRQ(m_IRQn);
+      m_dmaIn.stop();
+      m_dmaOut.stop();
+      m_tim->CR1 = 0;
+    }
+
+    TimingGenerator(const TimingGenerator&) = delete;
+    TimingGenerator& operator =(const TimingGenerator&) = delete;
+  };
+
+  class TimingGeneratorBus : public Bus
   {
-    RCC->APB1RSTR |= RCC_APB1RSTR_TIM2RST;    //fixme
-    RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM2RST;   //fixme
+  public:
+    TimingGeneratorBus(TimingGenerator& timingGenerator, GPIO_TypeDef* outGPIO, uint16_t outPin, bool outInvert, GPIO_TypeDef* inGPIO, uint16_t inMask, bool inInvert)
+      : m_timingGenerator(timingGenerator)
+      , m_resetTimings{
+        m_timingGenerator.toTicks(c_G + c_H + c_I + c_J),
+        m_timingGenerator.toTicks(c_G),
+        m_timingGenerator.toTicks(c_G + c_H),
+        m_timingGenerator.toTicks(c_G + c_H + c_I)
+      }
+      , m_readTimings{
+        m_timingGenerator.toTicks(c_A + c_E + c_F),
+        m_timingGenerator.toTicks(0),
+        m_timingGenerator.toTicks(c_A),
+        m_timingGenerator.toTicks(c_A + c_E)
+      }
+      , m_writeZeroTimings{
+        m_timingGenerator.toTicks(c_C + c_D),
+        m_timingGenerator.toTicks(0),
+        m_timingGenerator.toTicks(c_C),
+        m_timingGenerator.toTicks(c_A + c_E)
+      }
+      , m_writeOneTimings{
+        m_timingGenerator.toTicks(c_A + c_B),
+        m_timingGenerator.toTicks(0),
+        m_timingGenerator.toTicks(c_A),
+        m_timingGenerator.toTicks(c_A + c_E)
+      }
+    {
+      m_data.outAddr = uint32_t(&outGPIO->BSRR);
+      (outInvert ? m_data.out0 : m_data.out1) = outPin;
+      (outInvert ? m_data.out1 : m_data.out0) = uint32_t(outPin) << 16;
+      m_data.inAddr = uint32_t(&inGPIO->IDR);
+      m_data.inMask = inMask;
+      m_data.inInvert = inInvert;
 
-    m_dmaIn->CMAR = uint32_t(&m_in);
-    m_dmaOut->CMAR = uint32_t(&m_out);
+      *(decltype(outGPIO->BSRR)*)m_data.outAddr = m_data.out1;
+    }
 
-    m_tim->DIER = TIM_DIER_CC4DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;
-    m_tim->PSC = m_prescale - 1;
-    m_tim->CR1 = TIM_CR1_OPM | TIM_CR1_URS;
-    m_tim->EGR = TIM_EGR_UG;
+    virtual Capabilities capabilities() const override
+    {
+      return {
+        overdriveSupported : false,
+        strengthMicroampsStrongPoolup5V : 0,
+        strengthMicroampsPulse12V : 0,
+        strengthMicroampsExternal5V : 15000,
+      };
+    }
 
-    HAL_NVIC_EnableIRQ(m_IRQn);
-  }
+  protected:
+    virtual Status reset(bool& presence) override
+    {
+      presence = !m_timingGenerator.touch(m_resetTimings, m_data);
+      return Status::Success;
+    }
 
-  // Must stop all peripheral activities (even if called the middle of operation) and prevent further interrupt|DMA requests
-  void stop()
-  {
-    HAL_NVIC_DisableIRQ(m_IRQn);
-    m_dmaIn->CCR = 0;
-    m_dmaOut->CCR = 0;
-    m_tim->CR1 = 0;
-  }
+    virtual Status read(bool& bit, bool /*last*/) override
+    {
+      bit = m_timingGenerator.touch(m_readTimings, m_data);
+      return Status::Success;
+    }
 
-  bool touch(const Timings& timings, const Data& data)
-  {
-    m_dmaIn->CCR = 0;
-    m_dmaIn->CPAR = data.inAddr;
-    m_dmaIn->CNDTR = 1;
-    m_dmaIn->CCR = DMA_CCR_PL_1 | DMA_CCR_PL_0 | DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+    virtual Status write(bool bit, bool /*last*/) override
+    {
+      if (m_timingGenerator.touch(bit ? m_writeOneTimings : m_writeZeroTimings, m_data) != bit)
+        return bit ? Status::BusShortToGnd : Status::BusShortToVdd;
 
-    m_out[0] = data.out0;
-    m_out[1] = data.out1;
-    __DSB();
+      return Status::Success;
+    }
 
-    m_dmaOut->CCR = 0;
-    m_dmaOut->CPAR = data.outAddr;
-    m_dmaOut->CNDTR = 2;
-    m_dmaOut->CCR = DMA_CCR_PL_1 | DMA_CCR_PL_0 | DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-
-    m_tim->ARR = timings.UnitsTotal;
-    m_tim->CCR2 = timings.Unitsout0;
-    m_tim->CCR4 = timings.Unitsout1;
-    m_tim->CCR1 = timings.UnitsSample;
-    m_tim->CR1 |= TIM_CR1_CEN;
-
-    m_handlerTim.wait();
-
-    __DSB();
-    return (!!(m_in & data.inMask)) ^ data.inInvert;
-  }    
-
-  TimingGenerator(const TimingGenerator&) = delete;
-  TimingGenerator& operator =(const TimingGenerator&) = delete;
-
-//  friend class TimingGeneratorBus<TimingGenerator>;
-};
+  protected:
+    TimingGenerator& m_timingGenerator;
+    TimingGenerator::Timings m_resetTimings;
+    TimingGenerator::Timings m_readTimings;
+    TimingGenerator::Timings m_writeZeroTimings;
+    TimingGenerator::Timings m_writeOneTimings;
+    TimingGenerator::Data m_data;
+  };
+}
 
 extern "C" void maintask()
 {
@@ -157,6 +239,52 @@ extern "C" void maintask()
   Tools::IdleMeasure::calibrate();
 
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
+
+  MicroLan::TimingGenerator gen;
+  MicroLan::TimingGeneratorBus bus(gen, GPIOE, GPIO_PIN_0, false, GPIOE, GPIO_PIN_1, false);
+
+  {
+  /*
+found 28:0000037ee845
+found 28:0000037efbfd
+  */
+    MicroLan::Status status;
+    MicroLan::Enumerator enumerator(bus);
+    MicroLan::RomCode romCode;
+
+    while ((status = enumerator.next(romCode)) == MicroLan::Status::Success)
+    {
+      printf("found %02x:%04x%08x\n", romCode.family(), unsigned(romCode.serialNumber() >> 32), unsigned(romCode.serialNumber() & 0xffffffff));
+    }
+    printf("enum status %u\n", unsigned(status));
+  }
+
+  int prevTemp = 0;
+  for (int i = 0; ; ++i)
+  {
+    MicroLan::Status status;
+    MicroLan::Status status2;
+    MicroLan::RomCode romCode(0x28, 0x0000037ee845);
+    MicroLan::DS18B20::Device device(bus, romCode);
+
+    status = MicroLan::Device::executeWithMatchRom(device, {overdrive : false, powerMode : MicroLan::PowerMode::External5V}, &MicroLan::DS18B20::Device::convertT, 1);
+
+    MicroLan::DS18B20::Scratchpad sp;
+    status2 = MicroLan::Device::executeWithMatchRom(device, {}, &MicroLan::DS18B20::Device::readScratchpad, std::ref(sp));
+    int temp = sp.temp();
+
+    static const char* frac[] = {
+      "0000", "0625", "1250", "1875",
+      "2500", "3125", "3750", "4375",
+      "5000", "5625", "6250", "6875",
+      "7500", "8125", "8750", "9375"
+    };
+    int dif = temp - prevTemp;
+    printf("%i %li convertT status %u readScratchpad status %u CRC %s temp %i.%s %c%i.%s\n",
+      i, osKernelSysTick(), unsigned(status), unsigned(status2), sp.Crc == sp.calcCrc() ? "ok" : "fail",
+      temp >> 4, frac[temp & 0xf], dif == 0 ? ' ' : dif > 0 ? '+' : '-', abs(dif) >> 4, frac[abs(dif) & 0xf]);
+    prevTemp = temp;
+  }
 
   for (;;)
   {

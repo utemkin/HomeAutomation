@@ -84,6 +84,11 @@ namespace MicroLan
     virtual Capabilities capabilities() const = 0;
     virtual bool isSupported(const Options& options) const;
 
+    static constexpr unsigned toUnit(const unsigned intervalNs, const unsigned freqHz)
+    {
+      return (((freqHz + 500000U) / 1000000U) * intervalNs + 500U) / 1000U;
+    }
+
   protected:
     Bus() = default;
 
@@ -105,11 +110,6 @@ namespace MicroLan
 
     virtual Status read(uint8_t* data, size_t size, bool last);
     virtual Status write(const uint8_t* data, size_t size, bool last);
-
-    static constexpr unsigned toUnit(const unsigned intervalNs, const unsigned freqHz)
-    {
-      return (((freqHz + 500000U) / 1000000U) * intervalNs + 500U) / 1000U;
-    }
 
   protected:
     Options m_options;

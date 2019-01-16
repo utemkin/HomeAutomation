@@ -19,7 +19,7 @@ namespace Pin
     if (name[0] != 'P')
       return false;
 
-    switch(name[1])
+    switch (name[1])
     {
 #ifdef GPIOA
     case 'A':

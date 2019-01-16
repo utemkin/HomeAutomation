@@ -116,7 +116,7 @@ protected:
     setName("sequencer");
 
     while (true) {
-      switch(curr->action) {
+      switch (curr->action) {
       case SLEEP:
         sleep(TIME_MS2I(curr->value));
         break;

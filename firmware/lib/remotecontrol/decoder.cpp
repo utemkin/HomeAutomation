@@ -68,7 +68,7 @@ namespace RC
 
     auto const isSync = mstd::badd(m_lastCycle.oneDurationUs, m_lastCycle.zeroDurationUs) >= c_syncThreshold;
 
-    switch(m_phase)
+    switch (m_phase)
     {
     case Phase::WaitFirstSync:
       if (!isSync)
