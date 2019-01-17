@@ -248,7 +248,6 @@ namespace OS
       osMutexDelete(m_mutex);
     }
 
-  protected:
     void lock()
     {
       osMutexWait(m_mutex, osWaitForever);
