@@ -98,7 +98,7 @@ namespace MicroLan
         return Status::NotSupported;
 
       m_options = options;
-      return  Status::Success;
+      return Status::Success;
     }
     virtual void unlock()
     {

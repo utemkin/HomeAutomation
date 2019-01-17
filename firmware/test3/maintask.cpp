@@ -3,6 +3,7 @@
 #include <lib/analog/adc_stm32.h>
 #include <lib/microlan/microlan.h>
 #include <lib/common/hal.h>
+#include <lib/common/pin_stm32.h>
 #include <limits>
 
 namespace MicroLan
@@ -16,6 +17,13 @@ namespace MicroLan
       uint16_t ticksOut0;
       uint16_t ticksOut1;
       uint16_t ticksSample;
+      Timings(TimingGenerator& timingGenerator, unsigned const ticksTotalNs, unsigned const ticksOut0Ns, unsigned const ticksOut1Ns, unsigned const ticksSampleNs)
+        : ticksTotal(timingGenerator.toTicks(ticksTotalNs))
+        , ticksOut0(timingGenerator.toTicks(ticksOut0Ns))
+        , ticksOut1(timingGenerator.toTicks(ticksOut1Ns))
+        , ticksSample(timingGenerator.toTicks(ticksSampleNs))
+      {
+      }
     };
 
     struct Data
@@ -26,6 +34,15 @@ namespace MicroLan
       uint32_t inAddr;
       uint16_t inMask;
       bool inInvert;
+      Data(const Pin::Def& out, const Pin::Def& in)
+        : outAddr(uint32_t(&out.gpio()->BSRR))
+        , out1(out.invert() ? uint32_t(out.pin()) << 16 : out.pin())
+        , out0(out.invert() ? out.pin() : uint32_t(out.pin()) << 16)
+        , inAddr(uint32_t(&in.gpio()->IDR))
+        , inMask(in.pin())
+        , inInvert(in.invert())
+      {
+      }
     };
 
   public:
@@ -38,11 +55,6 @@ namespace MicroLan
     {
       init();
       start();
-    }
-
-    uint16_t toTicks(const unsigned intervalNs)
-    {
-      return Bus::toUnit(intervalNs, m_unitClock) + 1;
     }
 
     bool touch(const Timings& timings, const Data& data)
@@ -145,6 +157,11 @@ namespace MicroLan
       m_tim->CR1 = 0;
     }
 
+    uint16_t toTicks(unsigned const intervalNs)
+    {
+      return Bus::toUnit(intervalNs, m_unitClock) + 1;
+    }
+
     TimingGenerator(const TimingGenerator&) = delete;
     TimingGenerator& operator =(const TimingGenerator&) = delete;
   };
@@ -152,41 +169,15 @@ namespace MicroLan
   class TimingGeneratorBus : public Bus
   {
   public:
-    TimingGeneratorBus(TimingGenerator& timingGenerator, GPIO_TypeDef* outGPIO, uint16_t outPin, bool outInvert, GPIO_TypeDef* inGPIO, uint16_t inMask, bool inInvert)
+    TimingGeneratorBus(TimingGenerator& timingGenerator, const Pin::Def& out, const Pin::Def& in)
       : m_timingGenerator(timingGenerator)
-      , m_resetTimings{
-        m_timingGenerator.toTicks(c_G + c_H + c_I + c_J),
-        m_timingGenerator.toTicks(c_G),
-        m_timingGenerator.toTicks(c_G + c_H),
-        m_timingGenerator.toTicks(c_G + c_H + c_I)
-      }
-      , m_readTimings{
-        m_timingGenerator.toTicks(c_A + c_E + c_F),
-        m_timingGenerator.toTicks(0),
-        m_timingGenerator.toTicks(c_A),
-        m_timingGenerator.toTicks(c_A + c_E)
-      }
-      , m_writeZeroTimings{
-        m_timingGenerator.toTicks(c_C + c_D),
-        m_timingGenerator.toTicks(0),
-        m_timingGenerator.toTicks(c_C),
-        m_timingGenerator.toTicks(c_A + c_E)
-      }
-      , m_writeOneTimings{
-        m_timingGenerator.toTicks(c_A + c_B),
-        m_timingGenerator.toTicks(0),
-        m_timingGenerator.toTicks(c_A),
-        m_timingGenerator.toTicks(c_A + c_E)
-      }
+      , m_resetTimings(m_timingGenerator, c_G + c_H + c_I + c_J, c_G, c_G + c_H, c_G + c_H + c_I)
+      , m_readTimings(m_timingGenerator, c_A + c_E + c_F, 0, c_A, c_A + c_E)
+      , m_writeZeroTimings(m_timingGenerator, c_C + c_D, 0, c_C, c_A + c_E)
+      , m_writeOneTimings(m_timingGenerator, c_A + c_B, 0, c_A, c_A + c_E)
+      , m_data(out, in)
     {
-      m_data.outAddr = uint32_t(&outGPIO->BSRR);
-      (outInvert ? m_data.out0 : m_data.out1) = outPin;
-      (outInvert ? m_data.out1 : m_data.out0) = uint32_t(outPin) << 16;
-      m_data.inAddr = uint32_t(&inGPIO->IDR);
-      m_data.inMask = inMask;
-      m_data.inInvert = inInvert;
-
-      *(decltype(outGPIO->BSRR)*)m_data.outAddr = m_data.out1;
+      Pin::Out(out).toActive();
     }
 
     virtual Capabilities capabilities() const override
@@ -241,7 +232,7 @@ extern "C" void maintask()
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
 
   MicroLan::TimingGenerator gen;
-  MicroLan::TimingGeneratorBus bus(gen, GPIOE, GPIO_PIN_0, false, GPIOE, GPIO_PIN_1, false);
+  MicroLan::TimingGeneratorBus bus(gen, Pin::Def(GPIOE, GPIO_PIN_0, false), Pin::Def(GPIOE, GPIO_PIN_1, false));
 
   {
   /*
