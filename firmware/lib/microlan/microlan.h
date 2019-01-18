@@ -8,14 +8,14 @@ namespace MicroLan
 {
   enum class Status : uint_fast8_t
   {
-    Success = 0,
-    NotSupported,
-    Timeout,
-    Overcurrent,
-    NoDevices,
-    SearchFailed,
-    BusShortToVdd,
-    BusShortToGnd,
+    Success       = 0,
+    NotSupported  = 1,
+    Timeout       = 2,
+    Overcurrent   = 3,
+    NoDevices     = 4,
+    SearchFailed  = 5,
+    BusShortToVdd = 6,
+    BusShortToGnd = 7,
   };
 
   uint_fast8_t crc8(const uint8_t* data, size_t count, uint_fast8_t crc = 0);

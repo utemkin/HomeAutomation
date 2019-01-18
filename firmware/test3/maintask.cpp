@@ -46,12 +46,33 @@ namespace MicroLan
     };
 
   public:
+    //OUT/IN
+    //F1:
+    //  TIM2 - DMA1C7/DMA1C5
+    //F4:
+    //  TIM1 - DMA2S6C0/DMA2S1C6 or DMA2S6C0/DMA2S2C6 or DMA2S6C0/DMA2S3C6 or DMA2S6C0/DMA2S4C6
+    //  TIM8 - DMA2S2C0/DMA2S3C7 or DMA2S2C0/DMA2S4C7 or DMA2S2C0/DMA2S7C7
     TimingGenerator()
-      : m_tim(TIM2)               //fixme
-      , m_IRQn(TIM2_IRQn)         //fixme
-      , m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
-      , m_dmaIn(DMA1_Stream5, 3, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_P2M, 0, 0)    //fixme
+      : m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
+  #if defined(STM32F1)
+      , m_tim(TIM2)                   //fixme
+      , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
+      , m_tim_CC_Out1(&m_tim->CCR4)   //fixme
+      , m_tim_CC_Sample(&m_tim->CCR1) //fixme
+      , m_IRQn(TIM2_IRQn)             //fixme
       , m_dmaOut(DMA1_Stream6, 3, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_M2P, 0, 0)   //fixme
+      , m_dmaIn(DMA1_Stream5, 3, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_P2M, 0, 0)    //fixme
+  #elif defined(STM32F4)
+      , m_tim(TIM1)                   //fixme
+      , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
+      , m_tim_CC_Out1(&m_tim->CCR3)   //fixme
+      , m_tim_CC_Sample(&m_tim->CCR1) //fixme
+      , m_IRQn(TIM1_UP_TIM10_IRQn)    //fixme
+      , m_dmaOut(DMA2_Stream6, 0, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_M2P, 0, 0)   //fixme
+      , m_dmaIn(DMA2_Stream1, 6, HAL::DMALine::c_config_PRIO_LOW | HAL::DMALine::c_config_M32 | HAL::DMALine::c_config_P32 | HAL::DMALine::c_config_MINC | HAL::DMALine::c_config_P2M, 0, 0)    //fixme
+  #else
+  #error Unsupported architecture
+  #endif
     {
       init();
       start();
@@ -78,9 +99,9 @@ namespace MicroLan
       m_dmaOut.start();
 
       m_tim->ARR = timings.ticksTotal;
-      m_tim->CCR2 = timings.ticksOut0;
-      m_tim->CCR4 = timings.ticksOut1;
-      m_tim->CCR1 = timings.ticksSample;
+      *m_tim_CC_Out0 = timings.ticksOut0;
+      *m_tim_CC_Out1 = timings.ticksOut1;
+      *m_tim_CC_Sample = timings.ticksSample;
       m_tim->CR1 |= TIM_CR1_CEN;
 
       m_handlerTim.wait();
@@ -104,11 +125,14 @@ namespace MicroLan
 
   protected:
     OS::Mutex m_mutex;
-    TIM_TypeDef* const m_tim;
-    IRQn_Type const m_IRQn;
     Irq::SemaphoreHandler m_handlerTim;
-    HAL::DMALine m_dmaIn;
+    TIM_TypeDef* const m_tim;
+    __IO uint32_t* const m_tim_CC_Out0;
+    __IO uint32_t* const m_tim_CC_Out1;
+    __IO uint32_t* const m_tim_CC_Sample;
+    IRQn_Type const m_IRQn;
     HAL::DMALine m_dmaOut;
+    HAL::DMALine m_dmaIn;
     uint16_t m_prescale;
     uint32_t m_unitClock;
     volatile uint32_t m_in;
@@ -119,7 +143,7 @@ namespace MicroLan
     // Must do permanent initializations like turning on peripheral clocks, setting interrupt priorities, installing interrupt handlers
     void init()
     {
-      __HAL_RCC_TIM2_CLK_ENABLE();  //fixme
+      __HAL_RCC_TIM1_CLK_ENABLE();  //fixme
       m_handlerTim.install(m_IRQn);
       HAL_NVIC_SetPriority(m_IRQn, 5, 0);
 
@@ -142,15 +166,16 @@ namespace MicroLan
     // Must put peripheral to normal operational state either after init() or stop()
     void start()
     {
-      __HAL_RCC_TIM2_FORCE_RESET();   //fixme
-      __HAL_RCC_TIM2_RELEASE_RESET(); //fixme
+      __HAL_RCC_TIM1_FORCE_RESET();   //fixme
+      __HAL_RCC_TIM1_RELEASE_RESET(); //fixme
 
       m_dmaIn.setMAR(uint32_t(&m_in));
       m_dmaIn.setNDTR(1);
       m_dmaOut.setMAR(uint32_t(&m_out));
       m_dmaOut.setNDTR(2);
 
-      m_tim->DIER = TIM_DIER_CC4DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;
+//      m_tim->DIER = TIM_DIER_CC4DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;  //fixme
+      m_tim->DIER = TIM_DIER_CC3DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;  //fixme
       m_tim->PSC = m_prescale - 1;
       m_tim->CR1 = TIM_CR1_OPM | TIM_CR1_URS;
       m_tim->EGR = TIM_EGR_UG;
