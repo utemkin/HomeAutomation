@@ -3,7 +3,6 @@
 #include <lib/analog/adc_stm32.h>
 #include <lib/microlan/microlan.h>
 #include <lib/common/hal.h>
-#include <lib/common/pin_stm32.h>
 #include <limits>
 
 namespace MicroLan
@@ -200,76 +199,6 @@ namespace MicroLan
     TimingGenerator(const TimingGenerator&) = delete;
     TimingGenerator& operator =(const TimingGenerator&) = delete;
   };
-
-  class TimingGeneratorBus : public Bus
-  {
-  public:
-    TimingGeneratorBus(std::shared_ptr<TimingGenerator> const timingGenerator, const Pin::Def& out, const Pin::Def& in)
-      : m_timingGenerator(timingGenerator)
-      , m_resetTimings(*m_timingGenerator.get(), c_G + c_H + c_I + c_J, c_G, c_G + c_H, c_G + c_H + c_I)
-      , m_readTimings(*m_timingGenerator.get(), c_A + c_E + c_F, 0, c_A, c_A + c_E)
-      , m_writeZeroTimings(*m_timingGenerator.get(), c_C + c_D, 0, c_C, c_A + c_E)
-      , m_writeOneTimings(*m_timingGenerator.get(), c_A + c_B, 0, c_A, c_A + c_E)
-      , m_data(out, in)
-    {
-      Pin::Out(out).toActive();
-    }
-
-    virtual Capabilities capabilities() const override
-    {
-      return {
-        overdriveSupported : false,
-        strengthMicroampsStrongPoolup5V : 0,
-        strengthMicroampsPulse12V : 0,
-        strengthMicroampsExternal5V : 15000,
-      };
-    }
-
-  protected:
-    virtual Status lock(const Options& options) override
-    {
-      auto status = Bus::lock(options);
-      if (status != Status::Success)
-        return status;
-
-      m_timingGenerator->lock();
-      return Status::Success;
-    }
-
-    virtual void unlock()
-    {
-      m_timingGenerator->unlock();
-      Bus::unlock();
-    }
-
-    virtual Status reset(bool& presence) override
-    {
-      presence = !m_timingGenerator->touch(m_resetTimings, m_data);
-      return Status::Success;
-    }
-
-    virtual Status read(bool& bit, bool /*last*/) override
-    {
-      bit = m_timingGenerator->touch(m_readTimings, m_data);
-      return Status::Success;
-    }
-
-    virtual Status write(bool bit, bool /*last*/) override
-    {
-      if (m_timingGenerator->touch(bit ? m_writeOneTimings : m_writeZeroTimings, m_data) != bit)
-        return bit ? Status::BusShortToGnd : Status::BusShortToVdd;
-
-      return Status::Success;
-    }
-
-  protected:
-    std::shared_ptr<TimingGenerator> const m_timingGenerator;
-    TimingGenerator::Timings const m_resetTimings;
-    TimingGenerator::Timings const m_readTimings;
-    TimingGenerator::Timings const m_writeZeroTimings;
-    TimingGenerator::Timings const m_writeOneTimings;
-    TimingGenerator::Data const m_data;
-  };
 }
 
 extern "C" void maintask()
@@ -283,7 +212,7 @@ extern "C" void maintask()
 //  auto adc = Analog::CreateAdcStm32(0, 0, false);
 
   auto gen = std::make_shared<MicroLan::TimingGenerator>();
-  MicroLan::TimingGeneratorBus bus(gen, Pin::Def(GPIOE, GPIO_PIN_0, false), Pin::Def(GPIOE, GPIO_PIN_1, false));
+  MicroLan::TimingGeneratorBus<MicroLan::TimingGenerator> bus(gen, Pin::Def(GPIOE, GPIO_PIN_0, false), Pin::Def(GPIOE, GPIO_PIN_1, false));
 
   {
   /*

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lib/common/utils.h>
+#include <lib/common/pin_stm32.h>
 #include <cstddef>
 #include <cstdint>
 
@@ -386,7 +387,7 @@ namespace MicroLan
     static void out0();
     static bool in();
   };
-  Any method may be either static, member or virtual member
+  Any method can be either static, member or virtual member
   */
   template <typename BusTraits, unsigned CPUCLK, unsigned strengthMicroampsExternal5V>
   class BitbangBus : public Bus
@@ -505,5 +506,93 @@ namespace MicroLan
       }
       return Status::Success;
     }
+  };
+
+  /*
+  class TimingGenerator
+  {
+    struct Timings
+    {
+      Timings(TimingGenerator& timingGenerator, unsigned const ticksTotalNs, unsigned const ticksOut0Ns, unsigned const ticksOut1Ns, unsigned const ticksSampleNs);
+    }
+    struct Data
+    {
+      Data(const Pin::Def& out, const Pin::Def& in);
+    }
+
+  public:
+    bool touch(const Timings& timings, const Data& data)
+  }
+  Any method can be either static, member or virtual member
+  */
+  template<class TimingGenerator>
+  class TimingGeneratorBus : public Bus
+  {
+  public:
+    TimingGeneratorBus(std::shared_ptr<TimingGenerator> const timingGenerator, const Pin::Def& out, const Pin::Def& in)
+      : m_timingGenerator(timingGenerator)
+      , m_resetTimings(*m_timingGenerator.get(), c_G + c_H + c_I + c_J, c_G, c_G + c_H, c_G + c_H + c_I)
+      , m_readTimings(*m_timingGenerator.get(), c_A + c_E + c_F, 0, c_A, c_A + c_E)
+      , m_writeZeroTimings(*m_timingGenerator.get(), c_C + c_D, 0, c_C, c_A + c_E)
+      , m_writeOneTimings(*m_timingGenerator.get(), c_A + c_B, 0, c_A, c_A + c_E)
+      , m_data(out, in)
+    {
+      Pin::Out(out).toActive();
+    }
+
+    virtual Capabilities capabilities() const override
+    {
+      return {
+        overdriveSupported : false,
+        strengthMicroampsStrongPoolup5V : 0,
+        strengthMicroampsPulse12V : 0,
+        strengthMicroampsExternal5V : 15000,
+      };
+    }
+
+  protected:
+    virtual Status lock(const Options& options) override
+    {
+      auto status = Bus::lock(options);
+      if (status != Status::Success)
+        return status;
+
+      m_timingGenerator->lock();
+      return Status::Success;
+    }
+
+    virtual void unlock()
+    {
+      m_timingGenerator->unlock();
+      Bus::unlock();
+    }
+
+    virtual Status reset(bool& presence) override
+    {
+      presence = !m_timingGenerator->touch(m_resetTimings, m_data);
+      return Status::Success;
+    }
+
+    virtual Status read(bool& bit, bool /*last*/) override
+    {
+      bit = m_timingGenerator->touch(m_readTimings, m_data);
+      return Status::Success;
+    }
+
+    virtual Status write(bool bit, bool /*last*/) override
+    {
+      if (m_timingGenerator->touch(bit ? m_writeOneTimings : m_writeZeroTimings, m_data) != bit)
+        return bit ? Status::BusShortToGnd : Status::BusShortToVdd;
+
+      return Status::Success;
+    }
+
+  protected:
+    std::shared_ptr<TimingGenerator> const m_timingGenerator;
+    typename TimingGenerator::Timings const m_resetTimings;
+    typename TimingGenerator::Timings const m_readTimings;
+    typename TimingGenerator::Timings const m_writeZeroTimings;
+    typename TimingGenerator::Timings const m_writeOneTimings;
+    typename TimingGenerator::Data const m_data;
   };
 }
