@@ -511,6 +511,7 @@ namespace MicroLan
   /*
   class TimingGenerator
   {
+  public:
     struct Timings
     {
       Timings(TimingGenerator& timingGenerator, unsigned const ticksTotalNs, unsigned const ticksOut0Ns, unsigned const ticksOut1Ns, unsigned const ticksSampleNs);

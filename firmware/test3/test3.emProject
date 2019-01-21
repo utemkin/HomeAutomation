@@ -51,6 +51,7 @@
       <file file_name="../lib/common/utils_stm32.cpp" />
       <file file_name="../lib/common/pin_stm32.cpp" />
       <file file_name="../lib/common/math.cpp" />
+      <file file_name="../lib/common/hal.cpp" />
     </folder>
     <folder Name="cubemx">
       <file file_name="Src/main.c" />
