@@ -4,25 +4,26 @@
 
 namespace HAL
 {
-  class DMALine
+  class DmaLine
   {
   public:
   #if defined(STM32F1)
-      using MXType = DMA_Channel_TypeDef;
+      using MxType = DMA_Channel_TypeDef;
   #elif defined(STM32F4)
-      using MXType = DMA_Stream_TypeDef;
+      using MxType = DMA_Stream_TypeDef;
   #else
   #error Unsupported architecture
   #endif
 
   public:
   #if defined(STM32F1)
+    DmaLine(MxType* const line, uint32_t config, uint32_t interruptFlags);
   #elif defined(STM32F4)
-    DMALine(MXType* const line, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
+    DmaLine(MxType* const line, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
   #else
   #error Unsupported architecture
   #endif
-    MXType* line() const
+    MxType* line() const
     {
       return m_line;
     }
@@ -39,6 +40,7 @@ namespace HAL
     uint16_t NDTR() const
     {
   #if defined(STM32F1)
+      return m_line->CNDTR;
   #elif defined(STM32F4)
       return m_line->NDTR;
   #else
@@ -48,6 +50,7 @@ namespace HAL
     void setNDTR(uint16_t ndtr)
     {
   #if defined(STM32F1)
+      m_line->CNDTR = ndtr;
   #elif defined(STM32F4)
       m_line->NDTR = ndtr;
   #else
@@ -57,6 +60,7 @@ namespace HAL
     void setPAR(uint32_t par)
     {
   #if defined(STM32F1)
+      m_line->CPAR = par;
   #elif defined(STM32F4)
       m_line->PAR = par;
   #else
@@ -66,6 +70,7 @@ namespace HAL
     void setMAR(uint32_t mar)
     {
   #if defined(STM32F1)
+      m_line->CMAR = mar;
   #elif defined(STM32F4)
       m_line->M0AR = mar;
   #else
@@ -81,6 +86,8 @@ namespace HAL
     void start()
     {
   #if defined(STM32F1)
+      __DMB();
+      m_line->CCR = m_CR;
   #elif defined(STM32F4)
       __DMB();
       m_line->FCR = m_FCR;
@@ -92,6 +99,8 @@ namespace HAL
     void stop()
     {
   #if defined(STM32F1)
+      m_line->CCR = 0;
+      __DMB();
   #elif defined(STM32F4)
       m_line->CR = 0;
       while (m_line->CR & DMA_SxCR_EN);  //fixme: check timeout?
@@ -103,9 +112,27 @@ namespace HAL
 
   public:
   #if defined(STM32F1)
-    constexpr static uint32_t c_TCIF = DMA_ISR_TCIF1;
-    constexpr static uint32_t c_HTIF = DMA_ISR_HTIF1;
-    constexpr static uint32_t c_TEIF = DMA_ISR_TEIF1;
+    constexpr static uint32_t c_config_PRIO_LOW = 0;
+    constexpr static uint32_t c_config_PRIO_MED = DMA_CCR_PL_0;
+    constexpr static uint32_t c_config_PRIO_HIGH = DMA_CCR_PL_1;
+    constexpr static uint32_t c_config_PRIO_VERYHIGH = DMA_CCR_PL_0 | DMA_CCR_PL_1;
+    constexpr static uint32_t c_config_M8 = 0;
+    constexpr static uint32_t c_config_M16 = DMA_CCR_MSIZE_0;
+    constexpr static uint32_t c_config_M32 = DMA_CCR_MSIZE_1;
+    constexpr static uint32_t c_config_P8 = 0;
+    constexpr static uint32_t c_config_P16 = DMA_CCR_PSIZE_0;
+    constexpr static uint32_t c_config_P32 = DMA_CCR_PSIZE_1;
+    constexpr static uint32_t c_config_MINC = DMA_CCR_MINC;
+    constexpr static uint32_t c_config_PINC = DMA_CCR_PINC;
+    constexpr static uint32_t c_config_CIRC = DMA_CCR_CIRC;
+    constexpr static uint32_t c_config_P2M = 0;
+    constexpr static uint32_t c_config_M2P = DMA_CCR_DIR;
+    constexpr static uint32_t c_config_M2M = DMA_CCR_MEM2MEM;
+
+    constexpr static uint32_t c_flags_TC = DMA_ISR_TCIF1;
+    constexpr static uint32_t c_flags_HT = DMA_ISR_HTIF1;
+    constexpr static uint32_t c_flags_TE = DMA_ISR_TEIF1;
+    constexpr static uint32_t c_flags_E = c_flags_TE;
   #elif defined(STM32F4)
     constexpr static uint32_t c_config_MBURST_INCR4 = DMA_SxCR_MBURST_0;
     constexpr static uint32_t c_config_MBURST_INCR8 = DMA_SxCR_MBURST_1;
@@ -151,13 +178,14 @@ namespace HAL
   #endif
 
   protected:
-    MXType* const m_line;
+    MxType* const m_line;
     IRQn_Type m_IRQn;
     __IO uint32_t* m_ISR;
     __IO uint32_t* m_IFCR;
     uint8_t m_flagsShift;
     uint32_t m_flagsMask;
   #if defined(STM32F1)
+    uint32_t m_CR;
   #elif defined(STM32F4)
     uint32_t m_CR;
     uint32_t m_FCR;

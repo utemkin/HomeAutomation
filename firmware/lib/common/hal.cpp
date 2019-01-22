@@ -3,8 +3,121 @@
 namespace HAL
 {
 #if defined(STM32F1)
+  DmaLine::DmaLine(MxType* const line, uint32_t config, uint32_t interruptFlags)
+    : m_line(line)
+  {
+    if (line == DMA1_Channel1)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel1_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF1_Pos;
+    }
+    else if (line == DMA1_Channel2)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel2_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF2_Pos;
+    }
+    else if (line == DMA1_Channel3)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel3_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF3_Pos;
+    }
+    else if (line == DMA1_Channel4)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel4_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF4_Pos;
+    }
+    else if (line == DMA1_Channel5)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel5_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF5_Pos;
+    }
+    else if (line == DMA1_Channel6)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel6_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF6_Pos;
+    }
+    else if (line == DMA1_Channel7)
+    {
+      __HAL_RCC_DMA1_CLK_ENABLE();
+      m_IRQn = DMA1_Channel7_IRQn;
+      m_ISR = &DMA1->ISR;
+      m_IFCR = &DMA1->IFCR;
+      m_flagsShift = DMA_ISR_GIF7_Pos;
+    }
+    else if (line == DMA2_Channel1)
+    {
+      __HAL_RCC_DMA2_CLK_ENABLE();
+      m_IRQn = DMA2_Channel1_IRQn;
+      m_ISR = &DMA2->ISR;
+      m_IFCR = &DMA2->IFCR;
+      m_flagsShift = DMA_ISR_GIF1_Pos;
+    }
+    else if (line == DMA2_Channel2)
+    {
+      __HAL_RCC_DMA2_CLK_ENABLE();
+      m_IRQn = DMA2_Channel2_IRQn;
+      m_ISR = &DMA2->ISR;
+      m_IFCR = &DMA2->IFCR;
+      m_flagsShift = DMA_ISR_GIF2_Pos;
+    }
+    else if (line == DMA2_Channel3)
+    {
+      __HAL_RCC_DMA2_CLK_ENABLE();
+      m_IRQn = DMA2_Channel3_IRQn;
+      m_ISR = &DMA2->ISR;
+      m_IFCR = &DMA2->IFCR;
+      m_flagsShift = DMA_ISR_GIF3_Pos;
+    }
+    else if (line == DMA2_Channel4)
+    {
+      __HAL_RCC_DMA2_CLK_ENABLE();
+      m_IRQn = DMA2_Channel4_5_IRQn;
+      m_ISR = &DMA2->ISR;
+      m_IFCR = &DMA2->IFCR;
+      m_flagsShift = DMA_ISR_GIF4_Pos;
+    }
+    else if (line == DMA2_Channel5)
+    {
+      __HAL_RCC_DMA2_CLK_ENABLE();
+      m_IRQn = DMA2_Channel4_5_IRQn;
+      m_ISR = &DMA2->ISR;
+      m_IFCR = &DMA2->IFCR;
+      m_flagsShift = DMA_ISR_GIF5_Pos;
+    }
+    else
+    {
+      //fixme
+    }
+    m_flagsMask = (DMA_ISR_TCIF1 | DMA_ISR_HTIF1 | DMA_ISR_TEIF1) << m_flagsShift;
+    uint32_t CR = config | DMA_CCR_EN;
+    if (interruptFlags & c_flags_TC)
+      CR |= DMA_CCR_TCIE;
+    if (interruptFlags & c_flags_HT)
+      CR |= DMA_CCR_HTIE;
+    if (interruptFlags & c_flags_TE)
+      CR |= DMA_CCR_TEIE;
+    m_CR = CR;
+  }
 #elif defined(STM32F4)
-  DMALine::DMALine(MXType* const line, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags)
+  DmaLine::DmaLine(MxType* const line, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags)
     : m_line(line)
   {
     if (line == DMA1_Stream0)

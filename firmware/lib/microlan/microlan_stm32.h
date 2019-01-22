@@ -46,7 +46,7 @@ namespace MicroLan
   public:
     //OUT/IN
     //F1:
-    //  TIM2 - DMA1C7/DMA1C5
+    //  TIM2 - DMA1C7/DMA1C1 or DMA1C7/DMA1C5
     //F4:
     //  TIM1 - DMA2S6C0/DMA2S1C6 or DMA2S6C0/DMA2S2C6 or DMA2S6C0/DMA2S3C6 or DMA2S6C0/DMA2S4C6
     //  TIM8 - DMA2S2C0/DMA2S3C7 or DMA2S2C0/DMA2S4C7 or DMA2S2C0/DMA2S7C7
@@ -74,8 +74,8 @@ namespace MicroLan
     __IO uint32_t* const m_tim_CC_Out1;
     __IO uint32_t* const m_tim_CC_Sample;
     IRQn_Type const m_IRQn;
-    HAL::DMALine m_dmaOut;
-    HAL::DMALine m_dmaIn;
+    HAL::DmaLine m_dmaOut;
+    HAL::DmaLine m_dmaIn;
     uint16_t m_prescale;
     uint32_t m_unitClock;
     volatile uint32_t m_in;

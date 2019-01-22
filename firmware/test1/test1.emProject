@@ -51,6 +51,7 @@
       <file file_name="../lib/common/utils_stm32.cpp" />
       <file file_name="../lib/common/pin_stm32.cpp" />
       <file file_name="../lib/common/math.cpp" />
+      <file file_name="../lib/common/hal.cpp" />
     </folder>
     <folder Name="cubemx">
       <file file_name="Src/freertos.c" />
@@ -106,6 +107,7 @@
     </folder>
     <folder Name="microlan">
       <file file_name="../lib/microlan/microlan.cpp" />
+      <file file_name="../lib/microlan/microlan_stm32.cpp" />
     </folder>
     <folder Name="lwip">
       <file file_name="Middlewares/Third_Party/LwIP/ports/freertos/sys_arch.c" />
