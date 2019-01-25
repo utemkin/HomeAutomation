@@ -1,4 +1,5 @@
 #include <lib/analog/adc_stm32.h>
+#include <lib/common/hal.h>
 #include <lib/common/handlers.h>
 #include <limits>
 
@@ -186,9 +187,80 @@ namespace Analog
     class AdcImpl : public Adc
     {
     public:
-      AdcImpl(const Pin::Def& select2, Callback&& callback)
+      AdcImpl(Callback&& callback)
+        : m_callback(std::move(callback))
+        , m_handlerDma(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma>(*this))
+        , m_adc1(ADC1)
+        , m_adc2(ADC2)
+        , m_adc3(ADC3)
+        , m_adcCommon(ADC123_COMMON)
+        , m_dma(DMA2_Stream0, 0, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M16 | HAL::DmaLine::c_config_P16 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_P2M, 0, HAL::DmaLine::c_flags_TC | HAL::DmaLine::c_flags_E)    //fixme
       {
-        //fixme
+        __HAL_RCC_ADC1_CLK_ENABLE();
+        __HAL_RCC_ADC2_CLK_ENABLE();
+        __HAL_RCC_ADC3_CLK_ENABLE();
+        __HAL_RCC_ADC_FORCE_RESET();
+        __HAL_RCC_ADC_RELEASE_RESET();
+
+        m_adc1->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
+        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc1->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
+                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
+        m_adc1->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
+                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        static_assert(c_dataSize == 7);
+        m_adc1->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
+        m_adc1->SQR2 = ADC_CHANNEL_8 << ADC_SQR2_SQ7_Pos;
+        m_adc1->SQR3 = (ADC_CHANNEL_7 << ADC_SQR3_SQ6_Pos) | 
+                       (ADC_CHANNEL_6 << ADC_SQR3_SQ5_Pos) | 
+                       (ADC_CHANNEL_3 << ADC_SQR3_SQ4_Pos) | 
+                       (ADC_CHANNEL_2 << ADC_SQR3_SQ3_Pos) | 
+                       (ADC_CHANNEL_1 << ADC_SQR3_SQ2_Pos) | 
+                       (ADC_CHANNEL_0 << ADC_SQR3_SQ1_Pos);
+
+        m_adc2->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
+        m_adc2->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc2->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
+                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
+        m_adc2->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
+                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        static_assert(c_dataSize == 7);
+        m_adc2->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
+        m_adc2->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
+        m_adc2->SQR3 = (ADC_CHANNEL_14 << ADC_SQR3_SQ6_Pos) | 
+                       (ADC_CHANNEL_13 << ADC_SQR3_SQ5_Pos) | 
+                       (ADC_CHANNEL_12 << ADC_SQR3_SQ4_Pos) | 
+                       (ADC_CHANNEL_11 << ADC_SQR3_SQ3_Pos) | 
+                       (ADC_CHANNEL_10 << ADC_SQR3_SQ2_Pos) | 
+                       (ADC_CHANNEL_9 << ADC_SQR3_SQ1_Pos);
+
+        m_adc3->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
+        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc3->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
+                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
+        m_adc3->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
+                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        static_assert(c_dataSize == 7);
+        m_adc3->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
+        m_adc3->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
+        m_adc3->SQR3 = (ADC_CHANNEL_14 << ADC_SQR3_SQ6_Pos) | 
+                       (ADC_CHANNEL_8 << ADC_SQR3_SQ5_Pos) | 
+                       (ADC_CHANNEL_7 << ADC_SQR3_SQ4_Pos) | 
+                       (ADC_CHANNEL_6 << ADC_SQR3_SQ3_Pos) | 
+                       (ADC_CHANNEL_5 << ADC_SQR3_SQ2_Pos) | 
+                       (ADC_CHANNEL_4 << ADC_SQR3_SQ1_Pos);
+
+        m_adcCommon->CCR = ADC_CCR_ADCPRE_0 | ADC_CCR_DMA_0 | ADC_CCR_MULTI_4 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_1;
+
+        RT::stall(HAL_RCC_GetHCLKFreq() / 1000000 * 3);
+
+        m_handlerDma.install(m_dma.IRQn());
+        HAL_NVIC_SetPriority(m_dma.IRQn(), 5, 0);
+        HAL_NVIC_EnableIRQ(m_dma.IRQn());
+
+        m_dma.setNDTR(c_dataSize * 3);
+        m_dma.setPAR(uint32_t(&m_adcCommon->CDR));
+        m_dma.setMAR(uint32_t(&m_data));
       }
 
       virtual const volatile uint16_t* channel(size_t num) const override
@@ -199,11 +271,55 @@ namespace Analog
 
       virtual void start() override
       {
-        //fixme
+        m_dma.start();
+        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
     protected:
+      bool handleDma(IRQn_Type)
+      {
+        if (m_dma.flagsGetAndClear() != 0)
+        {
+          m_adc1->SR = 0;
+          m_adc2->SR = 0;
+          m_adc3->SR = 0;
+          m_callback();    //distinguish success and error
+          return true;
+        }
+
+        return false;
+      }      
+
+    protected:
       constexpr static size_t c_dataSize = 7;
+      Callback const m_callback;
+      Irq::Handler m_handlerDma;
+      ADC_TypeDef* const m_adc1;
+      ADC_TypeDef* const m_adc2;
+      ADC_TypeDef* const m_adc3;
+      ADC_Common_TypeDef* const m_adcCommon;
+      HAL::DmaLine m_dma;
+      // [0]  = ADC123_IN0  = PA0
+      // [1]  = ADC12_IN9   = PB1
+      // [2]  = ADC3_IN4    = PF6
+      // [3]  = ADC123_IN1  = PA1
+      // [4]  = ADC123_IN10 = PC0
+      // [5]  = ADC3_IN5    = PF7
+      // [6]  = ADC123_IN2  = PA2
+      // [7]  = ADC123_IN11 = PC1
+      // [8]  = ADC3_IN6    = PF8
+      // [9]  = ADC123_IN3  = PA3
+      // [10] = ADC123_IN12 = PC2
+      // [11] = ADC3_IN7    = PF9
+      // [12] = ADC123_IN6  = PA6
+      // [13] = ADC123_IN13 = PC3
+      // [14] = ADC3_IN8    = PF10
+      // [15] = ADC123_IN7  = PA7
+      // [16] = ADC123_IN14 = PC4
+      // [17] = ADC3_IN14   = PF4
+      // [18] = ADC123_IN8  = PB0
+      // [19] = ADC123_IN15 = PC5
+      // [20] = ADC3_IN15   = PF5
       volatile uint16_t m_data[c_dataSize * 3] = {};
     };
 #else
@@ -212,7 +328,16 @@ namespace Analog
   }
 }
 
+#if defined(STM32F1)
 auto Analog::CreateAdcStm32(const Pin::Def& select2, Adc::Callback&& callback) -> std::unique_ptr<Adc>
 {
   return std::make_unique<AdcImpl>(select2, std::move(callback));
 }
+#elif defined(STM32F4)
+auto Analog::CreateAdcStm32(Adc::Callback&& callback) -> std::unique_ptr<Adc>
+{
+  return std::make_unique<AdcImpl>(std::move(callback));
+}
+#else
+#error Unsupported architecture
+#endif

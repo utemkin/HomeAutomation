@@ -71,6 +71,12 @@ namespace mstd
       return Callback(&Callback::fn<T, func>, &obj);
     }
 
+    template<typename T, Ret(T::*func)(Args...) const>
+    static Callback make(T& obj)
+    {
+      return Callback(&Callback::fn<T, func>, &obj);
+    }
+
     operator bool() const
     {
       return !!m_func;
@@ -104,6 +110,12 @@ namespace mstd
     }
 
     template<typename T, Ret(T::*func)(Args...)>
+    static Ret fn(void* ctx, Args ...args)
+    {
+      return (static_cast<T*>(ctx)->*func)(args...);
+    }
+
+    template<typename T, Ret(T::*func)(Args...) const>
     static Ret fn(void* ctx, Args ...args)
     {
       return (static_cast<T*>(ctx)->*func)(args...);
