@@ -9,17 +9,17 @@ namespace MicroLan
     , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
     , m_tim_CC_Out1(&m_tim->CCR4)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
-    , m_IRQn(TIM2_IRQn)             //fixme
-    , m_dmaOut(DMA1_Channel7, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M32 | HAL::DmaLine::c_config_P32 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_M2P, 0)   //fixme
-    , m_dmaIn(DMA1_Channel5, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M32 | HAL::DmaLine::c_config_P32 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_P2M, 0)    //fixme
+    , m_irq(TIM2_IRQn)              //fixme
+    , m_dmaOut(DMA1_Channel7, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P, 0)   //fixme
+    , m_dmaIn(DMA1_Channel5, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0)    //fixme
 #elif defined(STM32F4)
     , m_tim(TIM1)                   //fixme
     , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
     , m_tim_CC_Out1(&m_tim->CCR3)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
-    , m_IRQn(TIM1_UP_TIM10_IRQn)    //fixme
-    , m_dmaOut(DMA2_Stream6, 0, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M32 | HAL::DmaLine::c_config_P32 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_M2P, 0, 0)   //fixme
-    , m_dmaIn(DMA2_Stream1, 6, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M32 | HAL::DmaLine::c_config_P32 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_P2M, 0, 0)    //fixme
+    , m_irq(TIM1_UP_TIM10_IRQn)    //fixme
+    , m_dmaOut(DMA2_Stream6, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P, 0, 0)   //fixme
+    , m_dmaIn(DMA2_Stream1, 6, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, 0)    //fixme
 #else
 #error Unsupported architecture
 #endif
@@ -51,7 +51,7 @@ namespace MicroLan
     return (!!(m_in & data.inMask)) ^ data.inInvert;
   }
 
-  bool TimingGenerator::handleTimIrq(IRQn_Type /*IRQn*/)
+  bool TimingGenerator::handleTimIrq(Hal::Irq /*irq*/)
   {
     if (m_tim->SR & TIM_IT_UPDATE)
     {
@@ -66,8 +66,8 @@ namespace MicroLan
   void TimingGenerator::init()
   {
     __HAL_RCC_TIM1_CLK_ENABLE();  //fixme
-    m_handlerTim.install(m_IRQn);
-    HAL_NVIC_SetPriority(m_IRQn, 5, 0);
+    m_handlerTim.install(m_irq);
+    HAL_NVIC_SetPriority(m_irq, 5, 0);
 
     uint32_t pclk = HAL_RCC_GetPCLK1Freq();
     RCC_ClkInitTypeDef clk;
@@ -101,12 +101,12 @@ namespace MicroLan
     m_tim->CR1 = TIM_CR1_OPM | TIM_CR1_URS;
     m_tim->EGR = TIM_EGR_UG;
 
-    HAL_NVIC_EnableIRQ(m_IRQn);
+    HAL_NVIC_EnableIRQ(m_irq);
   }
 
   void TimingGenerator::stop()
   {
-    HAL_NVIC_DisableIRQ(m_IRQn);
+    HAL_NVIC_DisableIRQ(m_irq);
     m_dmaIn.stop();
     m_dmaOut.stop();
     m_tim->CR1 = 0;

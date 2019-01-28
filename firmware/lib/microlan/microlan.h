@@ -425,20 +425,20 @@ namespace MicroLan
   protected:
     virtual Status reset(bool& presence) override
     {
-      RT::stall(c_G_units);
+      Rt::stall(c_G_units);
       {
-        OS::InterruptDisabler di;
+        Os::InterruptDisabler di;
         m_busTraits.out0();
-        RT::stall(c_H_units);
+        Rt::stall(c_H_units);
         if(m_busTraits.in())
         {
           return Status::BusShortToVdd;
         }
         m_busTraits.out1();
-        RT::stall(c_I_units);
+        Rt::stall(c_I_units);
         presence=!m_busTraits.in();
       }
-      RT::stall(c_J_units);
+      Rt::stall(c_J_units);
       if (!m_busTraits.in())
       {
         return Status::BusShortToGnd;
@@ -448,18 +448,18 @@ namespace MicroLan
     virtual Status read(bool& bit, bool /*last*/) override
     {
       {
-        OS::InterruptDisabler di;
+        Os::InterruptDisabler di;
         m_busTraits.out0();
-        RT::stall(c_A_units);
+        Rt::stall(c_A_units);
         if(m_busTraits.in())
         {
           return Status::BusShortToVdd;
         }
         m_busTraits.out1();
-        RT::stall(c_E_units);
+        Rt::stall(c_E_units);
         bit=m_busTraits.in();
       }
-      RT::stall(c_F_units);
+      Rt::stall(c_F_units);
       if (!m_busTraits.in())
       {
         return Status::BusShortToGnd;
@@ -471,16 +471,16 @@ namespace MicroLan
       if (bit)
       {
         {
-          OS::InterruptDisabler di;
+          Os::InterruptDisabler di;
           m_busTraits.out0();
-          RT::stall(c_A_units);
+          Rt::stall(c_A_units);
           if(m_busTraits.in())
           {
             return Status::BusShortToVdd;
           }
           m_busTraits.out1();
         }
-        RT::stall(c_B_units);
+        Rt::stall(c_B_units);
         if (!m_busTraits.in())
         {
           return Status::BusShortToGnd;
@@ -489,16 +489,16 @@ namespace MicroLan
       else
       {
         {
-          OS::InterruptDisabler di;
+          Os::InterruptDisabler di;
           m_busTraits.out0();
-          RT::stall(c_C_units);
+          Rt::stall(c_C_units);
           if(m_busTraits.in())
           {
             return Status::BusShortToVdd;
           }
           m_busTraits.out1();
         }
-        RT::stall(c_D_units);
+        Rt::stall(c_D_units);
         if (!m_busTraits.in())
         {
           return Status::BusShortToGnd;

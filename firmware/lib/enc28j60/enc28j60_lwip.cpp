@@ -185,7 +185,7 @@ namespace Enc28j60
       err_t init()
       {
         MacAddress mac;
-        const uint32_t unique = RT::getUnique();
+        const uint32_t unique = Rt::getUnique();
         mac.addr[0] = 2;
         mac.addr[1] = 'O';
         mac.addr[2] = 'C';
@@ -224,7 +224,7 @@ namespace Enc28j60
       err_t linkoutput(pbuf *p)
       {
         while (!m_device->output(std::make_unique<PbufImpl>(p)))
-          OS::Thread::yield();
+          Os::Thread::yield();
         //fixme: return !ERR_OK on error
         return ERR_OK;
       }
@@ -239,14 +239,14 @@ namespace Enc28j60
     //tcp thread or core lock
     static void initDone(void *arg)
     {
-      ((OS::BinarySemaphore*)arg)->signal();
+      ((Os::BinarySemaphore*)arg)->signal();
     }
   }
 
   //arbitrary thread
   void LwipNetif::initLwip()
   {
-    OS::BinarySemaphore sem;
+    Os::BinarySemaphore sem;
     tcpip_init(&initDone, (void*)&sem);
     sem.wait();
   }

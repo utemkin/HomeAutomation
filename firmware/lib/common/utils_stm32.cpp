@@ -1,7 +1,7 @@
 #include <lib/common/handlers.h>
 #include <lib/common/utils_stm32.h>
 
-namespace RT
+namespace Rt
 {
   namespace
   {
@@ -444,7 +444,7 @@ namespace RT
       }
 
     protected:
-      bool handleTim(IRQn_Type)
+      bool handleTim(Hal::Irq)
       {
         auto const sr = m_tim->SR;
         if (sr & TIM_SR_UIF)
@@ -530,7 +530,7 @@ namespace RT
   }
 }
 
-auto RT::CreateHiresTimer(TIM_TypeDef *tim, HiresTimer::Callback&& callback) -> std::unique_ptr<HiresTimer>
+auto Rt::CreateHiresTimer(TIM_TypeDef *tim, HiresTimer::Callback&& callback) -> std::unique_ptr<HiresTimer>
 {
   return std::make_unique<HiresTimerImpl>(tim, std::move(callback));
 }

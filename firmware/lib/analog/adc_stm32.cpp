@@ -23,7 +23,7 @@ namespace Analog
         m_adc1 = ADC1;
         m_adc1->CR1 = (6 << ADC_CR1_DUALMOD_Pos) | ADC_CR1_SCAN;
         m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-        RT::stall(72);                              //fixme: wait Tstab=1uS
+        Rt::stall(72);                              //fixme: wait Tstab=1uS
         m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc1->CR2 & ADC_CR2_RSTCAL);
         m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
@@ -44,7 +44,7 @@ namespace Analog
         m_adc2 = ADC2;
         m_adc2->CR1 = ADC_CR1_SCAN;
         m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_ADON;
-        RT::stall(72);                              //fixme: wait Tstab=1uS
+        Rt::stall(72);                              //fixme: wait Tstab=1uS
         m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc2->CR2 & ADC_CR2_RSTCAL);
         m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_CAL | ADC_CR2_ADON;
@@ -67,7 +67,7 @@ namespace Analog
           m_adc3 = ADC3;
           m_adc3->CR1 = ADC_CR1_SCAN;
           m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-          RT::stall(72);                              //fixme: wait Tstab=1uS
+          Rt::stall(72);                              //fixme: wait Tstab=1uS
           m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
           while (m_adc3->CR2 & ADC_CR2_RSTCAL);
           m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
@@ -136,7 +136,7 @@ namespace Analog
         m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
-      bool handleDma1Rx(IRQn_Type)
+      bool handleDma1Rx(Hal::Irq)
       {
         uint32_t const clear = m_dma1->ISR & m_dma1RxFlags;
         if (clear)
@@ -150,7 +150,7 @@ namespace Analog
         return false;
       }      
 
-      bool handleDma2Rx(IRQn_Type)
+      bool handleDma2Rx(Hal::Irq)
       {
         uint32_t const clear = m_dma2->ISR & m_dma2RxFlags;
         if (clear)
@@ -194,7 +194,7 @@ namespace Analog
         , m_adc2(ADC2)
         , m_adc3(ADC3)
         , m_adcCommon(ADC123_COMMON)
-        , m_dma(DMA2_Stream0, 0, HAL::DmaLine::c_config_PRIO_LOW | HAL::DmaLine::c_config_M16 | HAL::DmaLine::c_config_P16 | HAL::DmaLine::c_config_MINC | HAL::DmaLine::c_config_P2M, 0, HAL::DmaLine::c_flags_TC | HAL::DmaLine::c_flags_E)    //fixme
+        , m_dma(DMA2_Stream0, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E)    //fixme
       {
         __HAL_RCC_ADC1_CLK_ENABLE();
         __HAL_RCC_ADC2_CLK_ENABLE();
@@ -252,11 +252,11 @@ namespace Analog
 
         m_adcCommon->CCR = ADC_CCR_ADCPRE_0 | ADC_CCR_DMA_0 | ADC_CCR_MULTI_4 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_1;
 
-        RT::stall(HAL_RCC_GetHCLKFreq() / 1000000 * 3);
+        Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000 * 3);
 
-        m_handlerDma.install(m_dma.IRQn());
-        HAL_NVIC_SetPriority(m_dma.IRQn(), 5, 0);
-        HAL_NVIC_EnableIRQ(m_dma.IRQn());
+        m_handlerDma.install(m_dma.irq());
+        HAL_NVIC_SetPriority(m_dma.irq(), 5, 0);
+        HAL_NVIC_EnableIRQ(m_dma.irq());
 
         m_dma.setNDTR(c_dataSize * 3);
         m_dma.setPAR(uint32_t(&m_adcCommon->CDR));
@@ -276,7 +276,7 @@ namespace Analog
       }
 
     protected:
-      bool handleDma(IRQn_Type)
+      bool handleDma(Hal::Irq)
       {
         if (m_dma.flagsGetAndClear() != 0)
         {
@@ -298,7 +298,7 @@ namespace Analog
       ADC_TypeDef* const m_adc2;
       ADC_TypeDef* const m_adc3;
       ADC_Common_TypeDef* const m_adcCommon;
-      HAL::DmaLine m_dma;
+      Hal::DmaLine m_dma;
       // [0]  = ADC123_IN0  = PA0
       // [1]  = ADC12_IN9   = PB1
       // [2]  = ADC3_IN4    = PF6

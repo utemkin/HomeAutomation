@@ -39,7 +39,7 @@ namespace Tools
     Sample next;
     sample(next);
     {
-      OS::CriticalSection cs;
+      Os::CriticalSection cs;
       m_value += next.value - m_previous.value;
       m_total += next.total - m_previous.total;
       m_previous = next;
@@ -50,7 +50,7 @@ namespace Tools
   {
     update();
     {
-      OS::CriticalSection cs;
+      Os::CriticalSection cs;
       unsigned const p = mstd::ridiv(::calibrate(m_value, m_total) * 1000u, s_cal);
       if (tenths)
       {
@@ -65,11 +65,11 @@ namespace Tools
   void IdleMeasure::calibrate()
   {
     Sample s1, s2, s3;
-    OS::Thread::delay(1);
+    Os::Thread::delay(1);
     sample(s1);
-    OS::Thread::delay(1);
+    Os::Thread::delay(1);
     sample(s2);
-    OS::Thread::delay(10);
+    Os::Thread::delay(10);
     sample(s3);
 
     unsigned const value = s3.value - (s2.value << 1) + s1.value;
@@ -79,7 +79,7 @@ namespace Tools
 
   void IdleMeasure::sample(Sample& s)
   {
-    OS::InterruptDisabler id;
+    Os::InterruptDisabler id;
     s.value = s_value;
     s.total = DWT->CYCCNT;
   }

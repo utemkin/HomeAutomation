@@ -64,18 +64,18 @@ namespace MicroLan
     bool touch(const Timings& timings, const Data& data);
 
   protected:
-    bool handleTimIrq(IRQn_Type IRQn);
+    bool handleTimIrq(Hal::Irq irq);
 
   protected:
-    OS::Mutex m_mutex;
+    Os::Mutex m_mutex;
     Irq::SemaphoreHandler m_handlerTim;
     TIM_TypeDef* const m_tim;
     __IO uint32_t* const m_tim_CC_Out0;
     __IO uint32_t* const m_tim_CC_Out1;
     __IO uint32_t* const m_tim_CC_Sample;
-    IRQn_Type const m_IRQn;
-    HAL::DmaLine m_dmaOut;
-    HAL::DmaLine m_dmaIn;
+    Hal::Irq const m_irq;
+    Hal::DmaLine m_dmaOut;
+    Hal::DmaLine m_dmaIn;
     uint16_t m_prescale;
     uint32_t m_unitClock;
     volatile uint32_t m_in;

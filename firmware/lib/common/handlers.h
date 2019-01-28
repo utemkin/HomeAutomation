@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/common/stm32.h>
+#include <lib/common/hal.h>
 #include <lib/common/utils.h>
 
 namespace Irq
@@ -17,7 +17,7 @@ namespace Irq
   {
   public:
     //must be ready to be called from handler context
-    using Callback = mstd::Callback<bool, IRQn_Type>;
+    using Callback = mstd::Callback<bool, Hal::Irq>;
 
   public:
     Handler(Callback&& callback)
@@ -27,11 +27,11 @@ namespace Irq
 
     ~Handler()
     {
-      RT::fatal();
+      Rt::fatal();
     }
 
     // instance of Handler can only be installed once
-    void install(IRQn_Type IRQn);
+    void install(Hal::Irq irq);
 
   protected:
     Handler* m_next = nullptr;
@@ -40,7 +40,7 @@ namespace Irq
   friend class Vectors;
   };
 
-  class SemaphoreHandler : public Handler, public OS::BinarySemaphore
+  class SemaphoreHandler : public Handler, public Os::BinarySemaphore
   {
   public:
     SemaphoreHandler(Callback&& callback)
@@ -60,7 +60,7 @@ namespace Irq
     void signal()
     {
       if (m_threadId == NULL)
-        RT::fatal();
+        Rt::fatal();
 
       osSignalSet(m_threadId, 1);
     }

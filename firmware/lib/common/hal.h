@@ -2,34 +2,36 @@
 
 #include <lib/common/stm32.h>
 
-namespace HAL
+namespace Hal
 {
+  using Irq = IRQn_Type;
+
   class DmaLine
   {
   public:
   #if defined(STM32F1)
-      using MxType = DMA_Channel_TypeDef;
+      using Mx = DMA_Channel_TypeDef;
   #elif defined(STM32F4)
-      using MxType = DMA_Stream_TypeDef;
+      using Mx = DMA_Stream_TypeDef;
   #else
   #error Unsupported architecture
   #endif
 
   public:
   #if defined(STM32F1)
-    DmaLine(MxType* const line, uint32_t config, uint32_t interruptFlags);
+    DmaLine(Mx* const mx, uint32_t config, uint32_t interruptFlags);
   #elif defined(STM32F4)
-    DmaLine(MxType* const line, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
+    DmaLine(Mx* const mx, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
   #else
   #error Unsupported architecture
   #endif
-    MxType* line() const
+    Mx* mx() const
     {
-      return m_line;
+      return m_mx;
     }
-    IRQn_Type IRQn() const
+    Irq irq() const
     {
-      return m_IRQn;
+      return m_irq;
     }
     uint32_t flagsGetAndClear()
     {
@@ -40,9 +42,9 @@ namespace HAL
     uint16_t NDTR() const
     {
   #if defined(STM32F1)
-      return m_line->CNDTR;
+      return m_mx->CNDTR;
   #elif defined(STM32F4)
-      return m_line->NDTR;
+      return m_mx->NDTR;
   #else
   #error Unsupported architecture
   #endif
@@ -50,9 +52,9 @@ namespace HAL
     void setNDTR(uint16_t ndtr)
     {
   #if defined(STM32F1)
-      m_line->CNDTR = ndtr;
+      m_mx->CNDTR = ndtr;
   #elif defined(STM32F4)
-      m_line->NDTR = ndtr;
+      m_mx->NDTR = ndtr;
   #else
   #error Unsupported architecture
   #endif
@@ -60,9 +62,9 @@ namespace HAL
     void setPAR(uint32_t par)
     {
   #if defined(STM32F1)
-      m_line->CPAR = par;
+      m_mx->CPAR = par;
   #elif defined(STM32F4)
-      m_line->PAR = par;
+      m_mx->PAR = par;
   #else
   #error Unsupported architecture
   #endif
@@ -70,9 +72,9 @@ namespace HAL
     void setMAR(uint32_t mar)
     {
   #if defined(STM32F1)
-      m_line->CMAR = mar;
+      m_mx->CMAR = mar;
   #elif defined(STM32F4)
-      m_line->M0AR = mar;
+      m_mx->M0AR = mar;
   #else
   #error Unsupported architecture
   #endif
@@ -80,18 +82,18 @@ namespace HAL
   #if defined(STM32F4)
     void setMAR2(uint32_t mar2)
     {
-      m_line->M1AR = mar2;
+      m_mx->M1AR = mar2;
     }
   #endif
     void start()
     {
   #if defined(STM32F1)
       __DMB();
-      m_line->CCR = m_CR;
+      m_mx->CCR = m_CR;
   #elif defined(STM32F4)
       __DMB();
-      m_line->FCR = m_FCR;
-      m_line->CR = m_CR;
+      m_mx->FCR = m_FCR;
+      m_mx->CR = m_CR;
   #else
   #error Unsupported architecture
   #endif
@@ -99,11 +101,11 @@ namespace HAL
     void stop()
     {
   #if defined(STM32F1)
-      m_line->CCR = 0;
+      m_mx->CCR = 0;
       __DMB();
   #elif defined(STM32F4)
-      m_line->CR = 0;
-      while (m_line->CR & DMA_SxCR_EN);  //fixme: check timeout?
+      m_mx->CR = 0;
+      while (m_mx->CR & DMA_SxCR_EN);  //fixme: check timeout?
       __DMB();
   #else
   #error Unsupported architecture
@@ -178,8 +180,8 @@ namespace HAL
   #endif
 
   protected:
-    MxType* const m_line;
-    IRQn_Type m_IRQn;
+    Mx* const m_mx;
+    Irq m_irq;
     __IO uint32_t* m_ISR;
     __IO uint32_t* m_IFCR;
     uint8_t m_flagsShift;

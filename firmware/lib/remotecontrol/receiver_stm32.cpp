@@ -10,7 +10,7 @@ namespace RC
     {
     public:
       ReceiverImpl(TIM_TypeDef* tim, const Pin::Def& pin)
-        : m_timer(RT::CreateHiresTimer(tim, RT::HiresTimer::Callback::make<ReceiverImpl, &ReceiverImpl::periodic>(*this)))
+        : m_timer(Rt::CreateHiresTimer(tim, Rt::HiresTimer::Callback::make<ReceiverImpl, &ReceiverImpl::periodic>(*this)))
         , m_pin(pin)
       {
         m_timer->start(1000000 / c_samplePeriodUs);
@@ -46,7 +46,7 @@ namespace RC
       constexpr static unsigned c_filterLowerPercent = 25;
       constexpr static unsigned c_filterUpperPercent = 75;
 
-      std::unique_ptr<RT::HiresTimer> m_timer;
+      std::unique_ptr<Rt::HiresTimer> m_timer;
       Pin::In const m_pin;
       math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
       DurationUs m_currentDurationUs = 0;

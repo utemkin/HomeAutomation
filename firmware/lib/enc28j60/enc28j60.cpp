@@ -296,7 +296,7 @@ namespace Enc28j60
       uint8_t m_bank;
       uint16_t m_nextPacket;
       int m_phase = 0;
-      OS::ExpirationTimer m_timer;
+      Os::ExpirationTimer m_timer;
       bool m_reportedUplink = false;
       bool m_txEnabled = false;
       bool m_txInProgress;
@@ -1034,7 +1034,7 @@ namespace Enc28j60
               m_env->setLinkState(false);
             }
             regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
-            m_timer = OS::ExpirationTimer();
+            m_timer = Os::ExpirationTimer();
             ++m_phase;
             return;
           case 1:
@@ -1046,7 +1046,7 @@ namespace Enc28j60
             //no break
           case 2:
             opSRC();
-            m_timer = OS::ExpirationTimer();
+            m_timer = Os::ExpirationTimer();
             ++m_phase;
             return;
           case 3:
@@ -1100,9 +1100,9 @@ namespace Enc28j60
       virtual void test() override
       {
         regClr(Reg::Addr::ECON2, Reg::c_ECON2_PWRSV);
-        OS::ExpirationTimer::delay(1);
+        Os::ExpirationTimer::delay(1);
         opSRC();
-        OS::ExpirationTimer::delay(1);
+        Os::ExpirationTimer::delay(1);
         dumpRegs();
         dumpState();
 //        validate();

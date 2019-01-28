@@ -170,7 +170,7 @@ namespace mstd
   };
 }
 
-namespace RT
+namespace Rt
 {
   void fatal();
 
@@ -189,7 +189,7 @@ namespace RT
   };
 }
 
-namespace OS
+namespace Os
 {
   // Can be used recursively and/or from handler
   class InterruptDisabler : mstd::noncopyable
@@ -361,7 +361,7 @@ namespace OS
     static void func(const void* arg)
     {
       ((Thread*)arg)->func();
-      RT::fatal();          //fixme
+      Rt::fatal();          //fixme
     }
   };
 

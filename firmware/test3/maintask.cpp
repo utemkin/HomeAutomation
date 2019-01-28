@@ -10,7 +10,7 @@ class Sampler
 {
 public:
   Sampler()
-    : m_timer(RT::CreateHiresTimer(TIM7, RT::HiresTimer::Callback::make<Sampler, &Sampler::periodic>(*this)))
+    : m_timer(Rt::CreateHiresTimer(TIM7, Rt::HiresTimer::Callback::make<Sampler, &Sampler::periodic>(*this)))
     , m_adc(Analog::CreateAdcStm32(Analog::Adc::Callback::make<Sampler, &Sampler::adcReady>(*this)))
   {
 //    for (size_t i = 0;; ++i)
@@ -39,7 +39,7 @@ protected:
   }
 
 protected:
-  std::unique_ptr<RT::HiresTimer> m_timer;
+  std::unique_ptr<Rt::HiresTimer> m_timer;
   std::unique_ptr<Analog::Adc> m_adc;
 //  Meters m_meters;
 };
@@ -104,8 +104,8 @@ extern "C" void maintask()
   {
     Tools::IdleMeasure im;
 
-    OS::Thread::delay(1000);
-    RT::stall(SystemCoreClock);
+    Os::Thread::delay(1000);
+    Rt::stall(SystemCoreClock);
 
 //    for(int i = 0; i < 10000; ++i)
 //    {

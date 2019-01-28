@@ -3,7 +3,7 @@
 #include <lib/common/stm32.h>
 #include <lib/common/utils.h>
 
-namespace RT
+namespace Rt
 {
   std::unique_ptr<HiresTimer> CreateHiresTimer(TIM_TypeDef *tim, HiresTimer::Callback&& callback);
 }

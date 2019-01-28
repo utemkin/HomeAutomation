@@ -226,7 +226,7 @@ namespace Enc28j60
 
         //fixme: according to spec there should be at least Tcsh = (210ns for MAC|MII regusters or 10ns for others) delay between falling edge of last SCK and rising edge of CS
         if (delay)
-          RT::stall(m_delayHclk);
+          Rt::stall(m_delayHclk);
 
         __DMB();
         m_cs.toPassive();
@@ -324,7 +324,7 @@ namespace Enc28j60
       }
 
     protected:
-      bool handleDmaTx(IRQn_Type)
+      bool handleDmaTx(Hal::Irq)
       {
         uint32_t const clear = m_dma->ISR & m_dmaTxFlags;
         if (clear)

@@ -26,27 +26,27 @@ namespace
   std::atomic<Irq::Handler*> handlers[NUM_HANDLERS + 16];
 }
 
-void Irq::Handler::install(IRQn_Type IRQn)
+void Irq::Handler::install(Hal::Irq irq)
 {
   if (m_next)
-    RT::fatal();
+    Rt::fatal();
 
-  IRQn = IRQn_Type(int(IRQn) + 16);
+  auto const i = Hal::Irq(int(irq) + 16);
   assert_param(IRQn < NUM_HANDLERS + 16);
-  m_next = handlers[IRQn].load(std::memory_order_relaxed);
-  while (!handlers[IRQn].compare_exchange_weak(m_next, this, std::memory_order_release, std::memory_order_relaxed));
+  m_next = handlers[i].load(std::memory_order_relaxed);
+  while (!handlers[i].compare_exchange_weak(m_next, this, std::memory_order_release, std::memory_order_relaxed));
 }
 
 void __always_inline ATTR_SUPER_OPTIMIZE Irq::Vectors::handle()
 {
-  unsigned IRQn = __get_IPSR();
-  Irq::Handler* next = handlers[IRQn].load(std::memory_order_acquire);
+  unsigned i = __get_IPSR();
+  Irq::Handler* next = handlers[i].load(std::memory_order_acquire);
   unsigned handled = 0;
   for (;next; next = next->m_next)
-    handled += next->m_callback(IRQn_Type(IRQn));
+    handled += next->m_callback(Hal::Irq(i));
 
   if (!handled)
-    RT::fatal();
+    Rt::fatal();
 }
 
 extern "C" uint8_t _estack;
