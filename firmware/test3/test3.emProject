@@ -12,8 +12,8 @@
       arm_target_device_name="STM32F407ZG"
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="USE_HAL_DRIVER;STM32F407xx"
-      c_system_include_directories="$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1 ;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1/arm-none-eabi;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include/c++/7.3.1/backward;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/lib/gcc/arm-none-eabi/7.3.1/include;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/lib/gcc/arm-none-eabi/7.3.1/include-fixed;$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/arm-none-eabi/include"
-      c_user_include_directories=". ;./Inc;..;./Middlewares/Third_Party/LwIP/ports/freertos/include;./Middlewares/Third_Party/LwIP/src/include;./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F;./Middlewares/Third_Party/FreeRTOS/Source/include;./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;./Drivers/STM32F4xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F4xx/Include;./Drivers/CMSIS/Include"
+      c_system_include_directories="$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/arm-none-eabi/include/c++/8.2.1;$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/arm-none-eabi/include/c++/8.2.1/arm-none-eabi;$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/arm-none-eabi/include/c++/8.2.1/backward;$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/lib/gcc/arm-none-eabi/8.2.1/include;$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/lib/gcc/arm-none-eabi/8.2.1/include-fixed;$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/arm-none-eabi/include"
+      c_user_include_directories=".;./Inc;..;./Middlewares/Third_Party/LwIP/ports/freertos/include;./Middlewares/Third_Party/LwIP/src/include;./Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F;./Middlewares/Third_Party/FreeRTOS/Source/include;./Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;./Drivers/STM32F4xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F4xx/Include;./Drivers/CMSIS/Include"
       debug_initial_breakpoint="main"
       debug_leave_target_running="Yes"
       debug_register_definition_file="$(ProjectDir)/../lib/svd/STM32F40x.svd"
@@ -37,7 +37,7 @@
       c_additional_options="-O2 -g3" />
     <configuration
       Name="External GNU"
-      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-7-2018-q2-update-win32/bin"
+      build_toolchain_directory="$(StudioDir)/gcc-arm-none-eabi-8-2018-q4-major-win32/bin"
       external_link_command="&quot;$(ToolChainDir)/arm-none-eabi-g++&quot; -mcpu=$(CoreType) -mfpu=$(FPU) -mfloat-abi=$(FPABI) $(LinkOptions) -T &quot;$(RelLinkerScriptPath)&quot; $(Objects) -o &quot;$(RelTargetPath)&quot; -Xlinker -Map=&quot;$(RelMapPath)&quot;"
       link_linker_script_file="$(ProjectDir)/test3.ld"
       link_use_linker_script_file="Yes"
