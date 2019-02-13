@@ -190,6 +190,7 @@ namespace Analog
       AdcImpl(Callback&& callback)
         : m_callback(std::move(callback))
         , m_handlerDma(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma>(*this))
+        , m_handlerAdc(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleAdc>(*this))
         , m_adc1(ADC1)
         , m_adc2(ADC2)
         , m_adc3(ADC3)
@@ -202,8 +203,8 @@ namespace Analog
         __HAL_RCC_ADC_FORCE_RESET();
         __HAL_RCC_ADC_RELEASE_RESET();
 
-        m_adc1->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
-        m_adc1->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_ADON;
+        m_adc1->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
         m_adc1->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
                         ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
         m_adc1->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
@@ -218,8 +219,8 @@ namespace Analog
                        (ADC_CHANNEL_1 << ADC_SQR3_SQ2_Pos) | 
                        (ADC_CHANNEL_0 << ADC_SQR3_SQ1_Pos);
 
-        m_adc2->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
-        m_adc2->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_ADON;
+        m_adc2->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
         m_adc2->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
                         ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
         m_adc2->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
@@ -234,8 +235,8 @@ namespace Analog
                        (ADC_CHANNEL_10 << ADC_SQR3_SQ2_Pos) | 
                        (ADC_CHANNEL_9 << ADC_SQR3_SQ1_Pos);
 
-        m_adc3->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
-        m_adc3->CR2 = ADC_CR2_DMA | ADC_CR2_ADON;
+        m_adc3->CR2 = ADC_CR2_ADON;
+        m_adc3->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
         m_adc3->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
                         ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
         m_adc3->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
@@ -250,13 +251,26 @@ namespace Analog
                        (ADC_CHANNEL_5 << ADC_SQR3_SQ2_Pos) | 
                        (ADC_CHANNEL_4 << ADC_SQR3_SQ1_Pos);
 
-        m_adcCommon->CCR = ADC_CCR_ADCPRE_0 | ADC_CCR_DMA_0 | ADC_CCR_MULTI_4 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_1;
+        uint32_t pclk = HAL_RCC_GetPCLK2Freq();
+        uint32_t pre;
+        for (pre = 0; pre < 4; ++pre)
+          if (pclk / ((pre + 1) * 2) <= 36000000)
+            break;
+
+        if (pclk / ((pre + 1) * 2) > 36000000)
+          return;   //fixme
+
+        m_adcCommon->CCR = (pre << ADC_CCR_ADCPRE_Pos) | ADC_CCR_DMA_0 | ADC_CCR_DDS | ADC_CCR_MULTI_4 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_1;
 
         Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000 * 3);
 
         m_handlerDma.install(m_dma.irq());
         HAL_NVIC_SetPriority(m_dma.irq(), 5, 0);
         HAL_NVIC_EnableIRQ(m_dma.irq());
+
+        m_handlerAdc.install(ADC_IRQn);
+        HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(ADC_IRQn);
 
         m_dma.setNDTR(c_dataSize * 3);
         m_dma.setPAR(uint32_t(&m_adcCommon->CDR));
@@ -278,22 +292,36 @@ namespace Analog
     protected:
       bool handleDma(Hal::Irq)
       {
-        if (m_dma.flagsGetAndClear() != 0)
+        auto const flags = m_dma.flagsGetAndClear();
+        if (flags != 0)
         {
-          m_adc1->SR = 0;
-          m_adc2->SR = 0;
-          m_adc3->SR = 0;
-          m_callback();    //distinguish success and error
+          m_dma.stop();
+          m_callback((flags & Hal::DmaLine::c_flags_E) ? false : true);
           return true;
         }
 
         return false;
-      }      
+      }
+      bool handleAdc(Hal::Irq)
+      {
+        if (m_adcCommon->CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3))
+        {
+          m_dma.stop();
+          m_adc1->SR = 0;
+          m_adc2->SR = 0;
+          m_adc3->SR = 0;
+          m_callback(false);
+          return true;
+        }
+
+        return false;
+      }
 
     protected:
       constexpr static size_t c_dataSize = 7;
       Callback const m_callback;
       Irq::Handler m_handlerDma;
+      Irq::Handler m_handlerAdc;
       ADC_TypeDef* const m_adc1;
       ADC_TypeDef* const m_adc2;
       ADC_TypeDef* const m_adc3;

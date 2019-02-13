@@ -10,7 +10,7 @@ namespace Analog
   {
   public:
     //must be ready to be called from handler context
-    using Callback = mstd::Callback<void>;
+    using Callback = mstd::Callback<void, bool>;
 
   public:
     virtual ~Adc() = default;

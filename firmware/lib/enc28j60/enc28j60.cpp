@@ -992,6 +992,10 @@ namespace Enc28j60
       }
 
     public:
+      // minimum on-the-wire ethernet frame is 72 + 12=84 bytes = 672 bits
+      // maximum packet rate for 10Mbit ethernet is 10 000 000 / 672 = 14881 frames per second
+      // maximum on-the-wire ethernet frame is 1522 + 12 = 1534 bytes = 12272 bits
+      // minimum packet rate for 10Mbit ethernet is 10 000 000 / 12272 = 815 frames per second
       virtual bool output(std::unique_ptr<Pbuf>&& packet) override
       {
         if (!m_txEnabled || m_failureFlags)

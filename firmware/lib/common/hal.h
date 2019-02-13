@@ -6,6 +6,13 @@ namespace Hal
 {
   using Irq = IRQn_Type;
 
+  // DmaLine() constructs DMA line object and switches it to stopped state
+  // setNDTR(), setPAR(), setMAR() set corresponding counter/address
+  //   - the value is reloaded every time start() is called
+  //   - each of them must be called at least once before start()
+  // start() switches line to started state and makes DMA line ready to accept requests
+  //   - may only be called from stopped state
+  // stop() makes sure line is in stopped state, stops accepting requests and stops any possible DMA line activities
   class DmaLine
   {
   public:
@@ -19,9 +26,9 @@ namespace Hal
 
   public:
   #if defined(STM32F1)
-    DmaLine(Mx* const mx, uint32_t config, uint32_t interruptFlags);
+    DmaLine(Mx* mx, uint32_t config, uint32_t interruptFlags);
   #elif defined(STM32F4)
-    DmaLine(Mx* const mx, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
+    DmaLine(Mx* mx, unsigned channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
   #else
   #error Unsupported architecture
   #endif
@@ -35,7 +42,13 @@ namespace Hal
     }
     uint32_t flagsGetAndClear()
     {
-      uint32_t const flags = *m_ISR & m_flagsMask;
+      uint32_t const flags = *m_ISR & m_interruptFlagsMask;
+      *m_IFCR = flags;
+      return flags >> m_flagsShift;
+    }
+    uint32_t flagsGetAndClear(uint32_t const flagsMask)
+    {
+      uint32_t const flags = *m_ISR & (flagsMask << m_flagsShift);
       *m_IFCR = flags;
       return flags >> m_flagsShift;
     }
@@ -92,7 +105,6 @@ namespace Hal
       m_mx->CCR = m_CR;
   #elif defined(STM32F4)
       __DMB();
-      m_mx->FCR = m_FCR;
       m_mx->CR = m_CR;
   #else
   #error Unsupported architecture
@@ -185,12 +197,11 @@ namespace Hal
     __IO uint32_t* m_ISR;
     __IO uint32_t* m_IFCR;
     uint8_t m_flagsShift;
-    uint32_t m_flagsMask;
+    uint32_t m_interruptFlagsMask;
   #if defined(STM32F1)
     uint32_t m_CR;
   #elif defined(STM32F4)
     uint32_t m_CR;
-    uint32_t m_FCR;
   #else
   #error Unsupported architecture
   #endif

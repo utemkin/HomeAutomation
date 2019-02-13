@@ -3,7 +3,7 @@
 namespace Hal
 {
 #if defined(STM32F1)
-  DmaLine::DmaLine(Mx* const mx, uint32_t config, uint32_t interruptFlags)
+  DmaLine::DmaLine(Mx* const mx, uint32_t const config, uint32_t const interruptFlags)
     : m_mx(mx)
   {
     if (m_mx == DMA1_Channel1)
@@ -106,7 +106,7 @@ namespace Hal
     {
       //fixme
     }
-    m_flagsMask = (DMA_ISR_TCIF1 | DMA_ISR_HTIF1 | DMA_ISR_TEIF1) << m_flagsShift;
+    m_interruptFlagsMask = interruptFlags << m_flagsShift;
     uint32_t CR = config | DMA_CCR_EN;
     if (interruptFlags & c_flags_TC)
       CR |= DMA_CCR_TCIE;
@@ -117,7 +117,7 @@ namespace Hal
     m_CR = CR;
   }
 #elif defined(STM32F4)
-  DmaLine::DmaLine(Mx* const mx, unsigned const channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags)
+  DmaLine::DmaLine(Mx* const mx, unsigned const channel, uint32_t const config, uint32_t const fifoControl, uint32_t const interruptFlags)
     : m_mx(mx)
   {
     if (m_mx == DMA1_Stream0)
@@ -252,7 +252,7 @@ namespace Hal
     {
       //fixme
     }
-    m_flagsMask = (DMA_LISR_TCIF0 | DMA_LISR_HTIF0 | DMA_LISR_TEIF0 | DMA_LISR_DMEIF0 | DMA_LISR_FEIF0) << m_flagsShift;
+    m_interruptFlagsMask = interruptFlags << m_flagsShift;
     uint32_t CR = config | (channel << DMA_SxCR_CHSEL_Pos) | DMA_SxCR_EN;
     uint32_t FCR = fifoControl;
     if (interruptFlags & c_flags_TC)
@@ -266,7 +266,7 @@ namespace Hal
     if (interruptFlags & c_flags_FE)
       FCR |= DMA_SxFCR_FEIE;
     m_CR = CR;
-    m_FCR = FCR;
+    m_mx->FCR = FCR;
   }
 #else
 #error Unsupported architecture
