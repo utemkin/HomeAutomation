@@ -15,8 +15,18 @@ namespace Analog
       AdcImpl(const Pin::Def& select2, Callback&& callback)
         : m_select2(select2)
         , m_callback(std::move(callback))
-        , m_handlerDma1Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1Rx>(*this))
-        , m_handlerDma2Rx(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2Rx>(*this))
+        , m_handlerDma1(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1>(*this))
+        , m_handlerDma2(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2>(*this))
+        , m_dma1(
+            DMA1_Channel1,
+            Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+            Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E
+          )    //fixme
+        , m_dma2(
+            DMA2_Channel5,
+            Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+            Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E
+          )    //fixme
       {
         __HAL_RCC_ADC1_CLK_ENABLE();
         __HAL_RCC_ADC1_FORCE_RESET();
@@ -83,27 +93,23 @@ namespace Analog
                          mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_0);
         }
 
-        __HAL_RCC_DMA1_CLK_ENABLE();
-        m_dma1 = DMA1;
-        m_dma1Rx = DMA1_Channel1;
-        m_dma1RxFlags = mstd::bits_at<(1 - 1) * 4>(DMA_ISR_TEIF1 | DMA_ISR_TCIF1);
-        m_handlerDma1Rx.install(DMA1_Channel1_IRQn);
-        HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-        m_dma1Rx->CPAR = uint32_t(&m_adc1->DR);
-        m_dma1Rx->CMAR = uint32_t(&m_data[0]);
+        m_handlerDma1.install(m_dma1.irq());
+        HAL_NVIC_SetPriority(m_dma1.irq(), 5, 0);
+        HAL_NVIC_EnableIRQ(m_dma1.irq());
+
+        m_dma1.setNDTR(c_data1Size);
+        m_dma1.setPAR(uint32_t(&m_adc1->DR));
+        m_dma1.setMAR(uint32_t(&m_data[0]));
 
         if (m_select2)
         {
-          __HAL_RCC_DMA2_CLK_ENABLE();
-          m_dma2 = DMA2;
-          m_dma2Rx = DMA2_Channel5;
-          m_dma2RxFlags = mstd::bits_at<(5 - 1) * 4>(DMA_ISR_TEIF1 | DMA_ISR_TCIF1);
-          m_handlerDma2Rx.install(DMA2_Channel4_5_IRQn);
-          HAL_NVIC_SetPriority(DMA2_Channel4_5_IRQn, 5, 0);
-          HAL_NVIC_EnableIRQ(DMA2_Channel4_5_IRQn);
-          m_dma2Rx->CPAR = uint32_t(&m_adc3->DR);
-          m_dma2Rx->CMAR = uint32_t(&m_data[c_data1Size * 2]);
+          m_handlerDma2.install(m_dma2.irq());
+          HAL_NVIC_SetPriority(m_dma2.irq(), 5, 0);
+          HAL_NVIC_EnableIRQ(m_dma2.irq());
+
+          m_dma2.setNDTR(c_data2Size);
+          m_dma2.setPAR(uint32_t(&m_adc3->DR));
+          m_dma2.setMAR(uint32_t(&m_data[c_data1Size * 2]));
         }
       }
 
@@ -124,26 +130,23 @@ namespace Analog
     protected:
       void start1()
       {
-        m_dma1Rx->CNDTR = c_data1Size;
-        m_dma1Rx->CCR = mstd::bits_at<DMA_CCR_PL_Pos>(0b01) | mstd::bits_at<DMA_CCR_MSIZE_Pos>(0b10) | mstd::bits_at<DMA_CCR_PSIZE_Pos>(0b10) | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+        m_dma1.start();
         m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
       void start2()
       {
         m_select2.toActive();
-        m_dma2Rx->CNDTR = c_data2Size;
-        m_dma2Rx->CCR = mstd::bits_at<DMA_CCR_PL_Pos>(0b01) | mstd::bits_at<DMA_CCR_MSIZE_Pos>(0b01) | mstd::bits_at<DMA_CCR_PSIZE_Pos>(0b01) | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+        m_dma2.start();
         m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
-      bool handleDma1Rx(Hal::Irq)
+      bool handleDma1(Hal::Irq)
       {
-        uint32_t const clear = m_dma1->ISR & m_dma1RxFlags;
-        if (clear)
+        auto const flags = m_dma1.flagsGetAndClear();
+        if (flags)
         {
-          m_dma1->IFCR = clear;
-          m_dma1Rx->CCR = 0;
+          m_dma1.stop();
           m_callback(true);    //distinguish success and error
           return true;
         }
@@ -151,13 +154,12 @@ namespace Analog
         return false;
       }      
 
-      bool handleDma2Rx(Hal::Irq)
+      bool handleDma2(Hal::Irq)
       {
-        uint32_t const clear = m_dma2->ISR & m_dma2RxFlags;
-        if (clear)
+        auto const flags = m_dma2.flagsGetAndClear();
+        if (flags)
         {
-          m_dma2->IFCR = clear;
-          m_dma2Rx->CCR = 0;
+          m_dma2.stop();
           m_select2.toPassive();
           start1();
           return true;
@@ -171,17 +173,13 @@ namespace Analog
       constexpr static size_t c_data2Size = 6;
       Pin::Out const m_select2;
       Callback const m_callback;
-      Irq::Handler m_handlerDma1Rx;
-      Irq::Handler m_handlerDma2Rx;
+      Irq::Handler m_handlerDma1;
+      Irq::Handler m_handlerDma2;
       ADC_TypeDef* m_adc1;
       ADC_TypeDef* m_adc2;
       ADC_TypeDef* m_adc3;
-      DMA_TypeDef* m_dma1;
-      DMA_Channel_TypeDef* m_dma1Rx;
-      uint32_t m_dma1RxFlags;
-      DMA_TypeDef* m_dma2;
-      DMA_Channel_TypeDef* m_dma2Rx;
-      uint32_t m_dma2RxFlags;
+      Hal::DmaLine m_dma1;
+      Hal::DmaLine m_dma2;
       volatile uint16_t m_data[c_data1Size * 2 + c_data2Size] = {};
     };
 #elif defined(STM32F4)

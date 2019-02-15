@@ -10,16 +10,36 @@ namespace MicroLan
     , m_tim_CC_Out1(&m_tim->CCR4)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM2_IRQn)              //fixme
-    , m_dmaOut(DMA1_Channel7, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P, 0)   //fixme
-    , m_dmaIn(DMA1_Channel5, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0)    //fixme
+    , m_dmaOut(
+        DMA1_Channel7,
+        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+        0
+      )   //fixme
+    , m_dmaIn(
+        DMA1_Channel5,
+        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+        0
+      )    //fixme
 #elif defined(STM32F4)
     , m_tim(TIM1)                   //fixme
     , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
     , m_tim_CC_Out1(&m_tim->CCR3)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM1_UP_TIM10_IRQn)    //fixme
-    , m_dmaOut(DMA2_Stream6, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P, 0, 0)   //fixme
-    , m_dmaIn(DMA2_Stream1, 6, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, 0)    //fixme
+    , m_dmaOut(
+        DMA2_Stream6,
+        0,
+        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+        0,
+        0
+      )   //fixme
+    , m_dmaIn(
+        DMA2_Stream1,
+        6,
+        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+        0,
+        0
+      )    //fixme
 #else
 #error Unsupported architecture
 #endif
