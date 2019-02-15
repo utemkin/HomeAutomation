@@ -195,7 +195,13 @@ namespace Analog
         , m_adc2(ADC2)
         , m_adc3(ADC3)
         , m_adcCommon(ADC123_COMMON)
-        , m_dma(DMA2_Stream0, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, 0)    //fixme
+        , m_dma(
+            DMA2_Stream0,
+            0,
+            Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+            Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
+            0
+          )    //fixme
       {
         __HAL_RCC_ADC1_CLK_ENABLE();
         __HAL_RCC_ADC2_CLK_ENABLE();
