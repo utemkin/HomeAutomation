@@ -253,7 +253,7 @@ namespace Hal
       //fixme
     }
     m_interruptFlagsMask = interruptFlags << m_flagsShift;
-    uint32_t CR = config | (channel << DMA_SxCR_CHSEL_Pos) | DMA_SxCR_EN;
+    uint32_t CR = config | mstd::bits_at<DMA_SxCR_CHSEL_Pos>(channel) | DMA_SxCR_EN;
     uint32_t FCR = fifoControl;
     if (interruptFlags & c_flags_TC)
       CR |= DMA_SxCR_TCIE;

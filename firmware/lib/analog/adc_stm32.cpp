@@ -1,6 +1,7 @@
 #include <lib/analog/adc_stm32.h>
 #include <lib/common/hal.h>
 #include <lib/common/handlers.h>
+#include <lib/common/utils.h>
 #include <limits>
 
 namespace Analog
@@ -21,43 +22,43 @@ namespace Analog
         __HAL_RCC_ADC1_FORCE_RESET();
         __HAL_RCC_ADC1_RELEASE_RESET();
         m_adc1 = ADC1;
-        m_adc1->CR1 = (6 << ADC_CR1_DUALMOD_Pos) | ADC_CR1_SCAN;
-        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-        Rt::stall(72);                              //fixme: wait Tstab=1uS
-        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+        m_adc1->CR1 = mstd::bits_at<ADC_CR1_DUALMOD_Pos>(0b0110) | ADC_CR1_SCAN;
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
+        Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000);
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc1->CR2 & ADC_CR2_RSTCAL);
-        m_adc1->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
+        m_adc1->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
         while (m_adc1->CR2 & ADC_CR2_CAL);
-        m_adc1->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
+        m_adc1->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_data1Size - 1);
         static_assert(c_data1Size == 7);
-        m_adc1->SQR2 = ADC_CHANNEL_14 << ADC_SQR2_SQ7_Pos;
-        m_adc1->SQR3 = (ADC_CHANNEL_12 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_10 << ADC_SQR3_SQ5_Pos) | 
-                       (ADC_CHANNEL_8 << ADC_SQR3_SQ4_Pos) | 
-                       (ADC_CHANNEL_6 << ADC_SQR3_SQ3_Pos) | 
-                       (ADC_CHANNEL_2 << ADC_SQR3_SQ2_Pos) | 
-                       (ADC_CHANNEL_0 << ADC_SQR3_SQ1_Pos);
+        m_adc1->SQR2 = mstd::bits_at<ADC_SQR2_SQ7_Pos>(ADC_CHANNEL_14);
+        m_adc1->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_12) | 
+                       mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_10) | 
+                       mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_8) | 
+                       mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_6) | 
+                       mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_2) | 
+                       mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_0);
 
         __HAL_RCC_ADC2_CLK_ENABLE();
         __HAL_RCC_ADC2_FORCE_RESET();
         __HAL_RCC_ADC2_RELEASE_RESET();
         m_adc2 = ADC2;
         m_adc2->CR1 = ADC_CR1_SCAN;
-        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_ADON;
-        Rt::stall(72);                              //fixme: wait Tstab=1uS
-        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_ADON;
+        Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000);
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_RSTCAL | ADC_CR2_ADON;
         while (m_adc2->CR2 & ADC_CR2_RSTCAL);
-        m_adc2->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_CAL | ADC_CR2_ADON;
+        m_adc2->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_CAL | ADC_CR2_ADON;
         while (m_adc2->CR2 & ADC_CR2_CAL);
-        m_adc2->SQR1 = ((c_data1Size - 1) << ADC_SQR1_L_Pos);
+        m_adc2->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_data1Size - 1);
         static_assert(c_data1Size == 7);
-        m_adc2->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
-        m_adc2->SQR3 = (ADC_CHANNEL_13 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_11 << ADC_SQR3_SQ5_Pos) | 
-                       (ADC_CHANNEL_9 << ADC_SQR3_SQ4_Pos) | 
-                       (ADC_CHANNEL_7 << ADC_SQR3_SQ3_Pos) | 
-                       (ADC_CHANNEL_3 << ADC_SQR3_SQ2_Pos) | 
-                       (ADC_CHANNEL_1 << ADC_SQR3_SQ1_Pos);
+        m_adc2->SQR2 = mstd::bits_at<ADC_SQR2_SQ7_Pos>(ADC_CHANNEL_15);
+        m_adc2->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_13) | 
+                       mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_11) | 
+                       mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_9) | 
+                       mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_7) | 
+                       mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_3) | 
+                       mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_1);
 
         if (m_select2)
         {
@@ -66,26 +67,26 @@ namespace Analog
           __HAL_RCC_ADC3_RELEASE_RESET();
           m_adc3 = ADC3;
           m_adc3->CR1 = ADC_CR1_SCAN;
-          m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
-          Rt::stall(72);                              //fixme: wait Tstab=1uS
-          m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
+          m_adc3->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
+          Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000);
+          m_adc3->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_RSTCAL | ADC_CR2_ADON;
           while (m_adc3->CR2 & ADC_CR2_RSTCAL);
-          m_adc3->CR2 = ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
+          m_adc3->CR2 = ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_CAL | ADC_CR2_ADON;
           while (m_adc3->CR2 & ADC_CR2_CAL);
-          m_adc3->SQR1 = ((c_data2Size - 1) << ADC_SQR1_L_Pos);
+          m_adc3->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_data1Size - 1);
           static_assert(c_data2Size == 6);
-          m_adc3->SQR3 = (ADC_CHANNEL_13 << ADC_SQR3_SQ6_Pos) | 
-                         (ADC_CHANNEL_12 << ADC_SQR3_SQ5_Pos) | 
-                         (ADC_CHANNEL_11 << ADC_SQR3_SQ4_Pos) | 
-                         (ADC_CHANNEL_10 << ADC_SQR3_SQ3_Pos) | 
-                         (ADC_CHANNEL_1 << ADC_SQR3_SQ2_Pos) | 
-                         (ADC_CHANNEL_0 << ADC_SQR3_SQ1_Pos);
+          m_adc3->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_13) | 
+                         mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_12) | 
+                         mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_11) | 
+                         mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_10) | 
+                         mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_1) | 
+                         mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_0);
         }
 
         __HAL_RCC_DMA1_CLK_ENABLE();
         m_dma1 = DMA1;
         m_dma1Rx = DMA1_Channel1;
-        m_dma1RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (1 - 1) * 4;
+        m_dma1RxFlags = mstd::bits_at<(1 - 1) * 4>(DMA_ISR_TEIF1 | DMA_ISR_TCIF1);
         m_handlerDma1Rx.install(DMA1_Channel1_IRQn);
         HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
@@ -97,7 +98,7 @@ namespace Analog
           __HAL_RCC_DMA2_CLK_ENABLE();
           m_dma2 = DMA2;
           m_dma2Rx = DMA2_Channel5;
-          m_dma2RxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
+          m_dma2RxFlags = mstd::bits_at<(5 - 1) * 4>(DMA_ISR_TEIF1 | DMA_ISR_TCIF1);
           m_handlerDma2Rx.install(DMA2_Channel4_5_IRQn);
           HAL_NVIC_SetPriority(DMA2_Channel4_5_IRQn, 5, 0);
           HAL_NVIC_EnableIRQ(DMA2_Channel4_5_IRQn);
@@ -124,16 +125,16 @@ namespace Analog
       void start1()
       {
         m_dma1Rx->CNDTR = c_data1Size;
-        m_dma1Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
+        m_dma1Rx->CCR = mstd::bits_at<DMA_CCR_PL_Pos>(0b01) | mstd::bits_at<DMA_CCR_MSIZE_Pos>(0b10) | mstd::bits_at<DMA_CCR_PSIZE_Pos>(0b10) | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
       void start2()
       {
         m_select2.toActive();
         m_dma2Rx->CNDTR = c_data2Size;
-        m_dma2Rx->CCR = DMA_CCR_PL_0 | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-        m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | (7 << ADC_CR2_EXTSEL_Pos) | ADC_CR2_DMA | ADC_CR2_ADON;
+        m_dma2Rx->CCR = mstd::bits_at<DMA_CCR_PL_Pos>(0b01) | mstd::bits_at<DMA_CCR_MSIZE_Pos>(0b01) | mstd::bits_at<DMA_CCR_PSIZE_Pos>(0b01) | DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+        m_adc3->CR2 = ADC_CR2_SWSTART | ADC_CR2_EXTTRIG | mstd::bits_at<ADC_CR2_EXTSEL_Pos>(0b111) | ADC_CR2_DMA | ADC_CR2_ADON;
       }
 
       bool handleDma1Rx(Hal::Irq)
@@ -143,7 +144,7 @@ namespace Analog
         {
           m_dma1->IFCR = clear;
           m_dma1Rx->CCR = 0;
-          m_callback();    //distinguish success and error
+          m_callback(true);    //distinguish success and error
           return true;
         }
 
@@ -189,13 +190,12 @@ namespace Analog
     public:
       AdcImpl(Callback&& callback)
         : m_callback(std::move(callback))
-        , m_handlerDma(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma>(*this))
         , m_handlerAdc(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleAdc>(*this))
         , m_adc1(ADC1)
         , m_adc2(ADC2)
         , m_adc3(ADC3)
         , m_adcCommon(ADC123_COMMON)
-        , m_dma(DMA2_Stream0, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E)    //fixme
+        , m_dma(DMA2_Stream0, 0, Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M, 0, 0)    //fixme
       {
         __HAL_RCC_ADC1_CLK_ENABLE();
         __HAL_RCC_ADC2_CLK_ENABLE();
@@ -205,51 +205,96 @@ namespace Analog
 
         m_adc1->CR2 = ADC_CR2_ADON;
         m_adc1->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
-        m_adc1->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
-                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
-        m_adc1->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
-                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        m_adc1->SMPR1 = mstd::bits_at<ADC_SMPR1_SMP18_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP17_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP16_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP15_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP14_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP13_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP12_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP11_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP10_Pos>(0b001);
+        m_adc1->SMPR2 = mstd::bits_at<ADC_SMPR2_SMP9_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP8_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP7_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP6_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP5_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP4_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP3_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP2_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP1_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP0_Pos>(0b001);
         static_assert(c_dataSize == 7);
-        m_adc1->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
-        m_adc1->SQR2 = ADC_CHANNEL_8 << ADC_SQR2_SQ7_Pos;
-        m_adc1->SQR3 = (ADC_CHANNEL_7 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_6 << ADC_SQR3_SQ5_Pos) | 
-                       (ADC_CHANNEL_3 << ADC_SQR3_SQ4_Pos) | 
-                       (ADC_CHANNEL_2 << ADC_SQR3_SQ3_Pos) | 
-                       (ADC_CHANNEL_1 << ADC_SQR3_SQ2_Pos) | 
-                       (ADC_CHANNEL_0 << ADC_SQR3_SQ1_Pos);
+        m_adc1->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_dataSize - 1);
+        m_adc1->SQR2 = mstd::bits_at<ADC_SQR2_SQ7_Pos>(ADC_CHANNEL_8);
+        m_adc1->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_7) | 
+                       mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_6) | 
+                       mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_3) | 
+                       mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_2) | 
+                       mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_1) | 
+                       mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_0);
 
         m_adc2->CR2 = ADC_CR2_ADON;
         m_adc2->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
-        m_adc2->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
-                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
-        m_adc2->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
-                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        m_adc2->SMPR1 = mstd::bits_at<ADC_SMPR1_SMP18_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP17_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP16_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP15_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP14_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP13_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP12_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP11_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP10_Pos>(0b001);
+        m_adc2->SMPR2 = mstd::bits_at<ADC_SMPR2_SMP9_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP8_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP7_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP6_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP5_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP4_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP3_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP2_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP1_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP0_Pos>(0b001);
         static_assert(c_dataSize == 7);
-        m_adc2->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
-        m_adc2->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
-        m_adc2->SQR3 = (ADC_CHANNEL_14 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_13 << ADC_SQR3_SQ5_Pos) | 
-                       (ADC_CHANNEL_12 << ADC_SQR3_SQ4_Pos) | 
-                       (ADC_CHANNEL_11 << ADC_SQR3_SQ3_Pos) | 
-                       (ADC_CHANNEL_10 << ADC_SQR3_SQ2_Pos) | 
-                       (ADC_CHANNEL_9 << ADC_SQR3_SQ1_Pos);
+        m_adc2->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_dataSize - 1);
+        m_adc2->SQR2 = mstd::bits_at<ADC_SQR2_SQ7_Pos>(ADC_CHANNEL_15);
+        m_adc2->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_14) | 
+                       mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_13) | 
+                       mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_12) | 
+                       mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_11) | 
+                       mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_10) | 
+                       mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_9);
 
         m_adc3->CR2 = ADC_CR2_ADON;
-        m_adc3->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN;
-        m_adc3->SMPR1 = ADC_SMPR1_SMP18_0 | ADC_SMPR1_SMP17_0 | ADC_SMPR1_SMP16_0 | ADC_SMPR1_SMP15_0 |
-                        ADC_SMPR1_SMP14_0 | ADC_SMPR1_SMP13_0 | ADC_SMPR1_SMP12_0 | ADC_SMPR1_SMP11_0 | ADC_SMPR1_SMP10_0;
-        m_adc3->SMPR2 = ADC_SMPR2_SMP9_0 | ADC_SMPR2_SMP8_0 | ADC_SMPR2_SMP7_0 | ADC_SMPR2_SMP6_0 | ADC_SMPR2_SMP5_0 |
-                        ADC_SMPR2_SMP4_0 | ADC_SMPR2_SMP3_0 | ADC_SMPR2_SMP2_0 | ADC_SMPR2_SMP1_0 | ADC_SMPR2_SMP0_0;
+        m_adc3->CR1 = ADC_CR1_OVRIE | ADC_CR1_SCAN | ADC_CR1_EOCIE;
+        m_adc3->SMPR1 = mstd::bits_at<ADC_SMPR1_SMP18_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP17_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP16_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP15_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP14_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP13_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP12_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP11_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR1_SMP10_Pos>(0b001);
+        m_adc3->SMPR2 = mstd::bits_at<ADC_SMPR2_SMP9_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP8_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP7_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP6_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP5_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP4_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP3_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP2_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP1_Pos>(0b001) |
+                        mstd::bits_at<ADC_SMPR2_SMP0_Pos>(0b001);
         static_assert(c_dataSize == 7);
-        m_adc3->SQR1 = ((c_dataSize - 1) << ADC_SQR1_L_Pos);
-        m_adc3->SQR2 = ADC_CHANNEL_15 << ADC_SQR2_SQ7_Pos;
-        m_adc3->SQR3 = (ADC_CHANNEL_14 << ADC_SQR3_SQ6_Pos) | 
-                       (ADC_CHANNEL_8 << ADC_SQR3_SQ5_Pos) | 
-                       (ADC_CHANNEL_7 << ADC_SQR3_SQ4_Pos) | 
-                       (ADC_CHANNEL_6 << ADC_SQR3_SQ3_Pos) | 
-                       (ADC_CHANNEL_5 << ADC_SQR3_SQ2_Pos) | 
-                       (ADC_CHANNEL_4 << ADC_SQR3_SQ1_Pos);
+        m_adc3->SQR1 = mstd::bits_at<ADC_SQR1_L_Pos>(c_dataSize - 1);
+        m_adc3->SQR2 = mstd::bits_at<ADC_SQR2_SQ7_Pos>(ADC_CHANNEL_15);
+        m_adc3->SQR3 = mstd::bits_at<ADC_SQR3_SQ6_Pos>(ADC_CHANNEL_14) | 
+                       mstd::bits_at<ADC_SQR3_SQ5_Pos>(ADC_CHANNEL_8) | 
+                       mstd::bits_at<ADC_SQR3_SQ4_Pos>(ADC_CHANNEL_7) | 
+                       mstd::bits_at<ADC_SQR3_SQ3_Pos>(ADC_CHANNEL_6) | 
+                       mstd::bits_at<ADC_SQR3_SQ2_Pos>(ADC_CHANNEL_5) | 
+                       mstd::bits_at<ADC_SQR3_SQ1_Pos>(ADC_CHANNEL_4);
 
         uint32_t pclk = HAL_RCC_GetPCLK2Freq();
         uint32_t pre;
@@ -260,19 +305,15 @@ namespace Analog
         if (pclk / ((pre + 1) * 2) > 36000000)
           return;   //fixme
 
-        m_adcCommon->CCR = (pre << ADC_CCR_ADCPRE_Pos) | ADC_CCR_DMA_0 | ADC_CCR_DDS | ADC_CCR_MULTI_4 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_1;
+        m_adcCommon->CCR = mstd::bits_at<ADC_CCR_ADCPRE_Pos>(pre) | mstd::bits_at<ADC_CCR_DMA_Pos>(0b01) | mstd::bits_at<ADC_CCR_MULTI_Pos>(0b10110);
 
         Rt::stall(HAL_RCC_GetHCLKFreq() / 1000000 * 3);
-
-        m_handlerDma.install(m_dma.irq());
-        HAL_NVIC_SetPriority(m_dma.irq(), 5, 0);
-        HAL_NVIC_EnableIRQ(m_dma.irq());
 
         m_handlerAdc.install(ADC_IRQn);
         HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(ADC_IRQn);
 
-        m_dma.setNDTR(c_dataSize * 3);
+        m_dma.setNDTR(c_dataSize * 3 - 1);
         m_dma.setPAR(uint32_t(&m_adcCommon->CDR));
         m_dma.setMAR(uint32_t(&m_data));
       }
@@ -286,31 +327,32 @@ namespace Analog
       virtual void start() override
       {
         m_dma.start();
-        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_DMA | ADC_CR2_ADON;
+        auto const CCR = m_adcCommon->CCR;
+        m_adcCommon->CCR = CCR & ~ADC_CCR_DMA_Msk;
+        m_adcCommon->CCR = CCR;
+        m_adc1->CR2 = ADC_CR2_SWSTART | ADC_CR2_ADON;
       }
 
     protected:
-      bool handleDma(Hal::Irq)
-      {
-        auto const flags = m_dma.flagsGetAndClear();
-        if (flags != 0)
-        {
-          m_dma.stop();
-          m_callback((flags & Hal::DmaLine::c_flags_E) ? false : true);
-          return true;
-        }
-
-        return false;
-      }
       bool handleAdc(Hal::Irq)
       {
-        if (m_adcCommon->CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3))
+        auto const CSR = m_adcCommon->CSR;
+        if (CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC3))
         {
+          auto const flags = m_dma.flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
+          if ((CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC1 | ADC_CSR_EOC2)) || flags != Hal::DmaLine::c_flags_TC)
+          {
+            m_dma.stop();
+            m_adc1->SR = 0;
+            m_adc2->SR = 0;
+            m_adc3->SR = 0;
+            m_callback(false);
+            return true;
+          }
+
+          m_data[std::extent<decltype(m_data)>::value - 1] = m_adcCommon->CDR;
           m_dma.stop();
-          m_adc1->SR = 0;
-          m_adc2->SR = 0;
-          m_adc3->SR = 0;
-          m_callback(false);
+          m_callback(true);
           return true;
         }
 
@@ -320,7 +362,6 @@ namespace Analog
     protected:
       constexpr static size_t c_dataSize = 7;
       Callback const m_callback;
-      Irq::Handler m_handlerDma;
       Irq::Handler m_handlerAdc;
       ADC_TypeDef* const m_adc1;
       ADC_TypeDef* const m_adc2;

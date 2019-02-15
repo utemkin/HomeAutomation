@@ -168,6 +168,12 @@ namespace mstd
     std::atomic<size_t> m_readIndex = {0};
     std::atomic<size_t> m_writeIndex = {0};
   };
+
+  template<uint8_t pos, typename T = uint32_t>
+  constexpr T bits_at(const T& v)
+  {
+    return v << pos;
+  }
 }
 
 namespace Rt

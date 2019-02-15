@@ -198,7 +198,7 @@ protected:
     m_adc->start();
   }
 
-  void adcReady()
+  void adcReady(bool)
   {
     m_meters.process();
   }
