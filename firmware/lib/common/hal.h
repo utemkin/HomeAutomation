@@ -5,6 +5,40 @@
 
 namespace Hal
 {
+  enum class Status : uint_fast8_t
+  {
+    Success =                   0,
+    Failure =                   1,
+    BadParameter =              2,
+    BadParameterCombination =   3,
+    RequiredParamaterMissing =  4,
+  };
+
+  template<typename T, T dflt = std::numeric_limits<T>::is_signed ? std::numeric_limits<T>::min() : std::numeric_limits<T>::max()>
+  class Param
+  {
+  public:
+    using type = T;
+
+  public:
+    Param() = default;
+    Param(T const& v)
+      : m_v(v)
+    {
+    }
+    operator T() const
+    {
+      return m_v;
+    }
+    bool isDefault() const
+    {
+      return m_v == dflt;
+    }
+
+  protected:
+    T m_v = {dflt};
+  };
+
   using Irq = IRQn_Type;
 
   // DmaLine() constructs DMA line object and switches it to stopped state
@@ -14,45 +48,64 @@ namespace Hal
   // start() switches line to started state and makes DMA line ready to accept requests
   //   - may only be called from stopped state
   // stop() makes sure line is in stopped state, stops accepting requests and stops any possible DMA line activities
-  class DmaLine
+  class DmaLine : mstd::noncopyable
   {
   public:
   #if defined(STM32F1)
-      using Mx = DMA_Channel_TypeDef;
+    using Mx = DMA_Channel_TypeDef;
   #elif defined(STM32F4)
-      using Mx = DMA_Stream_TypeDef;
+    using Mx = DMA_Stream_TypeDef;
   #else
   #error Unsupported architecture
   #endif
 
-  public:
+    struct Setup
+    {
+      struct
+      {
+        Param<uint8_t> controller;
+        Param<uint8_t> line;
+      } resource;
   #if defined(STM32F1)
-    DmaLine(Mx* mx, uint32_t config, uint32_t interruptFlags);
+      Param<uint32_t> config;
+      Param<uint32_t, 0> interruptFlags;
   #elif defined(STM32F4)
-    DmaLine(Mx* mx, unsigned channel, uint32_t config, uint32_t fifoControl, uint32_t interruptFlags);
+      Param<uint8_t> channel;
+      Param<uint32_t> config;
+      Param<uint32_t, 0> fifoControl;
+      Param<uint32_t, 0> interruptFlags;
   #else
   #error Unsupported architecture
   #endif
+    };
+
+  public:
+    static Status create(std::unique_ptr<DmaLine>& dmaLine, Setup const& setup);
+
     Mx* mx() const
     {
       return m_mx;
     }
+
     Irq irq() const
     {
       return m_irq;
     }
+
     uint32_t flagsGetAndClear()
     {
       uint32_t const flags = *m_ISR & m_interruptFlagsMask;
       *m_IFCR = flags;
       return flags >> m_flagsShift;
     }
+
     uint32_t flagsGetAndClear(uint32_t const flagsMask)
     {
       uint32_t const flags = *m_ISR & (flagsMask << m_flagsShift);
       *m_IFCR = flags;
       return flags >> m_flagsShift;
     }
+
     uint16_t NDTR() const
     {
   #if defined(STM32F1)
@@ -63,6 +116,7 @@ namespace Hal
   #error Unsupported architecture
   #endif
     }
+
     void setNDTR(uint16_t ndtr)
     {
   #if defined(STM32F1)
@@ -73,6 +127,7 @@ namespace Hal
   #error Unsupported architecture
   #endif
     }
+
     void setPAR(uint32_t par)
     {
   #if defined(STM32F1)
@@ -83,6 +138,7 @@ namespace Hal
   #error Unsupported architecture
   #endif
     }
+
     void setMAR(uint32_t mar)
     {
   #if defined(STM32F1)
@@ -93,12 +149,14 @@ namespace Hal
   #error Unsupported architecture
   #endif
     }
+
   #if defined(STM32F4)
     void setMAR2(uint32_t mar2)
     {
       m_mx->M1AR = mar2;
     }
   #endif
+
     void start()
     {
   #if defined(STM32F1)
@@ -111,6 +169,7 @@ namespace Hal
   #error Unsupported architecture
   #endif
     }
+
     void stop()
     {
   #if defined(STM32F1)
@@ -193,18 +252,15 @@ namespace Hal
   #endif
 
   protected:
-    Mx* const m_mx;
+    Mx* m_mx;
     Irq m_irq;
     __IO uint32_t* m_ISR;
     __IO uint32_t* m_IFCR;
     uint8_t m_flagsShift;
     uint32_t m_interruptFlagsMask;
-  #if defined(STM32F1)
     uint32_t m_CR;
-  #elif defined(STM32F4)
-    uint32_t m_CR;
-  #else
-  #error Unsupported architecture
-  #endif
+
+  protected:
+    DmaLine() = default;
   };
 }

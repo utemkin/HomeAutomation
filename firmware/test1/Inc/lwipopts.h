@@ -52,7 +52,7 @@
 #ifndef __LWIPOPTS__H__
 #define __LWIPOPTS__H__
 
-#include "stm32f1xx_hal.h"
+#include <lib/common/stm32.h>
 
 /*-----------------------------------------------------------------------------*/
 /* Current version of LwIP supported by CubeMx: 2.0.0 -*/

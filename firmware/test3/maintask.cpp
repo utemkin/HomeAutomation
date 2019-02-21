@@ -8,68 +8,6 @@
 
 namespace Hal
 {
-  using Err=int;
-
-  template<typename T, T dflt = std::numeric_limits<T>::is_signed ? std::numeric_limits<T>::min() : std::numeric_limits<T>::max()>
-  class Param
-  {
-  public:
-    using type = T;
-
-  public:
-    Param() = default;
-    Param(T const& v)
-      : m_v(v)
-    {
-    }
-    operator T() const
-    {
-      return m_v;
-    }
-    bool isDefault() const
-    {
-      return m_v == dflt;
-    }
-
-  protected:
-    T m_v = {dflt};
-  };
-
-  class Dma
-  {
-  public:
-    using Mx=DMA_TypeDef;
-    struct Setup
-    {
-      Param<uint8_t> dev_no;
-      Param<uint8_t> ch;
-      Param<uint32_t> fl;
-      Err update(char*);
-    };
-
-  public:
-    Dma() = default;
-    Err setup(Setup const&);
-  };
-
-  class Spi
-  {
-  public:
-    using Mx=SPI_TypeDef;
-    struct Setup
-    {
-      Param<uint8_t> dev_no;
-      Param<uint32_t> speed;
-      Dma::Setup txDma;
-      Dma::Setup rxDma;
-      Err update(char*);
-    };
-
-  public:
-    Spi() = default;
-    Err setup(Setup const&);
-  };
-
   class System : mstd::noncopyable
   {
   public:

@@ -2,62 +2,86 @@
 
 namespace MicroLan
 {
+#if defined(STM32F1)
   TimingGenerator::TimingGenerator()
     : m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
-#if defined(STM32F1)
     , m_tim(TIM2)                   //fixme
     , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
     , m_tim_CC_Out1(&m_tim->CCR4)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM2_IRQn)              //fixme
-    , m_dmaOut(
-        DMA1_Channel7,
-        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
-        0
-      )   //fixme
-    , m_dmaIn(
-        DMA1_Channel5,
-        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-        0
-      )    //fixme
+  {
+    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup{
+      .resource = 
+        {
+        .controller = 1,  //fixme
+        .line = 7,        //fixme
+        },
+      .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+    }) != Hal::Status::Success)
+      Rt::fatal();  //fixme
+
+    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup{
+      .resource = 
+        {
+        .controller = 1,  //fixme
+        .line = 5,        //fixme
+        },
+      .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+    }) != Hal::Status::Success)
+      Rt::fatal();  //fixme
+
+    init();
+    start();
+  }
 #elif defined(STM32F4)
+  TimingGenerator::TimingGenerator()
+    : m_handlerTim(Irq::Handler::Callback::make<TimingGenerator, &TimingGenerator::handleTimIrq>(*this))
     , m_tim(TIM1)                   //fixme
     , m_tim_CC_Out0(&m_tim->CCR2)   //fixme
     , m_tim_CC_Out1(&m_tim->CCR3)   //fixme
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM1_UP_TIM10_IRQn)    //fixme
-    , m_dmaOut(
-        DMA2_Stream6,
-        0,
-        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
-        0,
-        0
-      )   //fixme
-    , m_dmaIn(
-        DMA2_Stream1,
-        6,
-        Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-        0,
-        0
-      )    //fixme
-#else
-#error Unsupported architecture
-#endif
   {
+    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup{
+      .resource = 
+        {
+        .controller = 2,  //fixme
+        .line = 6,        //fixme
+        },
+      .channel = 0,
+      .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+    }) != Hal::Status::Success)
+      Rt::fatal();  //fixme
+
+    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup{
+      .resource = 
+        {
+        .controller = 2,  //fixme
+        .line = 1,        //fixme
+        },
+      .channel = 6,
+      .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+    }) != Hal::Status::Success)
+      Rt::fatal();  //fixme
+
     init();
     start();
   }
+#else
+#error Unsupported architecture
+#endif
 
   bool TimingGenerator::touch(const Timings& timings, const Data& data)
   {
-    m_dmaIn.setPAR(data.inAddr);
-    m_dmaIn.start();
+    m_dmaIn->setPAR(data.inAddr);
+    m_dmaIn->start();
 
     m_out[0] = data.out0;
     m_out[1] = data.out1;
 
-    m_dmaOut.setPAR(data.outAddr);
-    m_dmaOut.start();
+    m_dmaOut->setPAR(data.outAddr);
+    m_dmaOut->start();
 
     m_tim->ARR = timings.ticksTotal;
     *m_tim_CC_Out0 = timings.ticksOut0;
@@ -110,10 +134,10 @@ namespace MicroLan
     __HAL_RCC_TIM1_FORCE_RESET();   //fixme
     __HAL_RCC_TIM1_RELEASE_RESET(); //fixme
 
-    m_dmaIn.setMAR(uint32_t(&m_in));
-    m_dmaIn.setNDTR(1);
-    m_dmaOut.setMAR(uint32_t(&m_out));
-    m_dmaOut.setNDTR(2);
+    m_dmaIn->setMAR(uint32_t(&m_in));
+    m_dmaIn->setNDTR(1);
+    m_dmaOut->setMAR(uint32_t(&m_out));
+    m_dmaOut->setNDTR(2);
 
 //      m_tim->DIER = TIM_DIER_CC4DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;  //fixme
     m_tim->DIER = TIM_DIER_CC3DE | TIM_DIER_CC2DE | TIM_DIER_CC1DE | TIM_DIER_UIE;  //fixme
@@ -127,8 +151,8 @@ namespace MicroLan
   void TimingGenerator::stop()
   {
     HAL_NVIC_DisableIRQ(m_irq);
-    m_dmaIn.stop();
-    m_dmaOut.stop();
+    m_dmaIn->stop();
+    m_dmaOut->stop();
     m_tim->CR1 = 0;
   }
 

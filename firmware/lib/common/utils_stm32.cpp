@@ -418,8 +418,7 @@ namespace Rt
     #endif
         else
         {
-          //fixme
-          return;
+          Rt::fatal();  //fixme
         }
         
         m_pclk = pclk;
