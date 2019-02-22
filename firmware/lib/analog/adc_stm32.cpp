@@ -18,26 +18,24 @@ namespace Analog
         , m_handlerDma1(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma1>(*this))
         , m_handlerDma2(Irq::Handler::Callback::make<AdcImpl, &AdcImpl::handleDma2>(*this))
       {
-        if (Hal::DmaLine::create(m_dma1, Hal::DmaLine::Setup{
-          .resource = 
-            {
+        if (Hal::DmaLine::create(m_dma1, Hal::DmaLine::Setup {
+          .resource = {
             .controller = 1,  //fixme
             .line = 1,        //fixme
-            },
+          },
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
           .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
-        }) != Hal::Status::Success)
+        } ) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
-        if (Hal::DmaLine::create(m_dma2, Hal::DmaLine::Setup{
-          .resource = 
-            {
+        if (Hal::DmaLine::create(m_dma2, Hal::DmaLine::Setup {
+          .resource = {
             .controller = 2,  //fixme
             .line = 5,        //fixme
-            },
+          },
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
           .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
-        }) != Hal::Status::Success)
+        } ) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
         __HAL_RCC_ADC1_CLK_ENABLE();
@@ -206,16 +204,15 @@ namespace Analog
         , m_adc3(ADC3)
         , m_adcCommon(ADC123_COMMON)
       {
-        if (Hal::DmaLine::create(m_dma, Hal::DmaLine::Setup{
-          .resource = 
-            {
+        if (Hal::DmaLine::create(m_dma, Hal::DmaLine::Setup {
+          .resource = {
             .controller = 2,  //fixme
             .line = 0,        //fixme
-            },
+          },
           .channel = 0,
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
           .fifoControl = Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
-        }) != Hal::Status::Success)
+        } ) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
         __HAL_RCC_ADC1_CLK_ENABLE();

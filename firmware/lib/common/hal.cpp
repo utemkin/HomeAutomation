@@ -3,6 +3,14 @@
 namespace Hal
 {
 #if defined(STM32F1)
+  void DmaLine::Setup::update(const Setup& other)
+  {
+    resource.controller.update(other.resource.controller);
+    resource.line.update(other.resource.line);
+    config.update(other.config);
+    interruptFlags.update(other.interruptFlags);
+  }
+
   Status DmaLine::create(std::unique_ptr<DmaLine>& dmaLine, Setup const& setup)
   {
     struct EnableMaker : public DmaLine {};
@@ -165,6 +173,16 @@ namespace Hal
     return Status::Success;
   }
 #elif defined(STM32F4)
+  void DmaLine::Setup::update(const Setup& other)
+  {
+    resource.controller.update(other.resource.controller);
+    resource.line.update(other.resource.line);
+    channel.update(other.channel);
+    config.update(other.config);
+    fifoControl.update(other.fifoControl);
+    interruptFlags.update(other.interruptFlags);
+  }
+
   Status DmaLine::create(std::unique_ptr<DmaLine>& dmaLine, Setup const& setup)
   {
     struct EnableMaker : public DmaLine {};

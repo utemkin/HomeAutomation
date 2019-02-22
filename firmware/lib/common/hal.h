@@ -34,6 +34,11 @@ namespace Hal
     {
       return m_v == dflt;
     }
+    void update(const Param& other)
+    {
+      if (!other.isDefault())
+        *this = other;
+    }
 
   protected:
     T m_v = {dflt};
@@ -77,6 +82,7 @@ namespace Hal
   #else
   #error Unsupported architecture
   #endif
+      void update(const Setup& other);
     };
 
   public:

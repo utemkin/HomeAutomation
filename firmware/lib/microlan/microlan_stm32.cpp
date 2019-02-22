@@ -11,24 +11,22 @@ namespace MicroLan
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM2_IRQn)              //fixme
   {
-    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup{
-      .resource = 
-        {
+    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup {
+      .resource = {
         .controller = 1,  //fixme
         .line = 7,        //fixme
-        },
+      },
       .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
-    }) != Hal::Status::Success)
+    } ) != Hal::Status::Success)
       Rt::fatal();  //fixme
 
-    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup{
-      .resource = 
-        {
+    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup {
+      .resource = {
         .controller = 1,  //fixme
         .line = 5,        //fixme
-        },
+      },
       .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-    }) != Hal::Status::Success)
+    } ) != Hal::Status::Success)
       Rt::fatal();  //fixme
 
     init();
@@ -43,26 +41,24 @@ namespace MicroLan
     , m_tim_CC_Sample(&m_tim->CCR1) //fixme
     , m_irq(TIM1_UP_TIM10_IRQn)    //fixme
   {
-    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup{
-      .resource = 
-        {
+    if (Hal::DmaLine::create(m_dmaOut, Hal::DmaLine::Setup {
+      .resource = {
         .controller = 2,  //fixme
         .line = 6,        //fixme
-        },
+      },
       .channel = 0,
       .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
-    }) != Hal::Status::Success)
+    } ) != Hal::Status::Success)
       Rt::fatal();  //fixme
 
-    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup{
-      .resource = 
-        {
+    if (Hal::DmaLine::create(m_dmaIn, Hal::DmaLine::Setup {
+      .resource = {
         .controller = 2,  //fixme
         .line = 1,        //fixme
-        },
+      },
       .channel = 6,
       .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M32 | Hal::DmaLine::c_config_P32 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-    }) != Hal::Status::Success)
+    } ) != Hal::Status::Success)
       Rt::fatal();  //fixme
 
     init();
