@@ -1,5 +1,6 @@
 #include <lib/common/utils.h>
 #include <lib/common/utils_stm32.h>
+#include <lib/enc28j60/enc28j60_spi_stm32.h>
 #include <lib/analog/adc_stm32.h>
 #include <lib/microlan/microlan_stm32.h>
 #include <lib/analog/adc_stm32.h>
@@ -118,7 +119,9 @@ extern "C" void maintask()
 //    prevTemp = temp;
 //  }
 
-  Sampler sampler;
+//  Sampler sampler;
+  auto&& enc = Enc28j60::CreateDevice(std::unique_ptr<Enc28j60::Env>(), Enc28j60::CreateSpiStm32(SPI1, Pin::Def(GPIOD, GPIO_PIN_7, true)), {});
+  enc->test();
 
   for (;;)
   {

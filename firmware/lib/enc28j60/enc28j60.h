@@ -85,7 +85,7 @@ namespace Enc28j60
     virtual ~Device() = default;
     virtual bool output(std::unique_ptr<Pbuf>&& packet) = 0;
     virtual void periodic() = 0;
-    virtual void test() = 0;
+    virtual void test() = 0;	//fixme
   };
 
   std::unique_ptr<Device> CreateDevice(std::unique_ptr<Env>&& env, std::unique_ptr<Spi>&& spi, const MacAddress& mac);

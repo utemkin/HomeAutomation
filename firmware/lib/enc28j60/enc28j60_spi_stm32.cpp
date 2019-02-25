@@ -153,7 +153,7 @@ namespace Enc28j60
         Hal::DmaLine::Setup dmaTxSetup = {
             .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
             .fifoControl = Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
-            .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
+//            .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
         };
 
         Hal::DmaLine::Setup dmaRxSetup = {
@@ -301,9 +301,9 @@ namespace Enc28j60
 //
 //        if ((m_dmaRx->CCR & DMA_CCR_EN) != 0)
 //          Error_Handler();
-//
-//        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
-//          Error_Handler();
+
+        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
+          Rt::fatal();
       }
   
       // should be called either at the end of constructor or after deinit()
@@ -427,8 +427,10 @@ namespace Enc28j60
         dmaTx->start();
         while (dmaTx->NDTR() != 0);
         dmaTx->stop();
+        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while (dmaRx->NDTR() != 0);
         dmaRx->stop();
+        dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
@@ -469,6 +471,7 @@ namespace Enc28j60
           while (dmaTx->NDTR() != 0);
 //        }
         dmaTx->stop();
+        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -517,8 +520,10 @@ namespace Enc28j60
           while (dmaTx->NDTR() != 0);
 //        }
         dmaTx->stop();
+        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while (dmaRx->NDTR() != 0);
         dmaRx->stop();
+        dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
@@ -561,7 +566,9 @@ namespace Enc28j60
         m_cs.toPassive();
         m_spi->CR1 = 0;
         m_dmaRx->stop();
+        m_dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         m_dmaTx->stop();
+        m_dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
       }
     };
   }

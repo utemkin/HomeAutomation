@@ -856,7 +856,7 @@ namespace Enc28j60
       __noinline void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
-//        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
+        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
 //        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
 //        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
 //        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
@@ -868,14 +868,14 @@ namespace Enc28j60
 //        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
 //        benchmark("memWrite 1", &DeviceImpl::benchmarkMemWrite, (void*)1, offset);
 //        benchmark("memRead 1000", &DeviceImpl::benchmarkMemRead, (void*)1000, offset);
-        benchmark("eRegRead", &DeviceImpl::benchmarkERegRead, 0, offset);
-        benchmark("mRegRead", &DeviceImpl::benchmarkMRegRead, 0, offset);
-        benchmark("eRegWrite", &DeviceImpl::benchmarkERegWrite, 0, offset);
-        benchmark("mRegWrite", &DeviceImpl::benchmarkMRegWrite, 0, offset);
-        benchmark("eRegRead16", &DeviceImpl::benchmarkERegRead16, 0, offset);
-        benchmark("mRegRead16", &DeviceImpl::benchmarkMRegRead16, 0, offset);
-        benchmark("eRegWrite16", &DeviceImpl::benchmarkERegWrite16, 0, offset);
-        benchmark("mRegWrite16", &DeviceImpl::benchmarkMRegWrite16, 0, offset);
+//        benchmark("eRegRead", &DeviceImpl::benchmarkERegRead, 0, offset);
+//        benchmark("mRegRead", &DeviceImpl::benchmarkMRegRead, 0, offset);
+//        benchmark("eRegWrite", &DeviceImpl::benchmarkERegWrite, 0, offset);
+//        benchmark("mRegWrite", &DeviceImpl::benchmarkMRegWrite, 0, offset);
+//        benchmark("eRegRead16", &DeviceImpl::benchmarkERegRead16, 0, offset);
+//        benchmark("mRegRead16", &DeviceImpl::benchmarkMRegRead16, 0, offset);
+//        benchmark("eRegWrite16", &DeviceImpl::benchmarkERegWrite16, 0, offset);
+//        benchmark("mRegWrite16", &DeviceImpl::benchmarkMRegWrite16, 0, offset);
 //        benchmark("memRead 100", &DeviceImpl::benchmarkMemRead, (void*)100, offset);
 //        benchmark("memRead 10", &DeviceImpl::benchmarkMemRead, (void*)10, offset);
 //        benchmark("memRead 51", &DeviceImpl::benchmarkMemRead, (void*)51, offset);

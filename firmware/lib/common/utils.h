@@ -169,10 +169,10 @@ namespace mstd
     std::atomic<size_t> m_writeIndex = {0};
   };
 
-  template<uint8_t pos, typename T = uint32_t>
-  constexpr T bits_at(const T& v)
+  template<uint8_t pos, typename T = uint32_t, typename U>
+  constexpr T bits_at(const U& v)
   {
-    return v << pos;
+    return T(v) << pos;
   }
 }
 
