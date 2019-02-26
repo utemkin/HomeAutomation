@@ -153,10 +153,10 @@ namespace Analog
 
       bool handleDma1(Hal::Irq)
       {
-        auto const flags = m_dma1->flagsGetAndClear();
+        auto flags = m_dma1->flagsGetAndClear();
         if (flags)
         {
-          m_dma1->stop();
+          flags |= m_dma1->stop();
           m_callback(true);    //distinguish success and error
           return true;
         }
@@ -166,10 +166,10 @@ namespace Analog
 
       bool handleDma2(Hal::Irq)
       {
-        auto const flags = m_dma2->flagsGetAndClear();
+        auto flags = m_dma2->flagsGetAndClear();
         if (flags)
         {
-          m_dma2->stop();
+          flags |= m_dma2->stop();
           m_select2.toPassive();
           start1();
           return true;
@@ -357,19 +357,19 @@ namespace Analog
         auto const CSR = m_adcCommon->CSR;
         if (CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC3))
         {
-          auto const flags = m_dma->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
-          if ((CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC1 | ADC_CSR_EOC2)) || flags != Hal::DmaLine::c_flags_TC)
+          auto const flags = m_dma->stop();
+          m_adc1->SR = 0;
+          m_adc2->SR = 0;
+          m_adc3->SR = 0;
+
+          if ((CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC1 | ADC_CSR_EOC2)) ||
+            (flags & (Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E)) != Hal::DmaLine::c_flags_TC)
           {
-            m_dma->stop();
-            m_adc1->SR = 0;
-            m_adc2->SR = 0;
-            m_adc3->SR = 0;
             m_callback(false);
             return true;
           }
 
           m_data[std::extent<decltype(m_data)>::value - 1] = m_adcCommon->CDR;
-          m_dma->stop();
           m_callback(true);
           return true;
         }

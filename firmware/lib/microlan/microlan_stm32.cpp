@@ -96,6 +96,8 @@ namespace MicroLan
     if (m_tim->SR & TIM_IT_UPDATE)
     {
       m_tim->SR = ~TIM_IT_UPDATE;
+      m_dmaIn->stop();
+      m_dmaOut->stop();
       m_handlerTim.signal();
       return true;
     }

@@ -301,9 +301,9 @@ namespace Enc28j60
 //
 //        if ((m_dmaRx->CCR & DMA_CCR_EN) != 0)
 //          Error_Handler();
-
-        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
-          Rt::fatal();
+//
+//        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
+//          Rt::fatal();
       }
   
       // should be called either at the end of constructor or after deinit()
@@ -410,7 +410,6 @@ namespace Enc28j60
       virtual int txRx(uint8_t* const txRx, size_t const txRxLen, bool const delay) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
@@ -427,10 +426,8 @@ namespace Enc28j60
         dmaTx->start();
         while (dmaTx->NDTR() != 0);
         dmaTx->stop();
-        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while (dmaRx->NDTR() != 0);
         dmaRx->stop();
-        dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
@@ -439,7 +436,6 @@ namespace Enc28j60
         if (delay)
           Rt::stall(m_delayHclk);
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -449,7 +445,6 @@ namespace Enc28j60
       virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
@@ -471,7 +466,6 @@ namespace Enc28j60
           while (dmaTx->NDTR() != 0);
 //        }
         dmaTx->stop();
-        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -480,7 +474,6 @@ namespace Enc28j60
 
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -490,7 +483,6 @@ namespace Enc28j60
       virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
@@ -520,17 +512,14 @@ namespace Enc28j60
           while (dmaTx->NDTR() != 0);
 //        }
         dmaTx->stop();
-        dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while (dmaRx->NDTR() != 0);
         dmaRx->stop();
-        dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
 
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -566,9 +555,7 @@ namespace Enc28j60
         m_cs.toPassive();
         m_spi->CR1 = 0;
         m_dmaRx->stop();
-        m_dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
         m_dmaTx->stop();
-        m_dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E);
       }
     };
   }

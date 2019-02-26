@@ -379,6 +379,7 @@ namespace Hal
       return Status::BadParameter;
 
     ptr->m_interruptFlagsMask = setup.interruptFlags << ptr->m_flagsShift;
+    ptr->m_allFlagsMask = c_flags_all << ptr->m_flagsShift;
     uint32_t CR = setup.config | mstd::bits_at<DMA_SxCR_CHSEL_Pos>(setup.channel) | DMA_SxCR_EN;
     uint32_t FCR = setup.fifoControl;
     if (setup.interruptFlags & c_flags_TC)

@@ -856,12 +856,12 @@ namespace Enc28j60
       __noinline void benchmarkAll()
       {
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
-        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
-//        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
+//        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
+        benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
 //        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
 //        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
-//        benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
-//        benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
+        benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
+        benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
 //        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
 //        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
 //        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);

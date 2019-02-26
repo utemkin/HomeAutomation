@@ -176,7 +176,7 @@ namespace Hal
   #endif
     }
 
-    void stop()
+    uint32_t stop()
     {
   #if defined(STM32F1)
       m_mx->CCR = 0;
@@ -188,6 +188,9 @@ namespace Hal
   #else
   #error Unsupported architecture
   #endif
+      uint32_t const flags = *m_ISR & m_allFlagsMask;
+      *m_IFCR = flags;
+      return flags >> m_flagsShift;
     }
 
   public:
@@ -209,10 +212,11 @@ namespace Hal
     constexpr static uint32_t c_config_M2P =           DMA_CCR_DIR;
     constexpr static uint32_t c_config_M2M =           DMA_CCR_MEM2MEM;
 
-    constexpr static uint32_t c_flags_TC = DMA_ISR_TCIF1;
-    constexpr static uint32_t c_flags_HT = DMA_ISR_HTIF1;
-    constexpr static uint32_t c_flags_TE = DMA_ISR_TEIF1;
-    constexpr static uint32_t c_flags_E = c_flags_TE;
+    constexpr static uint32_t c_flags_TC =  DMA_ISR_TCIF1;
+    constexpr static uint32_t c_flags_HT =  DMA_ISR_HTIF1;
+    constexpr static uint32_t c_flags_TE =  DMA_ISR_TEIF1;
+    constexpr static uint32_t c_flags_E =   c_flags_TE;
+    constexpr static uint32_t c_flags_all = c_flags_TC | c_flags_HT | c_flags_E;
   #elif defined(STM32F4)
     constexpr static uint32_t c_config_MBURST_INCR4 =  mstd::bits_at<DMA_SxCR_MBURST_Pos>(0b01);
     constexpr static uint32_t c_config_MBURST_INCR8 =  mstd::bits_at<DMA_SxCR_MBURST_Pos>(0b10);
@@ -253,6 +257,7 @@ namespace Hal
     constexpr static uint32_t c_flags_DME = DMA_LISR_DMEIF0;
     constexpr static uint32_t c_flags_FE =  DMA_LISR_FEIF0;
     constexpr static uint32_t c_flags_E =   c_flags_TE | c_flags_DME | c_flags_FE;
+    constexpr static uint32_t c_flags_all = c_flags_TC | c_flags_HT | c_flags_E;
   #else
   #error Unsupported architecture
   #endif
@@ -264,6 +269,7 @@ namespace Hal
     __IO uint32_t* m_IFCR;
     uint8_t m_flagsShift;
     uint32_t m_interruptFlagsMask;
+    uint32_t m_allFlagsMask;
     uint32_t m_CR;
 
   protected:
