@@ -4,45 +4,15 @@
   * Description        : This file provides code for the configuration
   *                      of the ADC instances.
   ******************************************************************************
-  * This notice applies to any and all portions of this file
-  * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
-  * inserted by the user or by software development tools
-  * are owned by their respective copyright owners.
+  * @attention
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
-  * All rights reserved.
+  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
@@ -64,7 +34,7 @@ void MX_ADC1_Init(void)
   ADC_MultiModeTypeDef multimode = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /**Common config 
+  /** Common config 
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
@@ -77,14 +47,14 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure the ADC multi-mode 
+  /** Configure the ADC multi-mode 
   */
   multimode.Mode = ADC_DUALMODE_REGSIMULT;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -93,7 +63,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
@@ -101,7 +71,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = ADC_REGULAR_RANK_3;
@@ -109,7 +79,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_8;
   sConfig.Rank = ADC_REGULAR_RANK_4;
@@ -117,7 +87,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_5;
@@ -125,7 +95,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = ADC_REGULAR_RANK_6;
@@ -133,7 +103,7 @@ void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_14;
   sConfig.Rank = ADC_REGULAR_RANK_7;
@@ -148,7 +118,7 @@ void MX_ADC2_Init(void)
 {
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /**Common config 
+  /** Common config 
   */
   hadc2.Instance = ADC2;
   hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
@@ -161,7 +131,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -170,7 +140,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_2;
@@ -178,7 +148,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_7;
   sConfig.Rank = ADC_REGULAR_RANK_3;
@@ -186,7 +156,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_9;
   sConfig.Rank = ADC_REGULAR_RANK_4;
@@ -194,7 +164,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_5;
@@ -202,7 +172,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_13;
   sConfig.Rank = ADC_REGULAR_RANK_6;
@@ -210,7 +180,7 @@ void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_15;
   sConfig.Rank = ADC_REGULAR_RANK_7;
@@ -225,7 +195,7 @@ void MX_ADC3_Init(void)
 {
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /**Common config 
+  /** Common config 
   */
   hadc3.Instance = ADC3;
   hadc3.Init.ScanConvMode = ADC_SCAN_ENABLE;
@@ -238,7 +208,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -247,7 +217,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_2;
@@ -255,7 +225,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_3;
@@ -263,7 +233,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_4;
@@ -271,7 +241,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = ADC_REGULAR_RANK_5;
@@ -279,7 +249,7 @@ void MX_ADC3_Init(void)
   {
     Error_Handler();
   }
-  /**Configure Regular Channel 
+  /** Configure Regular Channel 
   */
   sConfig.Channel = ADC_CHANNEL_13;
   sConfig.Rank = ADC_REGULAR_RANK_6;
