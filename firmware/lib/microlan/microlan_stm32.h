@@ -74,8 +74,8 @@ namespace MicroLan
     __IO uint32_t* const m_tim_CC_Out1;
     __IO uint32_t* const m_tim_CC_Sample;
     Hal::Irq const m_irq;
-    Hal::DmaLine m_dmaOut;
-    Hal::DmaLine m_dmaIn;
+    std::unique_ptr<Hal::DmaLine> m_dmaOut;
+    std::unique_ptr<Hal::DmaLine> m_dmaIn;
     uint16_t m_prescale;
     uint32_t m_unitClock;
     volatile uint32_t m_in;

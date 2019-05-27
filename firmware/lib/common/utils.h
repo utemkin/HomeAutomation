@@ -169,10 +169,10 @@ namespace mstd
     std::atomic<size_t> m_writeIndex = {0};
   };
 
-  template<uint8_t pos, typename T = uint32_t>
-  constexpr T bits_at(const T& v)
+  template<uint8_t pos, typename T = uint32_t, typename U>
+  constexpr T bits_at(const U& v)
   {
-    return v << pos;
+    return T(v) << pos;
   }
 }
 
@@ -229,21 +229,26 @@ namespace Os
   };
 
   template<class T>
-  class Lock : mstd::noncopyable
+  class Locker : mstd::noncopyable
   {
   public:
-    explicit Lock(T& obj)
+    explicit Locker(T& obj)
       : m_obj(&obj)
     {
       m_obj->lock();
     }
-    explicit Lock(T* obj)
+    explicit Locker(T* obj)
       : m_obj(obj)
     {
       if (m_obj)
         m_obj->lock();
     }
-    ~Lock()
+    Locker(Locker&& other)
+    {
+      m_obj = other.m_obj;
+      other.m_obj = nullptr;
+    }
+    ~Locker()
     {
       if (m_obj)
         m_obj->unlock();
@@ -274,11 +279,13 @@ namespace Os
     {
       osMutexRelease(m_mutex);
     }
+    Locker<Mutex> locker()
+    {
+      return Locker<Mutex>(*this);
+    }
 
   protected:
     osMutexId m_mutex;
-
-  friend class Lock<Mutex>;
   };
 
   class RecursiveMutex : mstd::noncopyable
@@ -294,7 +301,6 @@ namespace Os
       osMutexDelete(m_mutex);
     }
 
-  protected:
     void lock()
     {
       osRecursiveMutexWait(m_mutex, osWaitForever);
@@ -303,11 +309,13 @@ namespace Os
     {
       osRecursiveMutexRelease(m_mutex);
     }
+    Locker<RecursiveMutex> locker()
+    {
+      return Locker<RecursiveMutex>(*this);
+    }
 
   protected:
     osMutexId m_mutex;
-
-  friend class Lock<RecursiveMutex>;
   };
 
   class BinarySemaphore : mstd::noncopyable

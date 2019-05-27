@@ -74,61 +74,222 @@ namespace Enc28j60
         , m_handlerDmaTx(Irq::Handler::Callback::make<SpiImpl, &SpiImpl::handleDmaTx>(*this))
       {
 #if defined(STM32F1)
+        Hal::DmaLine::Setup dmaTxSetup = {
+          .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+//          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
+        };
+
+        Hal::DmaLine::Setup dmaRxSetup = {
+          .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+        };
+
         if (false)
           ;
 #  ifdef SPI1
         else if (m_spi == SPI1)
         {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 1,
+              .line = 3,
+            },
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 1,
+              .line = 2,
+            },
+          } );
+
           __HAL_RCC_SPI1_CLK_ENABLE();
-          
-          __HAL_RCC_DMA1_CLK_ENABLE();
-          m_dma = DMA1;
-          m_dmaTx = DMA1_Channel3;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (3 - 1) * 4;
-          m_handlerDmaTx.install(DMA1_Channel3_IRQn);
-          HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
-          HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-          m_dmaRx = DMA1_Channel2;
         }
 #  endif
 #  ifdef SPI2
         else if (m_spi == SPI2)
         {
-          __HAL_RCC_SPI2_CLK_ENABLE();
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 1,
+              .line = 5,
+            },
+          } );
 
-          __HAL_RCC_DMA1_CLK_ENABLE();
-          m_dma = DMA1;
-          m_dmaTx = DMA1_Channel5;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (5 - 1) * 4;
-          m_handlerDmaTx.install(DMA1_Channel5_IRQn);
-          HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
-          HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-          m_dmaRx = DMA1_Channel4;
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 1,
+              .line = 4,
+            },
+          } );
+
+          __HAL_RCC_SPI2_CLK_ENABLE();
         }
 #  endif
 #  ifdef SPI3
         else if (m_spi == SPI3)
         {
-          __HAL_RCC_SPI3_CLK_ENABLE();
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 2,
+              .line = 2,
+            },
+          } );
 
-          __HAL_RCC_DMA2_CLK_ENABLE();
-          m_dma = DMA2;
-          m_dmaTx = DMA2_Channel2;
-          m_dmaTxFlags = (DMA_ISR_TEIF1 | DMA_ISR_TCIF1) << (2 - 1) * 4;
-          m_handlerDmaTx.install(DMA2_Channel2_IRQn);
-          HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
-          HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
-          m_dmaRx = DMA2_Channel1;
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 2,
+              .line = 1,
+            },
+          } );
+
+          __HAL_RCC_SPI3_CLK_ENABLE();
         }
 #  endif
+        else
+        {
+          Rt::fatal();  //fixme
+        }
+#elif defined(STM32F4)
+        Hal::DmaLine::Setup dmaTxSetup = {
+            .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
+            .fifoControl = Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
+//            .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
+        };
+
+        Hal::DmaLine::Setup dmaRxSetup = {
+            .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
+            .fifoControl = Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
+        };
+
+        if (false)
+          ;
+#  ifdef SPI1
+        else if (m_spi == SPI1)
+        {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 3,        //fixme
+            },
+            .channel = 3,
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 0,        //fixme
+            },
+            .channel = 3,
+          } );
+
+          __HAL_RCC_SPI1_CLK_ENABLE();
+        }
+#  endif
+#  ifdef SPI2
+        else if (m_spi == SPI2)
+        {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 1,  //fixme
+              .line = 4,        //fixme
+            },
+            .channel = 0,
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 1,  //fixme
+              .line = 3,        //fixme
+            },
+            .channel = 0,
+          } );
+
+          __HAL_RCC_SPI2_CLK_ENABLE();
+        }
+#  endif
+#  ifdef SPI3
+        else if (m_spi == SPI3)
+        {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 1,  //fixme
+              .line = 5,        //fixme
+            },
+            .channel = 0,
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 1,  //fixme
+              .line = 0,        //fixme
+            },
+            .channel = 0,
+          } );
+
+          __HAL_RCC_SPI3_CLK_ENABLE();
+        }
+#  endif
+#  ifdef SPI4
+        else if (m_spi == SPI4)
+        {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 1,        //fixme
+            },
+            .channel = 4,
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 0,        //fixme
+            },
+            .channel = 4,
+          } );
+
+          __HAL_RCC_SPI4_CLK_ENABLE();
+        }
+#  endif
+#  ifdef SPI5
+        else if (m_spi == SPI5)
+        {
+          dmaTxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 4,        //fixme
+            },
+            .channel = 2,
+          } );
+
+          dmaRxSetup.update( {
+            .resource = {
+              .controller = 2,  //fixme
+              .line = 3,        //fixme
+            },
+            .channel = 2,
+          } );
+
+          __HAL_RCC_SPI5_CLK_ENABLE();
+        }
+#  endif
+        else
+        {
+          Rt::fatal();  //fixme
+        }
 #else
 #  error Unsupported architecture
 #endif
-        else
-        {
-          //fixme
-          return;
-        }
+        if (Hal::DmaLine::create(m_dmaTx, dmaTxSetup) != Hal::Status::Success)
+          Rt::fatal();  //fixme
+
+        if (Hal::DmaLine::create(m_dmaRx, dmaRxSetup) != Hal::Status::Success)
+          Rt::fatal();  //fixme
+
+        m_handlerDmaTx.install(m_dmaTx->irq());
+        HAL_NVIC_SetPriority(m_dmaTx->irq(), 5, 0);
+        HAL_NVIC_EnableIRQ(m_dmaTx->irq());
+
         //fixme
         reinit();
       }
@@ -142,7 +303,7 @@ namespace Enc28j60
 //          Error_Handler();
 //
 //        if ((m_spi->SR & (SPI_SR_BSY | SPI_SR_OVR | SPI_SR_MODF | SPI_SR_TXE | SPI_SR_RXNE)) != SPI_SR_TXE)
-//          Error_Handler();
+//          Rt::fatal();
       }
   
       // should be called either at the end of constructor or after deinit()
@@ -154,12 +315,16 @@ namespace Enc28j60
 
         uint32_t pclk = std::numeric_limits<decltype(pclk)>::max();
 #if defined(STM32F1)
+        if (false)
+          ;
+#  ifdef SPI1
         if (m_spi == SPI1)
         {
           __HAL_RCC_SPI1_FORCE_RESET();
           __HAL_RCC_SPI1_RELEASE_RESET();
           pclk = HAL_RCC_GetPCLK2Freq();
         }
+#  endif
 #  ifdef SPI2
         else if (m_spi == SPI2)
         {
@@ -176,6 +341,49 @@ namespace Enc28j60
           pclk = HAL_RCC_GetPCLK1Freq();
         }
 #  endif
+#elif defined(STM32F4)
+        if (false)
+          ;
+#  ifdef SPI1
+        if (m_spi == SPI1)
+        {
+          __HAL_RCC_SPI1_FORCE_RESET();
+          __HAL_RCC_SPI1_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK2Freq();
+        }
+#  endif
+#  ifdef SPI2
+        else if (m_spi == SPI2)
+        {
+          __HAL_RCC_SPI2_FORCE_RESET();
+          __HAL_RCC_SPI2_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+        }
+#  endif
+#  ifdef SPI3
+        else if (m_spi == SPI3)
+        {
+          __HAL_RCC_SPI3_FORCE_RESET();
+          __HAL_RCC_SPI3_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+        }
+#  endif
+#  ifdef SPI4
+        else if (m_spi == SPI4)
+        {
+          __HAL_RCC_SPI4_FORCE_RESET();
+          __HAL_RCC_SPI4_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+        }
+#  endif
+#  ifdef SPI5
+        else if (m_spi == SPI5)
+        {
+          __HAL_RCC_SPI5_FORCE_RESET();
+          __HAL_RCC_SPI5_RELEASE_RESET();
+          pclk = HAL_RCC_GetPCLK1Freq();
+        }
+#  endif
 #else
 #  error Unsupported architecture
 #endif
@@ -188,7 +396,8 @@ namespace Enc28j60
         if (pclk > (c_maxSpiRate << 1))
           return 1;   //fixme
 
-        m_dmaTx->CPAR = m_dmaRx->CPAR = uint32_t(&m_spi->DR);
+        m_dmaTx->setPAR(uint32_t(&m_spi->DR));
+        m_dmaRx->setPAR(uint32_t(&m_spi->DR));
 
         m_spi->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_SPE | (br << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
         m_spi->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
@@ -201,25 +410,24 @@ namespace Enc28j60
       virtual int txRx(uint8_t* const txRx, size_t const txRxLen, bool const delay) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txRx;
-        DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
-        dmaRx->CMAR = uint32_t(txRx);
-        dmaRx->CNDTR = txRxLen;
-        dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
-        dmaTx->CMAR = uint32_t(txRx+1);
-        dmaTx->CNDTR = txRxLen-1;
-        dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-        while (dmaTx->CNDTR != 0);
-        dmaTx->CCR = 0;
-        while (dmaRx->CNDTR != 0);
-        dmaRx->CCR = 0;
+        auto const dmaRx = m_dmaRx.get();
+        dmaRx->setMAR(uint32_t(txRx));
+        dmaRx->setNDTR(txRxLen);
+        dmaRx->start();
+        auto const dmaTx = m_dmaTx.get();
+        dmaTx->setMAR(uint32_t(txRx+1));
+        dmaTx->setNDTR(txRxLen-1);
+        dmaTx->start();
+        while (dmaTx->NDTR() != 0);
+        dmaTx->stop();
+        while (dmaRx->NDTR() != 0);
+        dmaRx->stop();
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
@@ -228,7 +436,6 @@ namespace Enc28j60
         if (delay)
           Rt::stall(m_delayHclk);
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -238,28 +445,27 @@ namespace Enc28j60
       virtual int txThenTx(uint8_t const txByte, const uint8_t* const tx, size_t const txLen) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = txByte;
-        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
-        dmaTx->CMAR = uint32_t(tx);
-        dmaTx->CNDTR = txLen;
-        if (txLen > c_maxBusyLoop)
-        {
-          m_dma->IFCR = m_dmaTxFlags;
-          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-          m_handlerDmaTx.wait();
-        }
-        else
-        {
-          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_EN;
-          while (dmaTx->CNDTR != 0);
-        }
-        dmaTx->CCR = 0;
+        auto const dmaTx = m_dmaTx.get();
+        dmaTx->setMAR(uint32_t(tx));
+        dmaTx->setNDTR(txLen);
+//        if (txLen > c_maxBusyLoop)
+//        {
+//          m_dma->IFCR = m_dmaTxFlags;
+//          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+//          m_handlerDmaTx.wait();
+//        }
+//        else
+//        {
+          dmaTx->start();
+          while (dmaTx->NDTR() != 0);
+//        }
+        dmaTx->stop();
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -268,7 +474,6 @@ namespace Enc28j60
 
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -278,45 +483,43 @@ namespace Enc28j60
       virtual int txThenRx(uint8_t const txByte, uint8_t* const rx, size_t const rxLen) override
       {
         m_cs.toActive();
-        __DMB();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = txByte;
-        DMA_Channel_TypeDef* const dmaRx = m_dmaRx;
-        dmaRx->CMAR = uint32_t(rx);
-        dmaRx->CNDTR = rxLen;
-        DMA_Channel_TypeDef* const dmaTx = m_dmaTx;
-        dmaTx->CMAR = uint32_t(rx);
-        dmaTx->CNDTR = rxLen-1;
+        auto const dmaRx = m_dmaRx.get();
+        dmaRx->setMAR(uint32_t(rx));
+        dmaRx->setNDTR(rxLen);
+        auto const dmaTx = m_dmaTx.get();
+        dmaTx->setMAR(uint32_t(rx));
+        dmaTx->setNDTR(rxLen-1);
         while ((spi->SR & (SPI_SR_RXNE)) == 0);
         spi->DR;
         spi->DR = 0;
-        if (rxLen > c_maxBusyLoop)
-        {
-          m_dma->IFCR = m_dmaTxFlags;
-          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-          m_handlerDmaTx.wait();
-        }
-        else
-        {
-          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_EN;
-          while (dmaTx->CNDTR != 0);
-        }
-        dmaTx->CCR = 0;
-        while (dmaRx->CNDTR != 0);
-        dmaRx->CCR = 0;
+//        if (rxLen > c_maxBusyLoop)
+//        {
+//          m_dma->IFCR = m_dmaTxFlags;
+//          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
+//          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
+//          m_handlerDmaTx.wait();
+//        }
+//        else
+//        {
+          dmaRx->start();
+          dmaTx->start();
+          while (dmaTx->NDTR() != 0);
+//        }
+        dmaTx->stop();
+        while (dmaRx->NDTR() != 0);
+        dmaRx->stop();
         while ((spi->SR & SPI_SR_BSY) != 0);
 
         validateState();
 
         //fixme: according to spec there should be at least Tcsh = 10ns delay between falling edge of last SCK and rising edge of CS
 
-        __DMB();
         m_cs.toPassive();
         //fixme: according to spec CS should be held high at least Tcsd = 50ns
 
@@ -326,11 +529,10 @@ namespace Enc28j60
     protected:
       bool handleDmaTx(Hal::Irq)
       {
-        uint32_t const clear = m_dma->ISR & m_dmaTxFlags;
-        if (clear)
+        auto const flags = m_dmaTx->flagsGetAndClear();
+        if (flags)
         {
-          m_dma->IFCR = clear;
-          m_handlerDmaTx.signal();    //distinguish success and error
+          m_handlerDmaTx.signal();    //fixme: distinguish success and error
           return true;
         }
 
@@ -344,18 +546,16 @@ namespace Enc28j60
       Pin::Out const m_cs;
       uint32_t const m_delayHclk;
       Irq::SemaphoreHandler m_handlerDmaTx;
-      DMA_TypeDef* m_dma;
-      DMA_Channel_TypeDef* m_dmaTx;
-      uint32_t m_dmaTxFlags;
-      DMA_Channel_TypeDef* m_dmaRx;
+      std::unique_ptr<Hal::DmaLine> m_dmaTx;
+      std::unique_ptr<Hal::DmaLine> m_dmaRx;
 
     protected:
       void deinit()
       {
         m_cs.toPassive();
         m_spi->CR1 = 0;
-        m_dmaRx->CCR = 0;
-        m_dmaTx->CCR = 0;
+        m_dmaRx->stop();
+        m_dmaTx->stop();
       }
     };
   }

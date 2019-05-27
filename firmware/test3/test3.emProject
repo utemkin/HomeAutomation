@@ -105,6 +105,62 @@
       <file file_name="../lib/microlan/microlan.cpp" />
       <file file_name="../lib/microlan/microlan_stm32.cpp" />
     </folder>
+    <folder Name="enc28j60">
+      <file file_name="../lib/enc28j60/enc28j60.cpp" />
+      <file file_name="../lib/enc28j60/enc28j60_lwip.cpp" />
+      <file file_name="../lib/enc28j60/enc28j60_spi_stm32.cpp" />
+    </folder>
+    <folder Name="lwip">
+      <file file_name="Middlewares/Third_Party/LwIP/ports/freertos/sys_arch.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/api_lib.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/api_msg.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/err.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/if_api.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/netbuf.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/netdb.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/netifapi.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/sockets.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/api/tcpip.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/altcp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/altcp_alloc.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/altcp_tcp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/def.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/dns.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/inet_chksum.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/init.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ip.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/mem.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/memp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/netif.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/pbuf.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/raw.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/stats.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/sys.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/tcp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/tcp_in.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/tcp_out.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/timeouts.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/udp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/autoip.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/dhcp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/etharp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/icmp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/igmp.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/dhcp6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/ethip6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/icmp6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/inet6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/ip6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_addr.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_frag.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/mld6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/core/ipv6/nd6.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/netif/ethernet.c" />
+      <file file_name="Middlewares/Third_Party/LwIP/src/apps/mqtt/mqtt.c" />
+    </folder>
   </project>
   <configuration
     Name="Debug External"

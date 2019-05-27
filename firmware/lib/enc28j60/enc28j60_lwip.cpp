@@ -22,8 +22,7 @@ namespace Enc28j60
       {
         if (netifapi_netif_add(&m_netif, IP4_ADDR_ANY4, IP4_ADDR_ANY4, IP4_ADDR_ANY4, (void*)this, &init, &tcpip_input) != ERR_OK)
         {
-          //fixme
-          return;
+          Rt::fatal();  //fixme
         }
         netifapi_netif_set_up(&m_netif);
       }
