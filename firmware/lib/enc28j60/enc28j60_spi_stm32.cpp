@@ -407,12 +407,52 @@ namespace Enc28j60
         return 0;
       }
 
-      virtual int txRx(uint8_t* const txRx, size_t const txRxLen, bool const delay) override
+      virtual int txRx(uint8_t* txRx, size_t txRxLen, bool const delay) override
       {
         m_cs.toActive();
         //fixme: according to spec there should be at least Tcss = 50ns delay between falling edge of CS and rising edge of first SCK
 
         validateState();
+
+//        SPI_TypeDef* const spi = m_spi;
+//        spi->DR = *txRx;
+//        auto const dmaRx = m_dmaRx.get();
+//        dmaRx->setMAR(uint32_t(txRx));
+//        dmaRx->setNDTR(txRxLen);
+//        dmaRx->start();
+//        uint32_t flags;
+//        if (txRxLen != 1)
+//        {
+//          auto const dmaTx = m_dmaTx.get();
+//          dmaTx->setMAR(uint32_t(txRx+1));
+//          dmaTx->setNDTR(txRxLen-1);
+//          dmaTx->start();
+//          while ((flags = dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+//          flags |= dmaTx->stop();
+//  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+//        }
+//        while ((flags = dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+//        flags |= dmaRx->stop();
+////        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+//        while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
+  
+//        SPI_TypeDef* const spi = m_spi;
+//        spi->DR = txRx[0];
+//        while ((spi->SR & SPI_SR_RXNE) == 0);
+//        txRx[0] = spi->DR;
+//        if (txRxLen > 1)
+//        {
+//          spi->DR = txRx[1];
+//          while ((spi->SR & SPI_SR_RXNE) == 0);
+//          txRx[1] = spi->DR;
+//          if (txRxLen > 2)
+//          {
+//            spi->DR = txRx[2];
+//            while ((spi->SR & SPI_SR_RXNE) == 0);
+//            txRx[2] = spi->DR;
+//          }
+//        }
+//        while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = *txRx;
@@ -420,19 +460,23 @@ namespace Enc28j60
         dmaRx->setMAR(uint32_t(txRx));
         dmaRx->setNDTR(txRxLen);
         dmaRx->start();
-        auto const dmaTx = m_dmaTx.get();
-        dmaTx->setMAR(uint32_t(txRx+1));
-        dmaTx->setNDTR(txRxLen-1);
-        dmaTx->start();
-        while (dmaTx->NDTR() != 0);
-        dmaTx->stop();
-        while (dmaRx->NDTR() != 0);
-        dmaRx->stop();
-        while ((spi->SR & SPI_SR_BSY) != 0);
+        while (txRxLen != 1)
+        {
+          uint32_t d = txRx[1];
+          while ((spi->SR & SPI_SR_TXE) == 0);
+          spi->DR = d;
+          --txRxLen;
+          ++txRx;
+        }
+        uint32_t flags;
+        while ((flags = dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+        flags |= dmaRx->stop();
+//        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+        while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
 
         validateState();
 
-        //fixme: according to spec there should be at least Tcsh = (210ns for MAC|MII regusters or 10ns for others) delay between falling edge of last SCK and rising edge of CS
+        //fixme: according to spec there should be at least Tcsh = (210ns for MAC|MII registers writing or 10ns otherwise) delay between falling edge of last SCK and rising edge of CS
         if (delay)
           Rt::stall(m_delayHclk);
 
@@ -459,13 +503,16 @@ namespace Enc28j60
 //          m_dma->IFCR = m_dmaTxFlags;
 //          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
 //          m_handlerDmaTx.wait();
+//          dmaTx->stop();
 //        }
 //        else
 //        {
           dmaTx->start();
-          while (dmaTx->NDTR() != 0);
+          uint32_t flags;
+          while ((flags = dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+          flags |= dmaTx->stop();
+  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
 //        }
-        dmaTx->stop();
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -508,13 +555,19 @@ namespace Enc28j60
 //        else
 //        {
           dmaRx->start();
-          dmaTx->start();
-          while (dmaTx->NDTR() != 0);
+          uint32_t flags;
+          if (rxLen > 1)
+          {
+            dmaTx->start();
+            while ((flags = dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+            flags |= dmaTx->stop();
+    //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+          }
+          while ((flags = dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+          flags |= dmaRx->stop();
+  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
 //        }
-        dmaTx->stop();
-        while (dmaRx->NDTR() != 0);
-        dmaRx->stop();
-        while ((spi->SR & SPI_SR_BSY) != 0);
+        while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
 
         validateState();
 

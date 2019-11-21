@@ -858,11 +858,15 @@ namespace Enc28j60
         unsigned offset = benchmark("null", &DeviceImpl::benchmarkNull, 0, 0);
 //        benchmark("txRx 1", &DeviceImpl::benchmarkTxRx, (void*)1, offset);
         benchmark("txRx 2", &DeviceImpl::benchmarkTxRx, (void*)2, offset);
-//        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
+        benchmark("txRx 3", &DeviceImpl::benchmarkTxRx, (void*)3, offset);
+        benchmark("txRx 1000", &DeviceImpl::benchmarkTxRx, (void*)1000, offset);
 //        benchmark("txThenTx 0", &DeviceImpl::benchmarkTxThenTx, (void*)0, offset);
         benchmark("txThenTx 1", &DeviceImpl::benchmarkTxThenTx, (void*)1, offset);
+        benchmark("txThenTx 2", &DeviceImpl::benchmarkTxThenTx, (void*)2, offset);
+        benchmark("txThenTx 999", &DeviceImpl::benchmarkTxThenTx, (void*)999, offset);
         benchmark("txThenRx 1", &DeviceImpl::benchmarkTxThenRx, (void*)1, offset);
-//        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
+        benchmark("txThenRx 2", &DeviceImpl::benchmarkTxThenRx, (void*)2, offset);
+        benchmark("txThenRx 999", &DeviceImpl::benchmarkTxThenRx, (void*)999, offset);
 //        benchmark("memRead 1", &DeviceImpl::benchmarkMemRead, (void*)1, offset);
 //        benchmark("memRead 2", &DeviceImpl::benchmarkMemRead, (void*)2, offset);
 //        benchmark("memWrite 0", &DeviceImpl::benchmarkMemWrite, (void*)0, offset);
