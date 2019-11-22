@@ -523,8 +523,7 @@ namespace Rt
 
   uint32_t getUnique()
   {
-    uint32_t uid[3];
-    HAL_GetUID(uid);
+    uint32_t uid[] = {HAL_GetUIDw0(), HAL_GetUIDw1(), HAL_GetUIDw2()};
     return Tools::CRC32::calculate((const uint8_t*)&uid, sizeof(uid));
   }
 }

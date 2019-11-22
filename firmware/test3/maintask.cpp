@@ -67,8 +67,7 @@ protected:
 
 extern "C" void maintask()
 {
-  uint32_t uid[3];
-  HAL_GetUID(uid);
+  uint32_t uid[] = {HAL_GetUIDw0(), HAL_GetUIDw1(), HAL_GetUIDw2()};
   printf("Device %08lx%08lx%08lx is running at %lu heap size=%u\n", uid[0], uid[1], uid[2], HAL_RCC_GetHCLKFreq(), xPortGetFreeHeapSize());
 
   Tools::IdleMeasure::calibrate();
