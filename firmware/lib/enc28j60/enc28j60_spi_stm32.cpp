@@ -76,7 +76,6 @@ namespace Enc28j60
 #if defined(STM32F1)
         Hal::DmaLine::Setup dmaTxSetup = {
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
-//          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
         };
 
         Hal::DmaLine::Setup dmaRxSetup = {
@@ -153,7 +152,6 @@ namespace Enc28j60
         Hal::DmaLine::Setup dmaTxSetup = {
             .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M8 | Hal::DmaLine::c_config_P8 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_M2P,
             .fifoControl = Hal::DmaLine::c_fifoControl_DMDIS | Hal::DmaLine::c_fifoControl_THRESH_2DIV4,
-//            .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
         };
 
         Hal::DmaLine::Setup dmaRxSetup = {
@@ -281,6 +279,10 @@ namespace Enc28j60
 #  error Unsupported architecture
 #endif
         if (Hal::DmaLine::create(m_dmaTx, dmaTxSetup) != Hal::Status::Success)
+          Rt::fatal();  //fixme
+
+        dmaTxSetup.interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE;
+        if (Hal::DmaLine::create(m_dmaTxInt, dmaTxSetup) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
         if (Hal::DmaLine::create(m_dmaRx, dmaRxSetup) != Hal::Status::Success)
@@ -495,24 +497,26 @@ namespace Enc28j60
 
         SPI_TypeDef* const spi = m_spi;
         spi->DR = txByte;
-        auto const dmaTx = m_dmaTx.get();
-        dmaTx->setMAR(uint32_t(tx));
-        dmaTx->setNDTR(txLen);
-//        if (txLen > c_maxBusyLoop)
-//        {
-//          m_dma->IFCR = m_dmaTxFlags;
-//          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-//          m_handlerDmaTx.wait();
-//          dmaTx->stop();
-//        }
-//        else
-//        {
+        if (txLen > c_maxBusyLoop)
+        {
+          auto const dmaTx = m_dmaTxInt.get();
+          dmaTx->setMAR(uint32_t(tx));
+          dmaTx->setNDTR(txLen);
+          dmaTx->start();
+          m_handlerDmaTx.wait();
+  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+        }
+        else
+        {
+          auto const dmaTx = m_dmaTx.get();
+          dmaTx->setMAR(uint32_t(tx));
+          dmaTx->setNDTR(txLen);
           dmaTx->start();
           uint32_t flags;
           while ((flags = dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
           flags |= dmaTx->stop();
   //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
-//        }
+        }
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
         spi->DR;
         spi->SR;
@@ -539,34 +543,41 @@ namespace Enc28j60
         auto const dmaRx = m_dmaRx.get();
         dmaRx->setMAR(uint32_t(rx));
         dmaRx->setNDTR(rxLen);
-        auto const dmaTx = m_dmaTx.get();
-        dmaTx->setMAR(uint32_t(rx));
-        dmaTx->setNDTR(rxLen-1);
-        while ((spi->SR & (SPI_SR_RXNE)) == 0);
-        spi->DR;
-        spi->DR = 0;
-//        if (rxLen > c_maxBusyLoop)
-//        {
-//          m_dma->IFCR = m_dmaTxFlags;
-//          dmaRx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_EN;
-//          dmaTx->CCR = DMA_CCR_PL_0 | DMA_CCR_PSIZE_1 | DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_TEIE | DMA_CCR_EN;
-//          m_handlerDmaTx.wait();
-//        }
-//        else
-//        {
+        if (rxLen > c_maxBusyLoop)
+        {
+          auto const dmaTx = m_dmaTxInt.get();
+          dmaTx->setMAR(uint32_t(rx));
+          dmaTx->setNDTR(rxLen-1);
+          while ((spi->SR & (SPI_SR_RXNE)) == 0);
+          spi->DR;
+          spi->DR = 0;
           dmaRx->start();
-          uint32_t flags;
+          dmaTx->start();
+          m_handlerDmaTx.wait();
+  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
+        }
+        else
+        {
+          auto const dmaTx = m_dmaTx.get();
+          dmaTx->setMAR(uint32_t(rx));
+          dmaTx->setNDTR(rxLen-1);
+          while ((spi->SR & (SPI_SR_RXNE)) == 0);
+          spi->DR;
+          spi->DR = 0;
+          dmaRx->start();
           if (rxLen > 1)
           {
             dmaTx->start();
+            uint32_t flags;
             while ((flags = dmaTx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
             flags |= dmaTx->stop();
     //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
           }
-          while ((flags = dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
-          flags |= dmaRx->stop();
-  //        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
-//        }
+        }
+        uint32_t flags;
+        while ((flags = dmaRx->flagsGetAndClear(Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) == 0);
+        flags |= dmaRx->stop();
+//        if ((flags & Hal::DmaLine::c_flags_TC) != 0) error; //fixme
         while ((spi->SR & (SPI_SR_BSY | SPI_SR_TXE)) != SPI_SR_TXE);
 
         validateState();
@@ -582,10 +593,12 @@ namespace Enc28j60
     protected:
       bool handleDmaTx(Hal::Irq)
       {
-        auto const flags = m_dmaTx->flagsGetAndClear();
+        auto const dmaTx = m_dmaTxInt.get();
+        auto flags = dmaTx->flagsGetAndClear();
         if (flags)
         {
-          m_handlerDmaTx.signal();    //fixme: distinguish success and error
+          flags |= dmaTx->stop();
+          m_handlerDmaTx.signal();    //fixme: pass flags
           return true;
         }
 
@@ -600,6 +613,7 @@ namespace Enc28j60
       uint32_t const m_delayHclk;
       Irq::SemaphoreHandler m_handlerDmaTx;
       std::unique_ptr<Hal::DmaLine> m_dmaTx;
+      std::unique_ptr<Hal::DmaLine> m_dmaTxInt;
       std::unique_ptr<Hal::DmaLine> m_dmaRx;
 
     protected:

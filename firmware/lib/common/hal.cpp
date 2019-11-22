@@ -393,7 +393,7 @@ namespace Hal
     if (setup.interruptFlags & c_flags_FE)
       FCR |= DMA_SxFCR_FEIE;
     ptr->m_CR = CR;
-    ptr->m_mx->FCR = FCR;
+    ptr->m_FCR = FCR;
 
     dmaLine = std::move(ptr);
     return Status::Success;

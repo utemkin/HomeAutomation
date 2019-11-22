@@ -170,6 +170,7 @@ namespace Hal
       m_mx->CCR = m_CR;
   #elif defined(STM32F4)
       __DMB();
+      m_mx->FCR = m_FCR;
       m_mx->CR = m_CR;
   #else
   #error Unsupported architecture
@@ -271,6 +272,9 @@ namespace Hal
     uint32_t m_interruptFlagsMask;
     uint32_t m_allFlagsMask;
     uint32_t m_CR;
+  #if defined(STM32F4)
+    uint32_t m_FCR;
+  #endif
 
   protected:
     DmaLine() = default;

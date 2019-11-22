@@ -24,7 +24,7 @@ namespace Analog
             .line = 1,        //fixme
           },
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
+          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE,
         } ) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
@@ -34,7 +34,7 @@ namespace Analog
             .line = 5,        //fixme
           },
           .config = Hal::DmaLine::c_config_PRIO_LOW | Hal::DmaLine::c_config_M16 | Hal::DmaLine::c_config_P16 | Hal::DmaLine::c_config_MINC | Hal::DmaLine::c_config_P2M,
-          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E,
+          .interruptFlags = Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE,
         } ) != Hal::Status::Success)
           Rt::fatal();  //fixme
 
@@ -363,7 +363,7 @@ namespace Analog
           m_adc3->SR = 0;
 
           if ((CSR & (ADC_CSR_OVR1 | ADC_CSR_OVR2 | ADC_CSR_OVR3 | ADC_CSR_EOC1 | ADC_CSR_EOC2)) ||
-            (flags & (Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_E)) != Hal::DmaLine::c_flags_TC)
+            (flags & (Hal::DmaLine::c_flags_TC | Hal::DmaLine::c_flags_TE)) != Hal::DmaLine::c_flags_TC)
           {
             m_callback(false);
             return true;
