@@ -123,12 +123,12 @@ namespace mstd
   };
 
   template<typename T, size_t N>
-  class NonlockedFifo : noncopyable
+  class NonblockingQueue : noncopyable
   {
   public:
-    NonlockedFifo() = default;
+    NonblockingQueue() = default;
 
-    bool store(const T& value)
+    bool push(const T& value)
     {
       auto writeIndex = m_writeIndex.load(std::memory_order_acquire);
       auto oldWriteIndex = writeIndex;
@@ -146,7 +146,7 @@ namespace mstd
       return true;
     }
 
-    bool load(T& value)
+    bool pop(T& value)
     {
       auto readIndex = m_readIndex.load(std::memory_order_acquire);
 
@@ -342,6 +342,55 @@ namespace Os
 
   protected:
     osSemaphoreId m_semaphore;
+  };
+
+  template<typename T, size_t N>
+  class Queue : mstd::noncopyable
+  {
+  public:
+    Queue()
+    {
+      osMailQDef(queue, N, T);
+      m_queue = osMailCreate(osMailQ(queue), NULL);
+    }
+    ~Queue()
+    {
+      Rt::fatal();
+    }
+    bool push(const T& value, uint32_t timeout = osWaitForever)  //returns true on success, false if timeout
+    {
+      auto* const msg = osMailAlloc(m_queue, timeout);
+      if (!msg)
+        return false;
+
+      *static_cast<T*>(msg) = value;
+
+      if (osMailPut(m_queue, msg) != osOK)
+        Rt::fatal();
+
+      return true;
+    }
+    bool pop(T& value, uint32_t timeout = osWaitForever)  //returns true on success, false if timeout
+    {
+      const auto& evt = osMailGet(m_queue, timeout);
+      switch (evt.status)
+      {
+      case osEventMail:
+        break;
+      case osOK:
+      case osEventTimeout:
+        return false;
+      default:
+        Rt::fatal();
+      }
+
+      value = *static_cast<T*>(evt.value.p);
+  
+      return true;      
+    }
+
+  protected:
+    osMailQId m_queue;
   };
 
   class Thread : mstd::noncopyable

@@ -72,6 +72,14 @@ extern "C" void maintask()
 
   Tools::IdleMeasure::calibrate();
 
+  Os::Queue<int, 1> q = {};
+  q.push(1);
+  q.push(1, 1000);
+  int r;
+  q.pop(r);
+  q.pop(r, 0);
+
+
 //  auto gen = std::make_shared<MicroLan::TimingGenerator>();
 //  MicroLan::TimingGeneratorBus<MicroLan::TimingGenerator> bus(gen, Pin::Def(GPIOE, GPIO_PIN_0, false), Pin::Def(GPIOE, GPIO_PIN_1, false));
 //

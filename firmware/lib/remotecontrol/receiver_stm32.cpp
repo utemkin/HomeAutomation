@@ -18,7 +18,7 @@ namespace RC
 
       virtual bool receive(DurationUs& durationUs)
       {
-        return m_samples.load(durationUs);
+        return m_samples.pop(durationUs);
       }
 
     protected:
@@ -29,7 +29,7 @@ namespace RC
     
         if (m_filter.next(m_pin.read()) || currentDurationUs >= c_maxDurationUs)
         {
-          m_samples.store(lastState ? currentDurationUs : -currentDurationUs);
+          m_samples.push(lastState ? currentDurationUs : -currentDurationUs);
           currentDurationUs = 0;
         }
 
@@ -50,7 +50,7 @@ namespace RC
       Pin::In const m_pin;
       math::BounceFilter<c_filterShift, c_filterLowerPercent, c_filterUpperPercent> m_filter;
       DurationUs m_currentDurationUs = 0;
-      mstd::NonlockedFifo<DurationUs, c_samples> m_samples;
+      mstd::NonblockingQueue<DurationUs, c_samples> m_samples;
     };
   }
 }
